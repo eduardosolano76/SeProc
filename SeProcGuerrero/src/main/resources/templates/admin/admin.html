@@ -4,19 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Módulo Admin</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
 
   <style>
     :root{
       --orange: #c66a00;
       --orange-2:#b55f00;
-      --active: #7a6049;     /* iluminado/seleccionado */
+      --active: #7a6049;
       --bg: #ffffff;
-      --panel: #eceae6;      /* recuadro gris grande */
+      --panel: #eceae6;
       --text: #111;
       --muted:#6c6c6c;
       --radius: 34px;
@@ -26,11 +25,11 @@
     html, body{ height:100%; }
 
     body{
-       margin:0;
-       font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-       background: var(--bg);
-       color: var(--text);
-       }
+      margin:0;
+      font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
 
     /* ===== Layout ===== */
     .layout{
@@ -47,6 +46,7 @@
       display:flex;
       flex-direction:column;
       gap: 22px;
+      position: relative;
     }
 
     .brand{
@@ -57,20 +57,19 @@
       padding: 0 18px;
     }
 
-    /* ===== Aquí se modifica el tamaño del logo en el menú===== */
-
+    /* Tamaño del logo */
     .brand .logo{
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  background:#fff;
-  overflow:hidden;
-  border: 6px solid #fff;
-  outline: 4px solid rgba(255,255,255,.25);
-  box-shadow: 0 10px 26px rgba(0,0,0,.18);
-  display:grid;
-  place-items:center;
-}
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background:#fff;
+      overflow:hidden;
+      border: 6px solid #fff;
+      outline: 4px solid rgba(255,255,255,.25);
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+      display:grid;
+      place-items:center;
+    }
 
     .brand .logo img{
       width:100%;
@@ -78,6 +77,25 @@
       object-fit:cover;
       display:block;
     }
+
+    /* Top móvil dentro del sidebar botón ☰ */
+    .mobile-top{
+      display:none;
+      padding: 0 14px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+    .hamburger{
+      border:none;
+      background: rgba(255,255,255,.18);
+      color:#fff;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 22px;
+      cursor:pointer;
+    }
+    .hamburger:active{ transform: translateY(1px); }
 
     .nav{
       margin-top: 12px;
@@ -96,27 +114,24 @@
       cursor:pointer;
 
       display:flex;
-      align-items:center;
+      align-items:center;     /* centra icono con texto */
       gap: 14px;
 
       font-size: 18px;
       border-radius: 0;
       transition: background .15s ease;
+      line-height: 1;         /* evita desalineados */
     }
 
-    /* hover como tu imagen */
-    .nav-item:hover{
-      background: var(--active);
-    }
-    .nav-item.active{
-      background: var(--active);
-    }
+    .nav-item:hover{ background: var(--active); }
+    .nav-item.active{ background: var(--active); }
 
     .nav-item .icon{
       width: 28px;
       height: 28px;
-      display:grid;
-      place-items:center;
+      display:flex;          
+      align-items:center;
+      justify-content:center;
       flex: 0 0 28px;
     }
 
@@ -125,21 +140,21 @@
       height: 26px;
       object-fit: contain;
       display:block;
-      filter: brightness(0) invert(1); /* iconos blancos */
+      filter: brightness(0) invert(1);
+      transform: translateY(1px); 
     }
 
     .nav-item .label{
       flex:1;
       font-weight: 500;
-      position: relative;
-      top: 4px;
     }
 
     .nav-item .chev{
       width: 18px;
       height: 18px;
-      display:grid;
-      place-items:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       opacity: .9;
       transition: transform .15s ease;
     }
@@ -149,6 +164,7 @@
       height: 16px;
       object-fit: contain;
       filter: brightness(0) invert(1);
+      transform: translateY(1px);
     }
 
     .nav-item[data-open="true"] .chev{
@@ -163,7 +179,6 @@
       padding: 0 0 10px 60px;
       margin-top: -6px;
     }
-
     .submenu.open{ display:flex; }
 
     .sub-item{
@@ -193,8 +208,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      }
-
+    }
 
     /* Topbar */
     .topbar{
@@ -251,7 +265,7 @@
       font-weight: 500;
     }
 
-    /* Perfil para subir imagen */
+    /* Perfil subir imagen */
     .profile{
       width: 44px;
       height: 44px;
@@ -277,10 +291,9 @@
       background: var(--panel);
       border-radius: var(--radius);
       padding: 24px 26px;
-      flex: 1;        
-      min-height: 0;  
-}
-
+      flex: 1;
+      min-height: 0;
+    }
 
     .panel-head{
       display:flex;
@@ -302,7 +315,7 @@
       font-size: 16px;
     }
 
-    /* Botón agregar usuario */
+    /* Botón agregar */
     .add-btn{
       width: 44px;
       height: 44px;
@@ -324,39 +337,94 @@
 
     .add-btn:hover{ background: var(--orange-2); }
 
-    /* Responsive básico */
+    /* ===== Responsive ===== */
     @media (max-width: 1024px){
       .sidebar{ width: 260px; }
       .userbox .hello{ font-size: 22px; }
+      .brand .logo{ width: 110px; height: 110px; }
     }
 
+    /* ===== Móvil bien ===== */
     @media (max-width: 768px){
       .layout{ flex-direction:column; }
 
+      /* Sidebar como topbar sticky */
       .sidebar{
         width: 100%;
-        flex-direction:row;
-        align-items:center;
-        justify-content:space-between;
-        padding: 14px;
+        padding: 12px 14px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
       }
 
-      .brand{ flex-direction:row; }
-      .nav{ flex-direction:row; gap: 6px; margin-top:0; }
-      .nav-item{ padding: 12px 12px; font-size: 16px; }
-      .nav-item .label{ display:none; }
+      .mobile-top{ display:flex; }
+
+      /* Logo pequeño en móvil */
+      .brand{ padding:0; }
+      .brand .logo{
+        width: 56px;
+        height: 56px;
+        border: 3px solid #fff;
+        outline: 2px solid rgba(255,255,255,.20);
+        box-shadow: 0 8px 18px rgba(0,0,0,.16);
+      }
+
+      /* Nav como menú desplegable */
+      .nav{
+        display:none;
+        position:absolute;
+        left:0;
+        top: 78px; /* debajo de la barra */
+        width:100%;
+        background: var(--orange);
+        padding: 10px 10px 14px;
+        gap: 6px;
+        flex-direction: column;
+      }
+      .sidebar.menu-open .nav{ display:flex; }
+
+      .nav-item{
+        border-radius: 12px;
+        padding: 14px 14px;
+      }
+      .nav-item .label{ display:block; }
 
       .submenu{
-        position:absolute;
-        left: 14px;
-        top: 120px;
-        background: rgba(0,0,0,.15);
-        padding: 10px;
-        border-radius: 14px;
+        position: static;
+        padding: 0 0 10px 52px;
+        background: transparent;
+        border-radius: 0;
       }
 
-      .content{ padding: 16px; }
-      .panel{ min-height: 520px; }
+      .content{
+        padding: 14px;
+        min-height: calc(100vh - 80px);
+      }
+
+      /* Topbar en columna para que no se encime */
+      .topbar{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 6px 12px;
+      }
+
+      .search{ max-width: 100%; }
+
+      .userbox{
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .userbox .hello{ font-size: 20px; }
+
+      .panel{
+        border-radius: 22px;
+      }
     }
   </style>
 </head>
@@ -365,11 +433,16 @@
 <div class="layout">
 
   <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="logo">
         <img th:src="@{/assets/logo.jpg}" alt="Logo">
       </div>
+    </div>
+
+    <!-- botón ☰ solo para móvil -->
+    <div class="mobile-top">
+      <button class="hamburger" id="btnMenu" type="button" aria-label="Abrir menú">☰</button>
     </div>
 
     <nav class="nav" aria-label="Menú Admin">
@@ -382,7 +455,7 @@
         <span class="label">Proyectos</span>
       </button>
 
-      <!-- Usuarios con desplegable -->
+      <!-- Usuarios -->
       <button class="nav-item" id="navUsuarios" type="button" data-open="false">
         <span class="icon">
           <img th:src="@{/assets/iconos/usuarios.png}" alt="">
@@ -417,7 +490,7 @@
   <main class="content">
 
     <header class="topbar">
-      <!-- Buscador pero solo es visual por ahora -->
+      <!-- Buscador visual -->
       <div class="search" role="search">
         <span class="s-icon" aria-hidden="true">
           <img th:src="@{/assets/iconos/buscar.png}" alt="">
@@ -429,7 +502,7 @@
                aria-label="Buscar por nombre, apellidos, proyecto, etc." />
       </div>
 
-      <!-- Saludo + Perfil -->
+      <!-- Saludo en el Perfil -->
       <div class="userbox">
         <div class="hello">
           Hola, <span th:text="${nombreUsuario != null ? nombreUsuario : 'Anette'}">Anette</span>!
@@ -444,7 +517,7 @@
       </div>
     </header>
 
-    <!-- Panel grande recuadro gris -->
+    <!-- Panel gris -->
     <section class="panel" aria-label="Sección principal">
       <div class="panel-head">
         <div>
@@ -457,8 +530,6 @@
       </div>
 
       <div class="panel-sub" id="emptyText">No se ha registrado ningún usuario</div>
-
-      <!-- Aquí después va la lista-->
       <div id="results" style="margin-top:14px;"></div>
     </section>
 
@@ -481,15 +552,12 @@
   function setView(viewKey){
     const v = VIEWS[viewKey];
     if(!v) return;
-
     sectionTitle.textContent = v.title;
     emptyText.textContent = v.empty;
-
     results.innerHTML = "";
     emptyText.style.display = "block";
   }
 
-  // ====== Active de botones (sidebar) ======
   function setActiveNav(buttonId){
     const allNav = document.querySelectorAll('.nav .nav-item');
     allNav.forEach(b => b.classList.remove('active'));
@@ -505,7 +573,6 @@
     const isOpen = navUsuarios.getAttribute('data-open') === 'true';
     navUsuarios.setAttribute('data-open', String(!isOpen));
     submenuUsuarios.classList.toggle('open', !isOpen);
-
     setActiveNav('navUsuarios');
   });
 
@@ -513,9 +580,9 @@
   document.getElementById('navProyectos')?.addEventListener('click', () => {
     setActiveNav('navProyectos');
     setView('proyectos');
+    closeMobileMenu();
   });
 
-  // ====== Click sub-items Usuarios ======
   function setActiveSubItem(clicked){
     const all = document.querySelectorAll('#submenuUsuarios .sub-item');
     all.forEach(x => x.classList.remove('active'));
@@ -527,10 +594,11 @@
       setActiveNav('navUsuarios');
       setActiveSubItem(btn);
       setView(btn.dataset.view);
+      closeMobileMenu();
     });
   });
 
-  // ====== Foto de perfil para subir y previsualizar======
+  // ====== Foto de perfil ======
   const profileBtn = document.getElementById('profileBtn');
   const profileFile = document.getElementById('profileFile');
   const profileImg = document.getElementById('profileImg');
@@ -541,21 +609,32 @@
   profileFile?.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if(!file) return;
-
     const url = URL.createObjectURL(file);
     profileImg.src = url;
     profileImg.style.display = 'block';
     profileFallback.style.display = 'none';
-
   });
 
-  // Botón agregar pero sin función ahorita
-  document.getElementById('btnAdd')?.addEventListener('click', () => {
+  // ====== Menú móvil ======
+  const btnMenu = document.getElementById('btnMenu');
+  const sidebar = document.getElementById('sidebar');
+
+  btnMenu?.addEventListener('click', () => {
+    sidebar?.classList.toggle('menu-open');
   });
 
-  // ====== Vista inicial ======
-setView("proyectos");
-setActiveNav("navProyectos");
+  function closeMobileMenu(){
+    if(window.matchMedia("(max-width: 768px)").matches){
+      sidebar?.classList.remove('menu-open');
+    }
+  }
+
+  // Botón agregar todavía sin función
+  document.getElementById('btnAdd')?.addEventListener('click', () => {});
+
+  // Vista inicial
+  setView("proyectos");
+  setActiveNav("navProyectos");
 </script>
 
 </body>
