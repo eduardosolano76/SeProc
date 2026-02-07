@@ -35,7 +35,7 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/login")          // <- tu pagina
                 .loginProcessingUrl("/login") // <- endpoint que procesa el POST (puede ser el mismo)
-                .defaultSuccessUrl("/", true) // <- a dónde ir si inicia sesión
+                .defaultSuccessUrl("/admin", true) // <- a dónde ir si inicia sesión
                 .failureUrl("/login?error=true")
                 .permitAll()
             )
