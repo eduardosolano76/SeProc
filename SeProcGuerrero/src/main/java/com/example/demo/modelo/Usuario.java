@@ -1,10 +1,18 @@
 package com.example.demo.modelo;
 
-import jakarta.persistence.*;
+import java.time.LocalDate;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -17,8 +25,10 @@ public class Usuario {
     @Column(name = "id_usuario")
     private Long idUsuario;
 
-    @Column(name = "id_roles")
-    private Integer idRoles; // por ahora simple (sin relación)
+    // FK a roles(id_roles)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_roles")
+    private Rol rol;
 
     @Column(name = "nombre", nullable = false, length = 250)
     private String nombre;
@@ -34,10 +44,11 @@ public class Usuario {
 
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
-
-    @Column(name = "tipo", nullable = false)
-    private String tipo; // central/contratista/supervisor/direccion
-
+    
     @Column(name = "fechaRegistro")
     private LocalDate fechaRegistro;
+    
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = false;
+
 }

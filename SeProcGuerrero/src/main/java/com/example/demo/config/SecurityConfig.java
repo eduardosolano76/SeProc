@@ -5,15 +5,16 @@ import java.time.LocalDate;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
-
-import com.example.demo.modelo.Usuario;
-import com.example.demo.repository.UsuarioRepository;
-
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+import com.example.demo.modelo.Rol;
+import com.example.demo.modelo.Usuario;
+import com.example.demo.repository.RolRepository;
+import com.example.demo.repository.UsuarioRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -27,7 +28,7 @@ public class SecurityConfig {
                 .requestMatchers("/assets/**","/css/**", "/js/**", "/images/**", "/static/**").permitAll()
 
                 // TU LOGIN + AUTH (publico)
-                .requestMatchers("/login", "/auth/**", "/public/**").permitAll()
+                .requestMatchers("/login", "/auth/**", "/public/**", "/registro/**").permitAll()
 
                 // TODO lo demás protegido
                 .anyRequest().authenticated()
@@ -36,7 +37,13 @@ public class SecurityConfig {
                 .loginPage("/login")          // <- tu pagina
                 .loginProcessingUrl("/login") // <- endpoint que procesa el POST (puede ser el mismo)
                 .defaultSuccessUrl("/admin", true) // <- a dónde ir si inicia sesión
-                .failureUrl("/login?error=true")
+                .failureHandler((request, response, exception) -> {
+                    if (exception instanceof org.springframework.security.authentication.DisabledException) {
+                        response.sendRedirect("/login?pending=true");
+                    } else {
+                        response.sendRedirect("/login?error=true");
+                    }
+                })
                 .permitAll()
             )
             .logout(logout -> logout
@@ -51,24 +58,5 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-    
-    // Crear admin si no existe)
-    @Bean
-    CommandLineRunner initAdmin(UsuarioRepository repo, PasswordEncoder encoder) {
-        return args -> {
-            if (repo.findByUsername("admin").isEmpty()) {
-                Usuario u = new Usuario();
-                u.setUsername("admin");
-                u.setPassword(encoder.encode("1234"));
-                u.setTipo("central");
-                u.setNombre("Administrador");
-                u.setApellido("Sistema");
-                u.setEmail("admin@seproc.com");
-                u.setFechaRegistro(LocalDate.now());
-                u.setIdRoles(1);
-                repo.save(u);
-            }
-        };
     }
 }

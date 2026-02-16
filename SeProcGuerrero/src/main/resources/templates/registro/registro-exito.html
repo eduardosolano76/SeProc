@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro enviado</title>
+  <style>
+    :root{ --accent:#c66a00; --card:#fbf6ee; --text:#1a1a1a; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; min-height:100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: url("/assets/fondo-login.png") center / cover no-repeat fixed;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+      color: var(--text);
+    }
+    body::before{
+      content:""; position:fixed; inset:0; background:rgba(255,255,255,.05);
+      pointer-events:none;
+    }
+    .card{
+      position:relative;
+      width:min(520px, 92vw);
+      background: var(--card);
+      border: 8px solid var(--accent);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.08);
+    }
+    h1{ margin:0 0 10px; font-size: 22px; }
+    p{ margin:0 0 14px; font-weight:700; line-height:1.35; }
+    a{
+      color: var(--accent);
+      font-weight: 900;
+      text-decoration: none;
+    }
+    a:hover{ text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h1>Solicitud enviada</h1>
+    <p>Tu cuenta quedó <b>pendiente de aprobación</b>. Un administrador revisará tu solicitud y te asignará un rol.</p>
+    <p>Mientras tanto, no podrás iniciar sesión.</p>
+    <a th:href="@{/login}">Volver al login</a>
+  </section>
+</body>
+</html>
