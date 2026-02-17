@@ -1,0 +1,5 @@
+seproc/
+*.sql
+*.dump
+*.bak
+*.zip
