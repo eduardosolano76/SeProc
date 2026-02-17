@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -49,7 +50,34 @@ public class AdminController {
         // Pendientes para aprobar
         model.addAttribute("pendientes", usuarioRepo.findByActivoFalse());
 
+        // View actual para que el HTML sepa qué mostrar
+        model.addAttribute("view", view);
 
+        // Lista de usuarios para la vista de usuarios (por rol)
+        List<Usuario> usuarios = List.of();
+        
+        switch (view) {
+        case "usuarios-supervisores":
+            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("supervisor");
+            break;
+        case "usuarios-constructores":
+            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("contratista"); // o "constructor" según tu BD
+            break;
+        case "usuarios-directores":
+            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("direccion");
+            break;
+        case "usuarios-central":
+            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("central");
+            break;
+        case "usuarios-administrador":
+            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("administrador");
+            break;
+        default:
+            // proyectos / pendientes / etc.
+            break;
+    }
+        model.addAttribute("usuarios", usuarios);
+        
         return "admin/admin";
     }
     

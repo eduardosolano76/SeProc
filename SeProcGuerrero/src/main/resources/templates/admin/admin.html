@@ -576,25 +576,36 @@ body {
 				</button>
 
 				<!-- Usuarios -->
-				<button class="nav-item" id="navUsuarios" type="button"
-					data-open="false">
-					<span class="icon"> <img
-						th:src="@{/assets/iconos/usuarios.png}" alt="">
-					</span> <span class="label">Usuarios</span> <span class="chev"
-						aria-hidden="true"> <img
-						th:src="@{/assets/iconos/desplegable.png}" alt="">
-					</span>
-				</button>
+<button class="nav-item"
+        id="navUsuarios"
+        type="button"
+        th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
+        th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
+  <span class="icon"><img th:src="@{/assets/iconos/usuarios.png}" alt=""></span>
+  <span class="label">Usuarios</span>
+  <span class="chev" aria-hidden="true">
+    <img th:src="@{/assets/iconos/desplegable.png}" alt="">
+  </span>
+</button>
 
-				<div class="submenu" id="submenuUsuarios">
-					<button class="sub-item active" type="button"
-						data-view="usuarios-supervisores">Supervisores</button>
-					<button class="sub-item" type="button"
-						data-view="usuarios-constructores">Constructores</button>
-					<button class="sub-item" type="button"
-						data-view="usuarios-directores">Directores</button>
-					<button class="sub-item" type="button" data-view="usuarios-central">Central</button>
-				</div>
+
+<div class="submenu" id="submenuUsuarios" th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
+  <a class="sub-item" th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
+     th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
+
+  <a class="sub-item" th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
+     th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
+
+  <a class="sub-item" th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
+     th:href="@{/admin(view='usuarios-directores')}">Directores</a>
+
+  <a class="sub-item" th:classappend="${view=='usuarios-central'} ? ' active' : ''"
+     th:href="@{/admin(view='usuarios-central')}">Central</a>
+
+  <a class="sub-item" th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
+     th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
+</div>
+
 
 				<!-- Solicitudes pendientes -->
 				<button class="nav-item" id="navSolicitudes" type="button"
@@ -664,9 +675,40 @@ body {
 					</button>
 				</div>
 
-				<div class="panel-sub" id="emptyText">No se ha registrado
-					ningún usuario</div>
-				<div id="results" style="margin-top: 14px;"></div>
+<!-- Solo mostrar si estás en una vista de usuarios -->
+<div th:if="${#strings.startsWith(view, 'usuarios-')}">
+
+  <!-- Mensaje vacío -->
+  <div class="panel-sub" th:if="${#lists.isEmpty(usuarios)}">
+    No se ha registrado ningún usuario
+  </div>
+
+  <!-- Tabla usuarios -->
+  <div th:if="${!#lists.isEmpty(usuarios)}" style="margin-top:14px;">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Rol</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="u : ${usuarios}">
+          <td th:text="${u.idUsuario}">1</td>
+          <td th:text="${u.nombre + ' ' + u.apellido}">Nombre Apellido</td>
+          <td th:text="${u.username}">usuario</td>
+          <td th:text="${u.email}">correo@mail.com</td>
+          <td th:text="${u.rol != null ? u.rol.nombre : 'sin rol'}">rol</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
 
 				<!-- Solicitudes pendientes -->
 				<div class="pendientes-wrap" id="pendientesWrap"
@@ -759,7 +801,8 @@ body {
     "usuarios-constructores": { title: "Constructores", empty: "No se ha registrado ningún usuario" },
     "usuarios-directores": { title: "Directores", empty: "No se ha registrado ningún usuario" },
     "usuarios-central": { title: "Central", empty: "No se ha registrado ningún usuario" },
-    "proyectos": { title: "Proyectos", empty: "No se ha registrado ningún proyecto" }
+    "proyectos": { title: "Proyectos", empty: "No se ha registrado ningún proyecto" },
+    "usuarios-administrador":{title: "Administrador", empty: "No se ha registrado ningun usuario"}
   };
 
   function setView(viewKey){
@@ -878,15 +921,21 @@ body {
   document.getElementById('btnAdd')?.addEventListener('click', () => {});
 
   // Vista inicial
-const viewParam2 = getParam('view');
+const viewParam2 = getParam('view') || 'proyectos';
 
 if(viewParam2 === 'pendientes'){
   openPendientes();
 } else {
-  setView("proyectos");
-  setActiveNav("navProyectos");
+  setView(viewParam2);
+  if(viewParam2.startsWith('usuarios-')){
+    setActiveNav('navUsuarios');
+    navUsuarios.setAttribute('data-open', 'true');
+    submenuUsuarios.classList.add('open');
+  } else {
+    setActiveNav('navProyectos');
+  }
 }
-  
+
   function aprobarUsuario(btn){
 	  const id = btn.getAttribute('data-id');
 	  const sel = document.getElementById('rol-' + id);

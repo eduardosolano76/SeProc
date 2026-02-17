@@ -12,6 +12,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     List<Usuario> findByActivoFalse();
     
+    // Aprobados por rol (nombre del rol)
+    List<Usuario> findByActivoTrueAndRol_NombreIgnoreCase(String nombre);
+    
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 }
