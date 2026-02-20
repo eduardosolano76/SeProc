@@ -403,6 +403,24 @@ body {
 	border-top: 1px solid rgba(0, 0, 0, .06);
 }
 
+.table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+}
+
+/* en pantallas pequeñas permite “scroll” sin aplastar */
+@media (max-width: 768px){
+  .table{
+    min-width: 720px; /* puedes subir/bajar: 650-900 */
+  }
+
+  .table th, .table td{
+    white-space: nowrap;
+  }
+}
+
 .role-select {
 	height: 36px;
 	border-radius: 999px;
@@ -590,20 +608,25 @@ body {
 
 
 <div class="submenu" id="submenuUsuarios" th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
-  <a class="sub-item" th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
-     th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
+  <a class="sub-item" data-view="usuarios-supervisores"
+  th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
+  th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
 
-  <a class="sub-item" th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
-     th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
+  <a class="sub-item" data-view="usuarios-constructores"
+  th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
+  th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
 
-  <a class="sub-item" th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
-     th:href="@{/admin(view='usuarios-directores')}">Directores</a>
+  <a class="sub-item" data-view="usuarios-directores"
+  th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
+  th:href="@{/admin(view='usuarios-directores')}">Directores</a>
 
-  <a class="sub-item" th:classappend="${view=='usuarios-central'} ? ' active' : ''"
-     th:href="@{/admin(view='usuarios-central')}">Central</a>
+  <a class="sub-item" data-view="usuarios-central"
+  th:classappend="${view=='usuarios-central'} ? ' active' : ''"
+  th:href="@{/admin(view='usuarios-central')}">Central</a>
 
-  <a class="sub-item" th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
-     th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
+  <a class="sub-item" data-view="usuarios-administrador"
+  th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
+  th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
 </div>
 
 				<!-- Solicitudes pendientes -->
@@ -662,39 +685,44 @@ body {
 				</div>
 			</header>
 
-			<!-- Panel gris -->
 			<section class="panel" aria-label="Sección principal">
-				<div class="panel-head">
-					<div>
-						<h2 class="panel-title" id="sectionTitle">Supervisores</h2>
-					</div>
+  <div class="panel-head">
+    <div>
+      <h2 class="panel-title" id="sectionTitle"
+    th:text="${ view=='proyectos' ? 'Proyectos' :
+              view=='pendientes' ? 'Solicitudes pendientes' :
+              view=='usuarios-supervisores' ? 'Supervisores' :
+              view=='usuarios-constructores' ? 'Constructores' :
+              view=='usuarios-directores' ? 'Directores' :
+              view=='usuarios-central' ? 'Central' :
+              view=='usuarios-administrador' ? 'Administrador' :
+              'Proyectos' }">
+  Supervisores
+</h2>
+    </div>
 
-					<button class="add-btn" type="button" id="btnAdd" title="Agregar">
-						<img th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
-					</button>
-				</div>
-
-<!-- Solo mostrar si estás en una vista de usuarios -->
-<div th:if="${#strings.startsWith(view, 'usuarios-')}">
-
-  <!-- Mensaje vacío -->
-  <div class="panel-sub" th:if="${#lists.isEmpty(usuarios)}">
-    No se ha registrado ningún usuario
+    <button class="add-btn" type="button" id="btnAdd" title="Agregar">
+      <img th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
+    </button>
   </div>
 
-  <!-- Tabla usuarios -->
-  <div th:if="${!#lists.isEmpty(usuarios)}" style="margin-top:14px;">
-    <table class="table">
-      <thead>
+  <div id="panelContent">
+
+    <!-- Mensaje vacío -->
+    <div class="panel-sub" th:if="${#lists.isEmpty(usuarios) and #strings.startsWith(view,'usuarios-')}">
+      No se ha registrado ningún usuario
+    </div>
+
+    <!-- Tabla usuarios -->
+    <div th:if="${!#lists.isEmpty(usuarios) and #strings.startsWith(view,'usuarios-')}" style="margin-top:14px;">
+      <div class="table-wrap">
+      <table class="table">
+        <thead>
         <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Username</th>
-          <th>Email</th>
-          <th>Rol</th>
+          <th>ID</th><th>Nombre</th><th>Username</th><th>Email</th><th>Rol</th>
         </tr>
-      </thead>
-      <tbody>
+        </thead>
+        <tbody>
         <tr th:each="u : ${usuarios}">
           <td th:text="${u.idUsuario}">1</td>
           <td th:text="${u.nombre + ' ' + u.apellido}">Nombre Apellido</td>
@@ -702,197 +730,144 @@ body {
           <td th:text="${u.email}">correo@mail.com</td>
           <td th:text="${u.rol != null ? u.rol.nombre : 'sin rol'}">rol</td>
         </tr>
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pendientes-wrap" id="pendientesWrap"
+         th:style="${view=='pendientes'} ? '' : 'display:none;'">
+
+      <p class="pendientes-note">
+        Selecciona un rol y aprueba al usuario. Hasta que lo apruebes, <b>no podrá iniciar sesión</b>.
+      </p>
+
+      <div th:if="${#lists.isEmpty(pendientes)}" class="badge">
+        No hay solicitudes pendientes.
+      </div>
+
+      <table class="table" th:if="${!#lists.isEmpty(pendientes)}">
+   
+      </table>
+    </div>
+
   </div>
-
-</div>
-
-
-				<!-- Solicitudes pendientes -->
-				<div class="pendientes-wrap" id="pendientesWrap"
-					style="display: none;">
-					<p class="pendientes-note">
-						Selecciona un rol y aprueba al usuario. Hasta que lo apruebes, <b>no
-							podrá iniciar sesión</b>.
-					</p>
-
-					<!-- Si no hay pendientes -->
-					<div th:if="${#lists.isEmpty(pendientes)}" class="badge">No
-						hay solicitudes pendientes.</div>
-
-					<!-- Tabla de pendientes -->
-					<table class="table" th:if="${!#lists.isEmpty(pendientes)}">
-						<thead>
-							<tr>
-								<th>ID</th>
-								<th>Nombre</th>
-								<th>Username</th>
-								<th>Email</th>
-								<th>Rol</th>
-								<th>Acciones</th>
-							</tr>
-						</thead>
-
-						<tbody>
-							<tr th:each="u : ${pendientes}">
-								<td th:text="${u.idUsuario}">1</td>
-								<td th:text="${u.nombre + ' ' + u.apellido}">Nombre
-									Apellido</td>
-								<td th:text="${u.username}">usuario</td>
-								<td th:text="${u.email}">correo@mail.com</td>
-
-								<!-- ROL: solo el select -->
-								<td><select class="role-select"
-									th:id="'rol-' + ${u.idUsuario}" name="rolNombre" required>
-										<option value="" selected disabled>Selecciona rol</option>
-										<option value="central">central</option>
-										<option value="contratista">contratista</option>
-										<option value="supervisor">supervisor</option>
-										<option value="direccion">direccion</option>
-										<option value="administrador">administrador</option>
-								</select></td>
-
-								<!-- ACCIONES: aprobar + rechazar -->
-								<td style="display: flex; gap: 10px; align-items: center;">
-
-									<!-- form oculto solo para enviar Aprobar -->
-									<form th:id="'aprobar-' + ${u.idUsuario}"
-										th:action="@{/admin/usuarios/{id}/aprobar(id=${u.idUsuario})}"
-										method="post" style="margin: 0;">
-										<input type="hidden" th:name="${_csrf.parameterName}"
-											th:value="${_csrf.token}" /> <input type="hidden"
-											th:id="'rolHidden-' + ${u.idUsuario}" name="rolNombre"
-											value="" />
-									</form> <!-- botón aprobar (fuera del form) -->
-									<button class="approve-btn" type="button"
-										th:attr="data-id=${u.idUsuario}"
-										onclick="aprobarUsuario(this)">Aprobar</button>
-
-									<form
-										th:action="@{/admin/usuarios/{id}/rechazar(id=${u.idUsuario})}"
-										method="post" style="margin: 0;">
-										<input type="hidden" th:name="${_csrf.parameterName}"
-											th:value="${_csrf.token}" />
-										<button class="reject-btn" type="submit">Rechazar</button>
-									</form>
-
-								</td>
-							</tr>
-
-						</tbody>
-					</table>
-				</div>
-
-			</section>
+</section>
 
 		</main>
 	</div>
 
 	<script>
-  // ====== Panel ======
-  const sectionTitle = document.getElementById('sectionTitle');
-  const emptyText = document.getElementById('emptyText');
-  const results = document.getElementById('results');
-
-  const VIEWS = {
-    "usuarios-supervisores": { title: "Supervisores", empty: "No se ha registrado ningún usuario" },
-    "usuarios-constructores": { title: "Constructores", empty: "No se ha registrado ningún usuario" },
-    "usuarios-directores": { title: "Directores", empty: "No se ha registrado ningún usuario" },
-    "usuarios-central": { title: "Central", empty: "No se ha registrado ningún usuario" },
-    "proyectos": { title: "Proyectos", empty: "No se ha registrado ningún proyecto" },
-    "usuarios-administrador":{title: "Administrador", empty: "No se ha registrado ningun usuario"}
-  };
-
-  function setView(viewKey){
-	
-	// Ocultar pendientes cuando cambias a otra vista
-	if(pendientesWrap) pendientesWrap.style.display = "none";
-    
-	const v = VIEWS[viewKey];
-    if(!v) return;
-    sectionTitle.textContent = v.title;
-    emptyText.textContent = v.empty;
-    results.innerHTML = "";
-    emptyText.style.display = "block";
-  }
-
-  function setActiveNav(buttonId){
-    const allNav = document.querySelectorAll('.nav .nav-item');
-    allNav.forEach(b => b.classList.remove('active'));
-    const btn = document.getElementById(buttonId);
-    if(btn) btn.classList.add('active');
-  }
-
-  // ====== Submenu Usuarios open/close ======
-  const navUsuarios = document.getElementById('navUsuarios');
-  const submenuUsuarios = document.getElementById('submenuUsuarios');
-
-  navUsuarios?.addEventListener('click', () => {
-    const isOpen = navUsuarios.getAttribute('data-open') === 'true';
-    navUsuarios.setAttribute('data-open', String(!isOpen));
-    submenuUsuarios.classList.toggle('open', !isOpen);
-    setActiveNav('navUsuarios');
-  });
-
-  // ====== Click Proyectos ======
-  document.getElementById('navProyectos')?.addEventListener('click', () => {
-    setActiveNav('navProyectos');
-    setView('proyectos');
-    closeMobileMenu();
-  });
-
-  function setActiveSubItem(clicked){
-    const all = document.querySelectorAll('#submenuUsuarios .sub-item');
-    all.forEach(x => x.classList.remove('active'));
-    clicked.classList.add('active');
-  }
-
-  document.querySelectorAll('#submenuUsuarios .sub-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setActiveNav('navUsuarios');
-      setActiveSubItem(btn);
-      setView(btn.dataset.view);
-      closeMobileMenu();
-    });
-  });
-  
-//====== Click Solicitudes Pendientes ======
-  const pendientesWrap = document.getElementById('pendientesWrap');
-
-  function openPendientes(){
-    setActiveNav('navSolicitudes');
-    sectionTitle.textContent = "Solicitudes pendientes";
-    emptyText.style.display = "none";
-    results.innerHTML = "";
-    pendientesWrap.style.display = "block";
-    closeMobileMenu();
-  }
-
+  // ===== Helpers =====
   function getParam(name){
     return new URLSearchParams(window.location.search).get(name);
   }
 
-  document.getElementById('navSolicitudes')?.addEventListener('click', () => {
-    openPendientes();
-  });
-
-  // al cargar la página, si viene ?view=pendientes => abre pendientes
-  const viewParam = getParam('view');
-  if(viewParam === 'pendientes'){
-    openPendientes();
+  function setActiveNav(buttonId){
+    document.querySelectorAll('.nav .nav-item').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(buttonId);
+    btn?.classList.add('active');
   }
 
+  function setActiveSubItem(clicked){
+    document.querySelectorAll('#submenuUsuarios .sub-item').forEach(x => x.classList.remove('active'));
+    clicked?.classList.add('active');
+  }
 
+  // ===== Elementos =====
+  const sectionTitle   = document.getElementById('sectionTitle');
+  const panelContent   = document.getElementById('panelContent');
+  const navUsuarios    = document.getElementById('navUsuarios');
+  const submenuUsuarios= document.getElementById('submenuUsuarios');
 
-  // ====== Foto de perfil ======
+  // ===== Cargar vista sin recargar y sin parpadeo =====
+  async function loadPanelFromUrl(href, push = true){
+    if(!panelContent){
+      window.location.href = href;
+      return;
+    }
+
+   
+    panelContent.innerHTML = `<div class="panel-sub">Cargando...</div>`;
+
+    try{
+      const res = await fetch(href, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status);
+
+      const html = await res.text();
+      const doc  = new DOMParser().parseFromString(html, "text/html");
+
+      const newPanelContent = doc.getElementById("panelContent");
+      const newTitle = doc.getElementById("sectionTitle")?.textContent?.trim();
+
+      if(!newPanelContent){
+        window.location.href = href;
+        return;
+      }
+
+      panelContent.innerHTML = newPanelContent.innerHTML;
+      if(newTitle && sectionTitle) sectionTitle.textContent = newTitle;
+
+      if(push) history.pushState({ href }, "", href);
+
+      closeMobileMenu();
+    }catch(e){
+      window.location.href = href;
+    }
+  }
+
+  // ===== Submenu Usuarios open/close =====
+  navUsuarios?.addEventListener('click', () => {
+    const isOpen = navUsuarios.getAttribute('data-open') === 'true';
+    navUsuarios.setAttribute('data-open', String(!isOpen));
+    submenuUsuarios?.classList.toggle('open', !isOpen);
+    setActiveNav('navUsuarios');
+  });
+
+  // ===== Proyectos =====
+  document.getElementById('navProyectos')?.addEventListener('click', (ev) => {
+    ev.preventDefault?.();
+    setActiveNav('navProyectos');
+    loadPanelFromUrl('/admin?view=proyectos', true);
+  });
+
+  // ===== Pendientes =====
+  document.getElementById('navSolicitudes')?.addEventListener('click', (ev) => {
+    ev.preventDefault?.();
+    setActiveNav('navSolicitudes');
+    loadPanelFromUrl('/admin?view=pendientes', true);
+  });
+
+  // ===== Subitems Usuarios =====
+  document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+
+      const href = a.getAttribute('href');
+      if(!href) return;
+
+      setActiveNav('navUsuarios');
+      setActiveSubItem(a);
+
+      navUsuarios?.setAttribute('data-open','true');
+      submenuUsuarios?.classList.add('open');
+
+      loadPanelFromUrl(href, true);
+    });
+  });
+
+  // ===== Back/Forward =====
+  window.addEventListener('popstate', (e) => {
+    const href = (e.state && e.state.href) ? e.state.href : window.location.href;
+    loadPanelFromUrl(href, false);
+  });
+
+  // ===== Foto de perfil =====
   const profileBtn = document.getElementById('profileBtn');
   const profileFile = document.getElementById('profileFile');
   const profileImg = document.getElementById('profileImg');
   const profileFallback = document.getElementById('profileFallback');
 
   profileBtn?.addEventListener('click', () => profileFile?.click());
-
   profileFile?.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -902,13 +877,11 @@ body {
     profileFallback.style.display = 'none';
   });
 
-  // ====== Menú móvil ======
+  // ===== Menú móvil =====
   const btnMenu = document.getElementById('btnMenu');
   const sidebar = document.getElementById('sidebar');
 
-  btnMenu?.addEventListener('click', () => {
-    sidebar?.classList.toggle('menu-open');
-  });
+  btnMenu?.addEventListener('click', () => sidebar?.classList.toggle('menu-open'));
 
   function closeMobileMenu(){
     if(window.matchMedia("(max-width: 768px)").matches){
@@ -919,37 +892,32 @@ body {
   // Botón agregar todavía sin función
   document.getElementById('btnAdd')?.addEventListener('click', () => {});
 
-  // Vista inicial
-const viewParam2 = getParam('view') || 'proyectos';
-
-if(viewParam2 === 'pendientes'){
-  openPendientes();
-} else {
-  setView(viewParam2);
-  if(viewParam2.startsWith('usuarios-')){
+  // ===== Vista inicial (solo activa estilos) =====
+  const v = getParam('view') || 'proyectos';
+  if(v === 'pendientes'){
+    setActiveNav('navSolicitudes');
+  } else if(v.startsWith('usuarios-')){
     setActiveNav('navUsuarios');
-    navUsuarios.setAttribute('data-open', 'true');
-    submenuUsuarios.classList.add('open');
+    navUsuarios?.setAttribute('data-open','true');
+    submenuUsuarios?.classList.add('open');
+    const link = document.querySelector(`#submenuUsuarios .sub-item[data-view="${v}"]`);
+    setActiveSubItem(link);
   } else {
     setActiveNav('navProyectos');
   }
-}
 
+  // ===== Aprobar usuario (pendientes) =====
   function aprobarUsuario(btn){
-	  const id = btn.getAttribute('data-id');
-	  const sel = document.getElementById('rol-' + id);
-
-	  // valida como antes (mensaje nativo)
-	  if(!sel.checkValidity()){
-	    sel.reportValidity(); // <-- muestra el tooltip del navegador
-	    return;
-	  }
-
-	  // pasa el valor al hidden y envía el form de aprobar
-	  document.getElementById('rolHidden-' + id).value = sel.value;
-	  document.getElementById('aprobar-' + id).submit();
-	}
+    const id = btn.getAttribute('data-id');
+    const sel = document.getElementById('rol-' + id);
+    if(!sel.checkValidity()){
+      sel.reportValidity();
+      return;
+    }
+    document.getElementById('rolHidden-' + id).value = sel.value;
+    document.getElementById('aprobar-' + id).submit();
+  }
+  window.aprobarUsuario = aprobarUsuario; 
 </script>
-
 </body>
 </html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+  <!-- Fragmento reutilizable para el listado de usuarios -->
+  <div th:fragment="usuariosContent">
+
+    <!-- Mensaje vacío -->
+    <div class="panel-sub" th:if="${#lists.isEmpty(usuarios)}">
+      No se ha registrado ningún usuario
+    </div>
+
+    <!-- Tabla usuarios -->
+    <div th:if="${!#lists.isEmpty(usuarios)}" style="margin-top:14px;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="u : ${usuarios}">
+            <td th:text="${u.idUsuario}">1</td>
+            <td th:text="${u.nombre + ' ' + u.apellido}">Nombre Apellido</td>
+            <td th:text="${u.username}">usuario</td>
+            <td th:text="${u.email}">correo@mail.com</td>
+            <td th:text="${u.rol != null ? u.rol.nombre : 'sin rol'}">rol</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</body>
+</html>

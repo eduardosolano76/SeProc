@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.demo.modelo.Rol;
@@ -28,7 +29,8 @@ public class AdminController {
 
     @GetMapping("/admin")
     public String admin(Model model, Principal principal,
-    		@RequestParam(value = "view", required = false, defaultValue = "proyectos") String view) {
+    		@RequestParam(value = "view", required = false, defaultValue = "proyectos") String view,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
 
         // username del que inició sesión
         String username = principal.getName();
@@ -77,6 +79,11 @@ public class AdminController {
             break;
     }
         model.addAttribute("usuarios", usuarios);
+        
+        boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(requestedWith);
+        if (isAjax && view != null && view.startsWith("usuarios-")) {
+            return "admin/_usuarios :: usuariosContent";
+        }
         
         return "admin/admin";
     }
