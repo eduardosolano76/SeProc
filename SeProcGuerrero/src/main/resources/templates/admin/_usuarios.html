@@ -22,7 +22,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr th:each="u : ${usuarios}">
+					<tr th:each="u : ${usuarios}" class="user-row" th:attr="data-id=${u.idUsuario}">
 						<td th:text="${u.idUsuario}">1</td>
 						<td th:text="${u.nombre + ' ' + u.apellido}">Nombre Apellido</td>
 						<td th:text="${u.username}">usuario</td>

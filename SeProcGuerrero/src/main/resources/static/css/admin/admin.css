@@ -25,14 +25,14 @@ body {
 	color: var(--text);
 }
 
-/* ===== Layout ===== */
+/* Layout */
 .layout {
 	display: flex;
 	min-height: 100vh;
 	width: 100%;
 }
 
-/* ===== Sidebar ===== */
+/* Sidebar */
 .sidebar {
 	width: 300px;
 	background: var(--orange);
@@ -172,7 +172,7 @@ body {
 	transform: rotate(180deg);
 }
 
-/* ===== Submenu ===== */
+/* Submenu */
 .submenu {
 	display: none;
 	flex-direction: column;
@@ -207,7 +207,7 @@ body {
 	font-weight: 800;
 }
 
-/* ===== Content ===== */
+/* Content */
 .content {
 	flex: 1;
 	padding: 22px 26px 26px;
@@ -345,7 +345,7 @@ body {
 	background: var(--orange-2);
 }
 
-/* ====== NUEVO: Tabla de pendientes ====== */
+/* Tabla de pendientes */
 .pendientes-wrap {
 	margin-top: 18px;
 	background: rgba(255, 255, 255, .55);
@@ -396,7 +396,7 @@ body {
 	border-radius: 14px;
 }
 
-/* en pantallas pequeñas permite “scroll” sin aplastar */
+/* En pantallas pequeñas permite “scroll” sin aplastar */
 @media ( max-width : 768px) {
 	.table {
 		min-width: 720px; /* puedes subir/bajar: 650-900 */
@@ -454,7 +454,7 @@ body {
 .reject-btn:hover {
 	filter: brightness(1.05);
 }
-/* ===== Responsive ===== */
+/* Responsive */
 @media ( max-width : 1024px) {
 	.sidebar {
 		width: 260px;
@@ -468,7 +468,7 @@ body {
 	}
 }
 
-/* ===== Móvil ===== */
+/* Móvil */
 @media ( max-width : 768px) {
 	.layout {
 		flex-direction: column;
@@ -546,5 +546,141 @@ body {
 	}
 	.panel {
 		border-radius: 22px;
+	}
+}
+
+/* Modal Usuario */
+.modal {
+	position: fixed;
+	inset: 0;
+	display: none;
+	z-index: 200;
+}
+
+.modal.open {
+	display: block;
+}
+
+.modal-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, .35);
+}
+
+.modal-card {
+	position: relative;
+	width: min(720px, calc(100% - 28px));
+	margin: 60px auto;
+	background: #fff;
+	border-radius: 18px;
+	box-shadow: 0 18px 40px rgba(0, 0, 0, .22);
+	overflow: hidden;
+}
+
+.modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px;
+	background: rgba(198, 106, 0, .12);
+}
+
+.modal-head h3 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 900;
+}
+
+.modal-close {
+	border: none;
+	background: transparent;
+	font-size: 18px;
+	cursor: pointer;
+	font-weight: 900;
+}
+
+.modal-body {
+	padding: 14px 16px 6px;
+}
+
+.modal-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 12px;
+}
+
+.field label {
+	display: block;
+	font-size: 12px;
+	font-weight: 800;
+	color: #444;
+	margin-bottom: 6px;
+}
+
+.field input {
+	width: 100%;
+	height: 40px;
+	border-radius: 12px;
+	border: 1px solid rgba(0, 0, 0, .12);
+	padding: 0 12px;
+	outline: none;
+	background: #fff;
+	font-weight: 600;
+}
+
+.field input:disabled {
+	background: #f3f1ee;
+	color: #666;
+}
+
+.modal-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	padding: 12px 16px 16px;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+	height: 40px;
+	border: none;
+	border-radius: 999px;
+	padding: 0 16px;
+	font-weight: 900;
+	cursor: pointer;
+}
+
+.btn-primary {
+	background: var(--orange);
+	color: #fff;
+}
+
+.btn-primary:hover {
+	background: var(--orange-2);
+}
+
+.btn-secondary {
+	background: rgba(0, 0, 0, .08);
+	color: #222;
+}
+
+.btn-secondary:hover {
+	background: rgba(0, 0, 0, .12);
+}
+
+.btn-danger {
+	background: #b00020;
+	color: #fff;
+}
+
+.btn-danger:hover {
+	filter: brightness(1.05);
+}
+
+@media ( max-width : 600px) {
+	.modal-grid {
+		grid-template-columns: 1fr;
+	}
+	.modal-card {
+		margin: 18px auto;
 	}
 }

@@ -159,8 +159,7 @@
 					<div th:if="${view=='proyectos'}">
 						<!-- Mensaje vacío -->
 						<div class="panel-sub" th:if="${#lists.isEmpty(proyectos)}">
-							No se ha registrado ningún proyecto
-						</div>
+							No se ha registrado ningún proyecto</div>
 					</div>
 
 					<!-- Vista usuarios por rol -->
@@ -185,7 +184,9 @@
 										</tr>
 									</thead>
 									<tbody>
-										<tr th:each="u : ${usuarios}">
+										<!-- Cada fila tiene el id del usuario -->
+										<tr th:each="u : ${usuarios}" class="user-row"
+											th:attr="data-id=${u.idUsuario}">
 											<td th:text="${u.idUsuario}">1</td>
 											<td th:text="${u.nombre + ' ' + u.apellido}">Nombre
 												Apellido</td>
@@ -272,6 +273,57 @@
 				</div>
 			</section>
 		</main>
+	</div>
+
+	<!-- Modal Usuario -->
+	<div class="modal" id="userModal" aria-hidden="true">
+		<div class="modal-backdrop" id="userModalBackdrop"></div>
+
+		<div class="modal-card" role="dialog" aria-modal="true"
+			aria-labelledby="userModalTitle">
+			<div class="modal-head">
+				<h3 id="userModalTitle">Detalle de usuario</h3>
+				<button class="modal-close" type="button" id="userModalClose">✕</button>
+			</div>
+
+			<div class="modal-body">
+				<div class="modal-grid">
+					<div class="field">
+						<label>ID</label> <input id="mId" type="text" disabled>
+					</div>
+
+					<div class="field">
+						<label>Nombre</label> <input id="mNombre" type="text">
+					</div>
+
+					<div class="field">
+						<label>Apellido</label> <input id="mApellido" type="text">
+					</div>
+
+					<div class="field">
+						<label>Username</label> <input id="mUsername" type="text">
+					</div>
+
+					<div class="field">
+						<label>Email</label> <input id="mEmail" type="email">
+					</div>
+
+					<div class="field">
+						<label>Rol</label> <input id="mRol" type="text" disabled>
+					</div>
+
+					<div class="field">
+						<label>Activo</label> <input id="mActivo" type="text" disabled>
+					</div>
+				</div>
+			</div>
+
+			<div class="modal-actions">
+				<button class="btn-primary" type="button" id="btnGuardarUsuario">Guardar
+					cambios</button>
+				<button class="btn-danger" type="button" id="btnEliminarUsuario">Eliminar</button>
+			</div>
+		</div>
 	</div>
 
 	<!-- JS -->

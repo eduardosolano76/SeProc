@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.security.Principal;
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.demo.modelo.Rol;
 import com.example.demo.modelo.Usuario;
@@ -117,5 +119,16 @@ public class AdminController {
 
         usuarioRepo.deleteById(id);
         return "redirect:/admin?view=pendientes";
+    }
+    
+    // Endpoint para traer un usuario por ID (JSON)
+    @GetMapping("/admin/usuarios/{id}")
+    @ResponseBody
+    public ResponseEntity<Usuario> verUsuario(@PathVariable Long id) {
+        Usuario u = usuarioRepo.findById(id).orElse(null);
+        if (u == null) return ResponseEntity.notFound().build();
+
+        // Nota: Como Usuario tiene rol ManyToOne EAGER, vendrá rol también.
+        return ResponseEntity.ok(u);
     }
 }

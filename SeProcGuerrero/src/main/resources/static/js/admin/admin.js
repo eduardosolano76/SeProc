@@ -1,4 +1,4 @@
-// ===== Helpers =====
+// Helpers 
 function getParam(name){
   return new URLSearchParams(window.location.search).get(name);
 }
@@ -14,13 +14,13 @@ function setActiveSubItem(clicked){
   clicked?.classList.add('active');
 }
 
-// ===== Elementos =====
+// Elementos
 const sectionTitle   = document.getElementById('sectionTitle');
 const panelContent   = document.getElementById('panelContent');
 const navUsuarios    = document.getElementById('navUsuarios');
 const submenuUsuarios= document.getElementById('submenuUsuarios');
 
-// ===== Cargar vista sin recargar y sin parpadeo =====
+// Cargar vista sin recargar y sin parpadeo 
 async function loadPanelFromUrl(href, push = true){
   if(!panelContent){
     window.location.href = href;
@@ -55,7 +55,7 @@ async function loadPanelFromUrl(href, push = true){
   }
 }
 
-// ===== Submenu Usuarios open/close =====
+// Submenu Usuarios open/close
 navUsuarios?.addEventListener('click', () => {
   const isOpen = navUsuarios.getAttribute('data-open') === 'true';
   navUsuarios.setAttribute('data-open', String(!isOpen));
@@ -63,21 +63,21 @@ navUsuarios?.addEventListener('click', () => {
   setActiveNav('navUsuarios');
 });
 
-// ===== Proyectos =====
+// Proyectos
 document.getElementById('navProyectos')?.addEventListener('click', (ev) => {
   ev.preventDefault?.();
   setActiveNav('navProyectos');
   loadPanelFromUrl('/admin?view=proyectos', true);
 });
 
-// ===== Pendientes =====
+// Pendientes
 document.getElementById('navSolicitudes')?.addEventListener('click', (ev) => {
   ev.preventDefault?.();
   setActiveNav('navSolicitudes');
   loadPanelFromUrl('/admin?view=pendientes', true);
 });
 
-// ===== Subitems Usuarios =====
+// Subitems Usuarios 
 document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
   a.addEventListener('click', (ev) => {
     ev.preventDefault();
@@ -95,13 +95,13 @@ document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
   });
 });
 
-// ===== Back/Forward =====
+// Back/Forward
 window.addEventListener('popstate', (e) => {
   const href = (e.state && e.state.href) ? e.state.href : window.location.href;
   loadPanelFromUrl(href, false);
 });
 
-// ===== Foto de perfil =====
+// Foto de perfil
 const profileBtn = document.getElementById('profileBtn');
 const profileFile = document.getElementById('profileFile');
 const profileImg = document.getElementById('profileImg');
@@ -117,7 +117,7 @@ profileFile?.addEventListener('change', (e) => {
   profileFallback.style.display = 'none';
 });
 
-// ===== Menú móvil =====
+// Menú móvil
 const btnMenu = document.getElementById('btnMenu');
 const sidebar = document.getElementById('sidebar');
 
@@ -132,7 +132,7 @@ function closeMobileMenu(){
 // Botón agregar todavía sin función
 document.getElementById('btnAdd')?.addEventListener('click', () => {});
 
-// ===== Vista inicial (solo activa estilos) =====
+// Vista inicial (solo activa estilos)
 const v = getParam('view') || 'proyectos';
 if(v === 'pendientes'){
   setActiveNav('navSolicitudes');
@@ -146,7 +146,7 @@ if(v === 'pendientes'){
   setActiveNav('navProyectos');
 }
 
-// ===== Aprobar usuario (pendientes) =====
+// Aprobar usuario (pendientes)
 function aprobarUsuario(btn){
   const id = btn.getAttribute('data-id');
   const sel = document.getElementById('rol-' + id);
@@ -158,3 +158,71 @@ function aprobarUsuario(btn){
   document.getElementById('aprobar-' + id).submit();
 }
 window.aprobarUsuario = aprobarUsuario; 
+
+// Modal helpers
+const userModal = document.getElementById('userModal');
+const userModalClose = document.getElementById('userModalClose');
+const userModalBackdrop = document.getElementById('userModalBackdrop');
+const btnCerrarModal = document.getElementById('btnCerrarModal');
+
+let currentUserId = null;
+
+function openUserModal(){
+  userModal?.classList.add('open');
+  userModal?.setAttribute('aria-hidden', 'false');
+}
+
+function closeUserModal(){
+  userModal?.classList.remove('open');
+  userModal?.setAttribute('aria-hidden', 'true');
+  currentUserId = null;
+}
+
+userModalClose?.addEventListener('click', closeUserModal);
+
+// Cargar detalle por fetch y llenar modal
+async function showUserDetail(id){
+  try{
+    const res = await fetch(`/admin/usuarios/${id}`, { cache: "no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const u = await res.json();
+
+    currentUserId = id;
+
+    document.getElementById('mId').value = u.idUsuario ?? '';
+    document.getElementById('mNombre').value = u.nombre ?? '';
+    document.getElementById('mApellido').value = u.apellido ?? '';
+    document.getElementById('mUsername').value = u.username ?? '';
+    document.getElementById('mEmail').value = u.email ?? '';
+    document.getElementById('mRol').value = (u.rol && u.rol.nombre) ? u.rol.nombre : 'sin rol';
+    document.getElementById('mActivo').value = (u.activo === true) ? 'Sí' : 'No';
+
+    openUserModal();
+  }catch(e){
+    alert("No se pudo cargar el usuario.");
+  }
+}
+
+// Conectar clicks en filas
+function bindUserRowClicks(){
+  document.querySelectorAll('tr.user-row').forEach(tr => {
+    if(tr.dataset.bound === "true") return;
+    tr.dataset.bound = "true";
+
+    tr.style.cursor = "pointer";
+    tr.addEventListener('click', () => {
+      const id = tr.getAttribute('data-id');
+      if(id) showUserDetail(id);
+    });
+  });
+}
+
+// Llamar al iniciar
+bindUserRowClicks();
+
+// IMPORTANTE: cuando cargas por AJAX, vuelves a bindear
+const originalLoadPanelFromUrl = loadPanelFromUrl;
+loadPanelFromUrl = async function(href, push = true){
+  await originalLoadPanelFromUrl(href, push);
+  bindUserRowClicks();
+};
