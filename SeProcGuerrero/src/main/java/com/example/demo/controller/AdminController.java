@@ -85,6 +85,8 @@ public class AdminController {
             return "admin/_usuarios :: usuariosContent";
         }
         
+        model.addAttribute("proyectos", List.of()); // temporal mientras se conecta la BD
+        
         return "admin/admin";
     }
     
