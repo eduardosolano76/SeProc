@@ -684,3 +684,48 @@ body {
 		margin: 18px auto;
 	}
 }
+
+/* Password con icono */
+.password-wrap{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrap input{
+  padding-right: 46px; /* espacio para el icono */
+}
+
+.toggle-pass{
+  position: absolute;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.toggle-pass:hover{
+  background: rgba(0,0,0,.06);
+}
+
+.toggle-pass img{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: .9;
+}
+
+/* Ojo oculto por defecto */
+.toggle-pass {
+  display: none;
+}
+
+/* Cuando hay texto en password, se muestra */
+.password-wrap.show-eye .toggle-pass {
+  display: grid; /* porque tú lo centras con grid */
+}

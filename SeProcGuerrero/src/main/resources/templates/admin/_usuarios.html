@@ -14,16 +14,17 @@
 			<table class="table">
 				<thead>
 					<tr>
-						<th>ID</th>
 						<th>Nombre</th>
 						<th>Username</th>
 						<th>Email</th>
 						<th>Rol</th>
 					</tr>
 				</thead>
+
 				<tbody>
-					<tr th:each="u : ${usuarios}" class="user-row" th:attr="data-id=${u.idUsuario}">
-						<td th:text="${u.idUsuario}">1</td>
+					<!-- Cada usuario tiene su ID -->
+					<tr th:each="u : ${usuarios}" class="user-row"
+						th:attr="data-id=${u.idUsuario}">
 						<td th:text="${u.nombre + ' ' + u.apellido}">Nombre Apellido</td>
 						<td th:text="${u.username}">usuario</td>
 						<td th:text="${u.email}">correo@mail.com</td>

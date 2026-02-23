@@ -3,16 +3,20 @@ package com.example.demo.controller;
 import java.security.Principal;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.demo.dto.UsuarioUpsertDto;
 import com.example.demo.modelo.Rol;
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.RolRepository;
@@ -23,10 +27,13 @@ public class AdminController {
 
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
+    
+    private final PasswordEncoder passwordEncoder;
 
-    public AdminController(UsuarioRepository usuarioRepo, RolRepository rolRepo) {
+    public AdminController(UsuarioRepository usuarioRepo, RolRepository rolRepo, PasswordEncoder passwordEncoder) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/admin")
@@ -130,5 +137,97 @@ public class AdminController {
 
         // Nota: Como Usuario tiene rol ManyToOne EAGER, vendrá rol también.
         return ResponseEntity.ok(u);
+    }
+    
+    // Actualizar
+    @PostMapping("/admin/usuarios/{id}/actualizar")
+    @ResponseBody
+    public ResponseEntity<?> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioUpsertDto dto) {
+        Usuario u = usuarioRepo.findById(id).orElse(null);
+        if (u == null) return ResponseEntity.notFound().build();
+
+        // No tocar admin por seguridad
+        if ("admin".equalsIgnoreCase(u.getUsername())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se puede editar el admin.");
+        }
+
+        // Validaciones simples
+        if (dto.getUsername() != null && !dto.getUsername().equalsIgnoreCase(u.getUsername())
+                && usuarioRepo.existsByUsername(dto.getUsername())) {
+            return ResponseEntity.badRequest().body("Username ya existe.");
+        }
+
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(u.getEmail())
+                && usuarioRepo.existsByEmail(dto.getEmail())) {
+            return ResponseEntity.badRequest().body("Email ya existe.");
+        }
+
+        u.setNombre(dto.getNombre());
+        u.setApellido(dto.getApellido());
+        u.setUsername(dto.getUsername());
+        u.setEmail(dto.getEmail());
+
+        // Si quieres permitir cambiar password desde modal
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            u.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        // Si quieres permitir cambiar rol desde modal
+        if (dto.getRolNombre() != null && !dto.getRolNombre().isBlank()) {
+            Rol rol = rolRepo.findByNombre(dto.getRolNombre()).orElse(null);
+            if (rol == null) return ResponseEntity.badRequest().body("Rol no válido.");
+            u.setRol(rol);
+        }
+
+        usuarioRepo.save(u);
+        return ResponseEntity.ok().build();
+    }
+    
+    // Eliminar
+    @PostMapping("/admin/usuarios/{id}/eliminar")
+    @ResponseBody
+    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
+        Usuario u = usuarioRepo.findById(id).orElse(null);
+        if (u == null) return ResponseEntity.notFound().build();
+
+        if ("admin".equalsIgnoreCase(u.getUsername())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se puede borrar el admin.");
+        }
+
+        usuarioRepo.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+    
+    // Crear
+    @PostMapping("/admin/usuarios/crear")
+    @ResponseBody
+    public ResponseEntity<?> crearUsuario(@RequestBody UsuarioUpsertDto dto) {
+
+        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body("Password es obligatorio.");
+        }
+        if (usuarioRepo.existsByUsername(dto.getUsername())) {
+            return ResponseEntity.badRequest().body("Username ya existe.");
+        }
+        if (usuarioRepo.existsByEmail(dto.getEmail())) {
+            return ResponseEntity.badRequest().body("Email ya existe.");
+        }
+
+        Usuario u = new Usuario();
+        u.setNombre(dto.getNombre());
+        u.setApellido(dto.getApellido());
+        u.setUsername(dto.getUsername());
+        u.setEmail(dto.getEmail());
+        u.setPassword(passwordEncoder.encode(dto.getPassword()));
+        u.setActivo(true);
+
+        if (dto.getRolNombre() != null && !dto.getRolNombre().isBlank()) {
+            Rol rol = rolRepo.findByNombre(dto.getRolNombre()).orElse(null);
+            if (rol == null) return ResponseEntity.badRequest().body("Rol no válido.");
+            u.setRol(rol);
+        }
+
+        usuarioRepo.save(u);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

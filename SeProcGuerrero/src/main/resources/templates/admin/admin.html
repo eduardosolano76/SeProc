@@ -14,11 +14,15 @@
 <!-- CSS -->
 <link rel="stylesheet" th:href="@{/css/admin/admin.css}">
 
+<!-- CSRF -->
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
 </head>
 <body>
 	<div class="layout">
 
-		<!-- ===== SIDEBAR ===== -->
+		<!-- SIDEBAR -->
 		<aside class="sidebar" id="sidebar">
 			<div class="brand">
 				<div class="logo">
@@ -98,7 +102,7 @@
 			</nav>
 		</aside>
 
-		<!-- ===== CONTENT ===== -->
+		<!-- CONTENT -->
 		<main class="content">
 
 			<header class="topbar">
@@ -176,18 +180,17 @@
 								<table class="table">
 									<thead>
 										<tr>
-											<th>ID</th>
 											<th>Nombre</th>
 											<th>Username</th>
 											<th>Email</th>
 											<th>Rol</th>
 										</tr>
 									</thead>
+
 									<tbody>
-										<!-- Cada fila tiene el id del usuario -->
+										<!-- Cada usuario tiene su ID -->
 										<tr th:each="u : ${usuarios}" class="user-row"
 											th:attr="data-id=${u.idUsuario}">
-											<td th:text="${u.idUsuario}">1</td>
 											<td th:text="${u.nombre + ' ' + u.apellido}">Nombre
 												Apellido</td>
 											<td th:text="${u.username}">usuario</td>
@@ -288,9 +291,6 @@
 
 			<div class="modal-body">
 				<div class="modal-grid">
-					<div class="field">
-						<label>ID</label> <input id="mId" type="text" disabled>
-					</div>
 
 					<div class="field">
 						<label>Nombre</label> <input id="mNombre" type="text">
@@ -313,7 +313,18 @@
 					</div>
 
 					<div class="field">
-						<label>Activo</label> <input id="mActivo" type="text" disabled>
+						<label>Password</label>
+
+						<div class="password-wrap">
+							<input id="mPassword" type="password"
+								placeholder="Deja vacío para no cambiar">
+							<button type="button" class="toggle-pass" id="togglePassword"
+								aria-label="Mostrar contraseña" title="Mostrar/ocultar">
+								<img id="togglePasswordIcon" th:src="@{/assets/iconos/ojo.png}"
+									alt="Ver">
+							</button>
+						</div>
+
 					</div>
 				</div>
 			</div>
