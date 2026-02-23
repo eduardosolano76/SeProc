@@ -128,7 +128,7 @@
 					<input id="profileFile" type="file" accept="image/*" hidden>
 
 					<button class="profile" id="profileBtn" type="button"
-						title="Cambiar foto">
+						title="Cambiar foto" th:attr="data-foto=${fotoUrl}">
 						<img id="profileImg" alt="Foto de perfil" style="display: none;">
 						<img id="profileFallback" th:src="@{/assets/iconos/usuarios.png}"
 							alt="">
@@ -151,11 +151,12 @@
 							Supervisores</h2>
 					</div>
 
+					<!-- Icono para añadir usuarios y proyectos -->
 					<button class="add-btn" type="button" id="btnAdd" title="Agregar">
-						<img th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
+						<img id="btnAddIcon"
+							th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
 					</button>
 				</div>
-
 
 				<div id="panelContent">
 
@@ -220,7 +221,6 @@
 							<table class="table">
 								<thead>
 									<tr>
-										<th>ID</th>
 										<th>Nombre</th>
 										<th>Username</th>
 										<th>Email</th>
@@ -230,13 +230,13 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr th:each="p : ${pendientes}">
-										<td th:text="${p.idUsuario}">1</td>
+									<tr th:each="p : ${pendientes}" th:attr="data-id=${p.idUsuario}">
 										<td th:text="${p.nombre + ' ' + p.apellido}">Nombre</td>
 										<td th:text="${p.username}">user</td>
 										<td th:text="${p.email}">mail</td>
 
-										<td><select class="role-select"
+										<td>
+										<select class="role-select"
 											th:id="'rol-' + ${p.idUsuario}" required>
 												<option value="" selected disabled>Elegir rol</option>
 												<option value="supervisor">Supervisor</option>
@@ -244,7 +244,8 @@
 												<option value="direccion">Director</option>
 												<option value="central">Central</option>
 												<option value="administrador">Administrador</option>
-										</select></td>
+										</select>
+										</td>
 
 										<td>
 											<form th:id="'aprobar-' + ${p.idUsuario}"
@@ -301,20 +302,20 @@
 					</div>
 
 					<div class="field">
-						<label>Username</label> <input id="mUsername" type="text">
+						<label>Usuario</label> <input id="mUsername" type="text">
 					</div>
 
 					<div class="field">
-						<label>Email</label> <input id="mEmail" type="email">
+						<label>Correo electrónico</label> <input id="mEmail" type="email">
 					</div>
 
 					<div class="field">
 						<label>Rol</label> <input id="mRol" type="text" disabled>
+						<input id="mRolNombre" type="hidden">
 					</div>
 
 					<div class="field">
-						<label>Password</label>
-
+						<label id="lblPassword">Password</label>
 						<div class="password-wrap">
 							<input id="mPassword" type="password"
 								placeholder="Deja vacío para no cambiar">
@@ -324,8 +325,8 @@
 									alt="Ver">
 							</button>
 						</div>
-
 					</div>
+
 				</div>
 			</div>
 
@@ -337,6 +338,9 @@
 		</div>
 	</div>
 
+	<script th:inline="javascript">
+		window.LOGGED_USERNAME = /*[[${loggedUsername}]]*/"";
+	</script>
 	<!-- JS -->
 	<script th:src="@{/js/admin/admin.js}" defer></script>
 </body>

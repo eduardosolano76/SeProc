@@ -20,6 +20,9 @@ const panelContent = document.getElementById('panelContent');
 const navUsuarios = document.getElementById('navUsuarios');
 const submenuUsuarios = document.getElementById('submenuUsuarios');
 
+const btnAdd = document.getElementById('btnAdd');
+const btnAddIcon = document.getElementById('btnAddIcon');
+
 // Cargar vista sin recargar y sin parpadeo 
 async function loadPanelFromUrl(href, push = true) {
     if (!panelContent) {
@@ -30,7 +33,11 @@ async function loadPanelFromUrl(href, push = true) {
     panelContent.innerHTML = `<div class="panel-sub">Cargando...</div>`;
 
     try {
-        const res = await fetch(href, { cache: "no-store" });
+        const res = await fetch(href, {
+            cache: "no-store",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+
         if (!res.ok) throw new Error("HTTP " + res.status);
 
         const html = await res.text();
@@ -38,18 +45,31 @@ async function loadPanelFromUrl(href, push = true) {
 
         const newPanelContent = doc.getElementById("panelContent");
         const newTitle = doc.getElementById("sectionTitle")?.textContent?.trim();
+        const fragment = doc.body?.firstElementChild || doc.body;
 
-        if (!newPanelContent) {
-            window.location.href = href;
-            return;
+        if (newPanelContent) {
+            panelContent.innerHTML = newPanelContent.innerHTML;
+            if (newTitle && sectionTitle) sectionTitle.textContent = newTitle;
+        } else {
+            panelContent.innerHTML = fragment.innerHTML;
+
+            const view = getViewFromUrl(href);
+            const titles = {
+                "usuarios-supervisores": "Supervisores",
+                "usuarios-constructores": "Constructores",
+                "usuarios-directores": "Directores",
+                "usuarios-central": "Central",
+                "usuarios-administrador": "Administrador",
+            };
+            if (sectionTitle) sectionTitle.textContent = titles[view] || "Usuarios";
         }
-
-        panelContent.innerHTML = newPanelContent.innerHTML;
-        if (newTitle && sectionTitle) sectionTitle.textContent = newTitle;
 
         if (push) history.pushState({ href }, "", href);
 
+        syncSidebarWithUrl(href);
+        syncAddButtonWithUrl(href);
         closeMobileMenu();
+
     } catch (e) {
         window.location.href = href;
     }
@@ -66,6 +86,8 @@ navUsuarios?.addEventListener('click', () => {
 // Proyectos
 document.getElementById('navProyectos')?.addEventListener('click', (ev) => {
     ev.preventDefault?.();
+
+    closeUsuariosMenu(); // Cierra “Usuarios” y limpia activos
     setActiveNav('navProyectos');
     loadPanelFromUrl('/admin?view=proyectos', true);
 });
@@ -73,6 +95,8 @@ document.getElementById('navProyectos')?.addEventListener('click', (ev) => {
 // Pendientes
 document.getElementById('navSolicitudes')?.addEventListener('click', (ev) => {
     ev.preventDefault?.();
+
+    closeUsuariosMenu(); // Cierra “Usuarios” y limpia activos
     setActiveNav('navSolicitudes');
     loadPanelFromUrl('/admin?view=pendientes', true);
 });
@@ -99,6 +123,9 @@ document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
 window.addEventListener('popstate', (e) => {
     const href = (e.state && e.state.href) ? e.state.href : window.location.href;
     loadPanelFromUrl(href, false);
+    syncSidebarWithUrl(href); // Mantener sidebar correcto
+
+    syncAddButtonWithUrl(href);
 });
 
 // Foto de perfil
@@ -107,14 +134,55 @@ const profileFile = document.getElementById('profileFile');
 const profileImg = document.getElementById('profileImg');
 const profileFallback = document.getElementById('profileFallback');
 
-profileBtn?.addEventListener('click', () => profileFile?.click());
-profileFile?.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    profileImg.src = url;
+document.addEventListener("DOMContentLoaded", () => {
+  const fotoUrl = profileBtn?.dataset?.foto;
+  if (fotoUrl) {
+    profileImg.src = fotoUrl + "?t=" + Date.now();
     profileImg.style.display = 'block';
     profileFallback.style.display = 'none';
+  }
+});
+
+profileBtn?.addEventListener('click', () => profileFile?.click());
+
+async function uploadProfilePhoto(file) {
+  const { token, header } = getCsrf();
+
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch("/perfil/foto", {
+    method: "POST",
+    body: form,
+    headers: token && header ? { [header]: token } : {}
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || "No se pudo subir la foto.");
+
+  return data.url; // url pública
+}
+
+profileFile?.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  // preview inmediato
+  const previewUrl = URL.createObjectURL(file);
+  profileImg.src = previewUrl;
+  profileImg.style.display = 'block';
+  profileFallback.style.display = 'none';
+
+  try {
+    const url = await uploadProfilePhoto(file);
+
+    // usa la URL real (guardada en BD)
+    profileImg.src = url + "?t=" + Date.now(); // cache-bust
+    profileImg.style.display = 'block';
+    profileFallback.style.display = 'none';
+  } catch (err) {
+    alert(err.message || "Error al subir la foto.");
+  }
 });
 
 // Menú móvil
@@ -131,6 +199,8 @@ function closeMobileMenu() {
 
 // Vista inicial (solo activa estilos)
 const v = getParam('view') || 'proyectos';
+
+syncAddButtonWithUrl(window.location.href);
 if (v === 'pendientes') {
     setActiveNav('navSolicitudes');
 } else if (v.startsWith('usuarios-')) {
@@ -164,6 +234,37 @@ const btnCerrarModal = document.getElementById('btnCerrarModal');
 
 let currentUserId = null;
 
+let modalMode = "EDIT"; // "CREATE" | "EDIT"
+
+function setModalMode(mode) {
+  modalMode = mode;
+
+  const title = document.getElementById("userModalTitle");
+  const btnSave = document.getElementById("btnGuardarUsuario");
+  const btnDelete = document.getElementById("btnEliminarUsuario");
+  
+  const pass = document.getElementById("mPassword");
+  const lblPass = document.getElementById("lblPassword");
+  
+  if (mode === "CREATE") {
+    if (title) title.textContent = "Agregar usuario";
+    if (btnSave) btnSave.textContent = "Crear usuario";
+    if (btnDelete) btnDelete.style.display = "none"; // ocultar eliminar
+	
+	// Password en CREATE
+	if (lblPass) lblPass.textContent = "Password (obligatorio)";
+	if (pass) pass.placeholder = "Escribe una contraseña";
+  } else {
+    if (title) title.textContent = "Detalle de usuario";
+    if (btnSave) btnSave.textContent = "Guardar cambios";
+    if (btnDelete) btnDelete.style.display = "inline-flex"; // mostrar eliminar
+	
+	// Password en EDIT
+	if (lblPass) lblPass.textContent = "Password";
+	if (pass) pass.placeholder = "Deja vacío para no cambiar";
+  }
+}
+
 function openUserModal() {
     userModal?.classList.add('open');
     userModal?.setAttribute('aria-hidden', 'false');
@@ -185,6 +286,8 @@ async function showUserDetail(id) {
         const u = await res.json();
 
         currentUserId = id;
+		
+		setModalMode("EDIT");
 
         document.getElementById('mNombre').value = u.nombre ?? '';
         document.getElementById('mApellido').value = u.apellido ?? '';
@@ -192,7 +295,19 @@ async function showUserDetail(id) {
         document.getElementById('mEmail').value = u.email ?? '';
         document.getElementById('mRol').value = (u.rol && u.rol.nombre) ? u.rol.nombre : 'sin rol';
 		
-		resetPasswordVisibility();
+		// Ocultar/ mostrar el boton eliminar si es el mismo usuario logueado
+		const btnDelete = document.getElementById("btnEliminarUsuario");
+		const logged = (window.LOGGED_USERNAME || "").toLowerCase();
+		const selected = (u.username || "").toLowerCase();
+
+		if (selected === logged) {
+		  if (btnDelete) btnDelete.style.display = "none";
+		} else {
+		  if (btnDelete) btnDelete.style.display = "inline-flex";
+		}
+
+		
+        resetPasswordVisibility();
 
         openUserModal();
     } catch (e) {
@@ -244,33 +359,61 @@ async function fetchJson(url, options = {}) {
 
 // Guardar cambios 
 document.getElementById('btnGuardarUsuario')?.addEventListener('click', async () => {
-    if (!currentUserId) return;
 
-    const payload = {
-        nombre: document.getElementById('mNombre').value.trim(),
-        apellido: document.getElementById('mApellido').value.trim(),
-        username: document.getElementById('mUsername').value.trim(),
-        email: document.getElementById('mEmail').value.trim(),
-        password: document.getElementById('mPassword')?.value || "",
-        rolNombre: document.getElementById('mRolNombre')?.value || ""
-    };
+  const payload = {
+    nombre: document.getElementById('mNombre').value.trim(),
+    apellido: document.getElementById('mApellido').value.trim(),
+    username: document.getElementById('mUsername').value.trim(),
+    email: document.getElementById('mEmail').value.trim(),
+    password: document.getElementById('mPassword')?.value || "",
+    rolNombre: document.getElementById('mRolNombre')?.value || "" 
+  };
 
-    const { ok, text } = await fetchJson(`/admin/usuarios/${currentUserId}/actualizar`, {
-        method: 'POST',
-        body: JSON.stringify(payload)
+  // CREATE
+  if (modalMode === "CREATE") {
+
+    // Validación mínima (porque el backend exige password)
+    if (!payload.password || payload.password.trim().length === 0) {
+      alert("Password es obligatorio para crear.");
+      return;
+    }
+
+    const { ok, text } = await fetchJson(`/admin/usuarios/crear`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
 
     if (!ok) {
-        alert(text || "No se pudo actualizar.");
-        return;
+      alert(text || "No se pudo crear.");
+      return;
     }
 
-    alert("Usuario actualizado");
+    alert("Usuario creado");
     closeUserModal();
 
-    // Refresca la vista actual
     const currentView = getParam('view') || 'proyectos';
     loadPanelFromUrl(`/admin?view=${currentView}`, false);
+    return;
+  }
+
+  // EDIT
+  if (!currentUserId) return;
+
+  const { ok, text } = await fetchJson(`/admin/usuarios/${currentUserId}/actualizar`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+  if (!ok) {
+    alert(text || "No se pudo actualizar.");
+    return;
+  }
+
+  alert("Usuario actualizado");
+  closeUserModal();
+
+  const currentView = getParam('view') || 'proyectos';
+  loadPanelFromUrl(`/admin?view=${currentView}`, false);
 });
 
 // Eliminar
@@ -296,20 +439,32 @@ document.getElementById('btnEliminarUsuario')?.addEventListener('click', async (
 });
 
 // Crear (botón +) 
-document.getElementById('btnAdd')?.addEventListener('click', () => {
-    // Reusa el modal para crear
+btnAdd?.addEventListener('click', () => {
+    const action = btnAdd.dataset.action;
+    const rol = btnAdd.dataset.rol || "";
+
+    if (action === 'proyecto') {
+        // Más adelante se hara el modal de proyecto o algo similar
+        alert("Aquí irá: Agregar proyecto (pendiente)");
+        return;
+    }
+
+    // Crear usuario (reusa modal)
     currentUserId = null;
-	
+	setModalMode("CREATE");
+
     document.getElementById('mNombre').value = '';
     document.getElementById('mApellido').value = '';
     document.getElementById('mUsername').value = '';
     document.getElementById('mEmail').value = '';
-    document.getElementById('mRol').value = 'nuevo';
-    if (document.getElementById('mPassword')) document.getElementById('mPassword').value = '';
-    if (document.getElementById('mRolNombre')) document.getElementById('mRolNombre').value = '';
 
-	resetPasswordVisibility();
-	openUserModal();
+    // Aquí se guarda el rol que se va a crear
+    document.getElementById('mRol').value = rol || 'nuevo';
+
+    document.getElementById('mRolNombre').value = rol || '';
+
+    resetPasswordVisibility();
+    openUserModal();
 });
 
 // Mostrar/ocultar password 
@@ -318,43 +473,125 @@ const togglePassword = document.getElementById('togglePassword');
 const togglePasswordIcon = document.getElementById('togglePasswordIcon');
 const passwordWrap = document.querySelector('.password-wrap');
 
-function setEyeIcon(isVisible){
-  // Ruta de los iconos
-  if(!togglePasswordIcon) return;
-  togglePasswordIcon.src = isVisible
-    ? '/assets/iconos/ojo.png'
-    : '/assets/iconos/ojo-cerrado.png';
-  togglePassword?.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+function setEyeIcon(isVisible) {
+    // Ruta de los iconos
+    if (!togglePasswordIcon) return;
+    togglePasswordIcon.src = isVisible
+        ? '/assets/iconos/ojo.png'
+        : '/assets/iconos/ojo-cerrado.png';
+    togglePassword?.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
 }
 
 togglePassword?.addEventListener('click', () => {
-  if(!mPassword) return;
-  const visible = mPassword.type === 'text';
-  mPassword.type = visible ? 'password' : 'text';
-  setEyeIcon(!visible);
+    if (!mPassword) return;
+    const visible = mPassword.type === 'text';
+    mPassword.type = visible ? 'password' : 'text';
+    setEyeIcon(!visible);
 });
 
-function updateEyeVisibility(){
-  if(!passwordWrap || !mPassword) return;
+function updateEyeVisibility() {
+    if (!passwordWrap || !mPassword) return;
 
-  const hasText = mPassword.value.trim().length > 0;
-  passwordWrap.classList.toggle('show-eye', hasText);
+    const hasText = mPassword.value.trim().length > 0;
+    passwordWrap.classList.toggle('show-eye', hasText);
 
-  // Si se borra el texto, vuelve a ocultar y deja tipo password
-  if(!hasText){
-    mPassword.type = 'password';
-    setEyeIcon(false);
-  }
+    // Si se borra el texto, vuelve a ocultar y deja tipo password
+    if (!hasText) {
+        mPassword.type = 'password';
+        setEyeIcon(false);
+    }
 }
 
 mPassword?.addEventListener('input', updateEyeVisibility);
 
-// Cada vez que abras el modal, reinicia a "password"
-function resetPasswordVisibility(){
-  if(!mPassword) return;
-  
-  mPassword.value = "";              // vacío
-  mPassword.type = 'password';       // oculto
-  setEyeIcon(false);                 // icono default
-  updateEyeVisibility();             // esto oculta el botón
+// Cada vez que abras el modal, reinicia a "password" 
+function resetPasswordVisibility() {
+    if (!mPassword) return;
+
+    mPassword.value = "";              // vacío
+    mPassword.type = 'password';       // oculto
+    setEyeIcon(false);                 // icono default
+    updateEyeVisibility();             // esto oculta el botón
 }
+
+// Cuando cambies a Proyectos/Pendientes, cierra “Usuarios” y limpia activos 
+function closeUsuariosMenu() {
+    // quita active a sub-items
+    document.querySelectorAll('#submenuUsuarios .sub-item')
+        .forEach(x => x.classList.remove('active'));
+
+    // cierra submenu y marca data-open false
+    navUsuarios?.setAttribute('data-open', 'false');
+    submenuUsuarios?.classList.remove('open');
+}
+
+// 
+function syncSidebarWithUrl(url) {
+    const view = new URL(url, window.location.origin).searchParams.get('view') || 'proyectos';
+
+    if (view === 'pendientes') {
+        closeUsuariosMenu();
+        setActiveNav('navSolicitudes');
+        return;
+    }
+
+    if (view.startsWith('usuarios-')) {
+        setActiveNav('navUsuarios');
+        navUsuarios?.setAttribute('data-open', 'true');
+        submenuUsuarios?.classList.add('open');
+        const link = document.querySelector(`#submenuUsuarios .sub-item[data-view="${view}"]`);
+        setActiveSubItem(link);
+        return;
+    }
+
+    closeUsuariosMenu();
+    setActiveNav('navProyectos');
+}
+
+// Funcion para configurar el boton segun la vista 
+function getViewFromUrl(url) {
+    return new URL(url, window.location.origin).searchParams.get('view') || 'proyectos';
+}
+
+// Mapa de rol por vista (para que el modal sepa qué crear)
+const roleByView = {
+    "usuarios-supervisores": "supervisor",
+    "usuarios-constructores": "contratista",
+    "usuarios-directores": "direccion",
+    "usuarios-central": "central",
+    "usuarios-administrador": "administrador",
+};
+
+function syncAddButtonWithUrl(url) {
+    const view = getViewFromUrl(url);
+
+    // Pendientes: ocultar
+    if (view === 'pendientes') {
+        if (btnAdd) btnAdd.style.display = 'none';
+        return;
+    }
+
+    // Proyectos: mostrar + icono de proyecto
+    if (view === 'proyectos') {
+        if (btnAdd) btnAdd.style.display = 'grid';
+        if (btnAddIcon) btnAddIcon.src = '/assets/iconos/agregar-proyecto.png';
+        if (btnAdd) btnAdd.title = 'Agregar proyecto';
+        if (btnAdd) btnAdd.dataset.action = 'proyecto';
+        delete btnAdd?.dataset.rol;
+        return;
+    }
+
+    // Usuarios por rol: mostrar + icono usuario + guardar rol
+    if (view.startsWith('usuarios-')) {
+        if (btnAdd) btnAdd.style.display = 'grid';
+        if (btnAddIcon) btnAddIcon.src = '/assets/iconos/agregar-usuario.png';
+        if (btnAdd) btnAdd.title = 'Agregar usuario';
+        if (btnAdd) btnAdd.dataset.action = 'usuario';
+        if (btnAdd) btnAdd.dataset.rol = roleByView[view] || '';
+        return;
+    }
+
+    // Default: por seguridad
+    if (btnAdd) btnAdd.style.display = 'grid';
+}
+

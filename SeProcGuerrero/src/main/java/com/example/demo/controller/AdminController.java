@@ -2,8 +2,10 @@ package com.example.demo.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.dto.UsuarioUpsertDto;
 import com.example.demo.modelo.Rol;
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.RolRepository;
 import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.storage.StorageService;
 
 @Controller
 public class AdminController {
@@ -29,11 +33,15 @@ public class AdminController {
     private final RolRepository rolRepo;
     
     private final PasswordEncoder passwordEncoder;
+    
+    private final StorageService storageService;
 
-    public AdminController(UsuarioRepository usuarioRepo, RolRepository rolRepo, PasswordEncoder passwordEncoder) {
+    public AdminController(UsuarioRepository usuarioRepo, RolRepository rolRepo, PasswordEncoder passwordEncoder,
+    		StorageService storageService) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.passwordEncoder = passwordEncoder;
+        this.storageService = storageService;
     }
 
     @GetMapping("/admin")
@@ -43,6 +51,8 @@ public class AdminController {
 
         // username del que inició sesión
         String username = principal.getName();
+        
+        model.addAttribute("loggedUsername", username);
 
         // traer usuario de BD
         var usuario = usuarioRepo.findByUsername(username).orElse(null);
@@ -50,6 +60,8 @@ public class AdminController {
         if (usuario != null) {
             String nombreCompleto = usuario.getNombre() /*+ " " + usuario.getApellido()*/;
             String rol = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "sin rol";
+            
+            model.addAttribute("fotoUrl", storageService.publicUrl(usuario.getFoto()));
 
             model.addAttribute("nombreUsuario", nombreCompleto);
             model.addAttribute("rolUsuario", rol);
@@ -186,12 +198,17 @@ public class AdminController {
     // Eliminar
     @PostMapping("/admin/usuarios/{id}/eliminar")
     @ResponseBody
-    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
+    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id, Principal principal) {
         Usuario u = usuarioRepo.findById(id).orElse(null);
         if (u == null) return ResponseEntity.notFound().build();
 
-        if ("admin".equalsIgnoreCase(u.getUsername())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se puede borrar el admin.");
+        // username del que está logueado
+        String loggedUsername = principal.getName();
+
+        // NO permitir auto-eliminación (aplica para admin y para cualquier rol)
+        if (u.getUsername() != null && u.getUsername().equalsIgnoreCase(loggedUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No puedes eliminar tu propio usuario mientras estás logueado.");
         }
 
         usuarioRepo.deleteById(id);
@@ -229,5 +246,35 @@ public class AdminController {
 
         usuarioRepo.save(u);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+    
+    @PostMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
+
+        String username = principal.getName();
+        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
+        if (u == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // (opcional) borrar anterior
+        storageService.deleteIfExists(u.getFoto());
+
+        String key = storageService.saveProfilePhoto(u.getIdUsuario(), file);
+        u.setFoto(key);
+        usuarioRepo.save(u);
+
+        String url = storageService.publicUrl(key);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    @GetMapping("/perfil/foto")
+    @ResponseBody
+    public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
+        String username = principal.getName();
+        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
+        if (u == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        String url = storageService.publicUrl(u.getFoto());
+        return ResponseEntity.ok(Map.of("url", url));
     }
 }

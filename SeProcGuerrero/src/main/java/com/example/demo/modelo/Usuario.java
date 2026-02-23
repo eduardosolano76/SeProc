@@ -50,5 +50,8 @@ public class Usuario {
     
     @Column(name = "activo", nullable = false)
     private Boolean activo = false;
+    
+    @Column(name = "foto", length = 255, nullable = true)
+    private String foto; // guarda la "key" tipo: usuarios/15/profile_xxx.jpg
 
 }
