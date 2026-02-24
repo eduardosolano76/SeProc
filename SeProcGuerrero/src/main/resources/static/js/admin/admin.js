@@ -8,7 +8,7 @@ function setActiveNav(buttonId) {
     const btn = document.getElementById(buttonId);
     btn?.classList.add('active');
 }
-
+//
 function setActiveSubItem(clicked) {
     document.querySelectorAll('#submenuUsuarios .sub-item').forEach(x => x.classList.remove('active'));
     clicked?.classList.add('active');
