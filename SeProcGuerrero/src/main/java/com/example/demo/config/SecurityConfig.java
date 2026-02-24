@@ -1,8 +1,5 @@
 package com.example.demo.config;
 
-import java.time.LocalDate;
-
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,32 +8,40 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.example.demo.modelo.Rol;
-import com.example.demo.modelo.Usuario;
-import com.example.demo.repository.RolRepository;
-import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.security.RoleRedirectSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            RoleRedirectSuccessHandler successHandler
+    ) throws Exception {
+
         http
             .authorizeHttpRequests(auth -> auth
-                // ESTÁTICOS (para que cargue CSS/JS/imagenes)
-                .requestMatchers("/assets/**","/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                // ESTÁTICOS
+                .requestMatchers("/assets/**","/css/**","/js/**","/images/**","/static/**","/uploads/**").permitAll()
 
-                // TU LOGIN + AUTH (publico)
-                .requestMatchers("/login", "/auth/**", "/public/**", "/registro/**").permitAll()
+                // PÚBLICOS
+                .requestMatchers("/login","/auth/**","/public/**","/registro/**").permitAll()
+
+                // MÓDULOS POR ROL
+                .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/constructor/**").hasRole("CONTRATISTA")
+                .requestMatchers("/supervisor/**").hasRole("SUPERVISOR")
+                .requestMatchers("/central/**").hasRole("CENTRAL")
+                .requestMatchers("/direccion/**").hasRole("DIRECCION")
 
                 // TODO lo demás protegido
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login")          // <- tu pagina
-                .loginProcessingUrl("/login") // <- endpoint que procesa el POST (puede ser el mismo)
-                .defaultSuccessUrl("/admin", true) // <- a dónde ir si inicia sesión
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .successHandler(successHandler) // <-- REDIRECCIÓN POR ROL
                 .failureHandler((request, response, exception) -> {
                     if (exception instanceof org.springframework.security.authentication.DisabledException) {
                         response.sendRedirect("/login?pending=true");
