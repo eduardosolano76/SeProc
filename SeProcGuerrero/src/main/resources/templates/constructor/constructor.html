@@ -9,10 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- CSS del módulo -->
   <link rel="stylesheet" th:href="@{/css/constructor/constructor.css}">
-
-  <!-- CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:content="${_csrf.headerName}" />
 </head>
@@ -88,24 +85,143 @@
             <div class="panel-sub">Aquí se verán los proyectos</div>
           </div>
 
-          <!-- Botón visual (sin lógica por ahora) -->
-          <button class="add-btn" type="button" title="Nuevo proyecto (próximamente)" disabled>
+          <!-- Botón para solicitar proyectos-->
+          <button class="add-btn" type="button" id="btnAddProyecto" title="Nuevo proyecto">
             <span class="add-plus">+</span>
           </button>
         </div>
 
         <div class="cards">
-
-          <!-- Card placeholder vacío (sin lógica) -->
           <div class="empty">
             Aún no hay proyectos para mostrar.
           </div>
-
-         
         </div>
       </section>
 
+      <!-- Solicitud de proyectos -->
+      <div class="modal-backdrop" id="projModalBackdrop" aria-hidden="true"></div>
+
+      <div class="modal" id="projModal" role="dialog" aria-modal="true" aria-labelledby="projModalTitle" aria-hidden="true">
+        <div class="modal-card">
+          <div class="dg-head">
+  <span class="dg-chip" id="projModalTitle">Datos Generales</span>
+
+  <div class="dg-actions">
+    <button class="dg-btn" type="button" id="btnEnviarSolicitud">Enviar solicitud</button>
+
+    <button class="dg-close" type="button" id="btnCerrarProyecto" aria-label="Cerrar">✕</button>
+  </div>
+</div>
+
+          <form id="formSolicitudProyecto" autocomplete="off" novalidate>
+            <div class="dg-row dg-1">
+              <label class="dg-label">Nombre de la escuela<span class="req">*</span></label>
+              <input class="dg-input" type="text" name="nombreEscuela" required />
+            </div>
+
+            <div class="dg-row dg-3">
+              <div class="dg-field">
+                <label class="dg-label">CCT<span class="req">*</span></label>
+                <input class="dg-input" type="text" name="cct1" required />
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">CCT</label>
+                <input class="dg-input" type="text" name="cct2" />
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">Ciudad<span class="req">*</span></label>
+                <select class="dg-select" name="ciudad" required>
+                  <option value="" selected disabled>Seleccionar</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="dg-row dg-2">
+              <div class="dg-field">
+                <label class="dg-label">Calle y número<span class="req">*</span></label>
+                <input class="dg-input" type="text" name="calleNumero" required />
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">Municipio<span class="req">*</span></label>
+                <select class="dg-select" name="municipio" required>
+                  <option value="" selected disabled>Seleccionar</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="dg-row dg-2">
+              <div class="dg-field">
+                <label class="dg-label">Estado<span class="req">*</span></label>
+                <select class="dg-select" name="estado" required>
+                  <option value="" selected disabled>Seleccionar</option>
+                  <option value="Guerrero">Guerrero</option>
+                </select>
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">C.P.<span class="req">*</span></label>
+                <input class="dg-input" type="text" name="cp" required />
+              </div>
+            </div>
+
+            <div class="dg-row dg-3">
+              <div class="dg-field">
+                <label class="dg-label">Responsable del inmueble<span class="req">*</span></label>
+                <input class="dg-input" type="text" name="responsable" required />
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">Contacto<span class="req">*</span></label>
+                <input class="dg-input" type="text" name="contacto" required />
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">No. de inmuebles a evaluar<span class="req">*</span></label>
+                <input class="dg-input" type="number" name="numInmuebles" min="1" required />
+              </div>
+            </div>
+
+            <div class="dg-row dg-3">
+              <div class="dg-field">
+                <label class="dg-label">Tipo de obra<span class="req">*</span></label>
+                <select class="dg-select" name="tipoObra" required>
+                  <option value="" selected disabled>Seleccionar</option>
+                  <option value="Edificación">Edificación</option>
+                  <option value="Barda perimetral">Barda perimetral</option>
+                  <option value="Techado">Techado</option>
+                  <option value="Pisos">Pisos</option>
+                </select>
+              </div>
+
+              <div class="dg-field dg-concepto">
+                <label class="dg-label">Concepto<span class="req">*</span></label>
+                <div class="dg-concepto-wrap">
+                  <input class="dg-input" type="text" name="concepto" required />
+                  <button class="dg-plus" type="button" title="Agregar concepto">+</button>
+                </div>
+              </div>
+
+              <div class="dg-field">
+                <label class="dg-label">No. de entre ejes<span class="req">*</span></label>
+                <input class="dg-input" type="number" name="numEntreEjes" min="1" required />
+              </div>
+            </div>
+
+            <div class="dg-foot">
+              <span class="dg-hint">Los campos con <span class="req">*</span> son obligatorios.</span>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Hasta acá llega -->
+
     </main>
   </div>
+
+  <!-- JS del constructor -->
+  <script th:src="@{/js/constructor/constructor.js}"></script>
 </body>
 </html>
