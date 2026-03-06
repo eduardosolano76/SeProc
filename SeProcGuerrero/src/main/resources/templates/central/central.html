@@ -9,10 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- CSS del módulo -->
   <link rel="stylesheet" th:href="@{/css/central/central.css}">
 
-  <!-- CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:content="${_csrf.headerName}" />
 </head>
@@ -20,7 +18,6 @@
 <body>
   <div class="layout">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div class="logo">
@@ -29,42 +26,67 @@
       </div>
 
       <nav class="nav" aria-label="Menú Central">
+        <a class="nav-item" id="navSolicitudes" th:href="@{/central(view='solicitudes')}">
+          <span class="icon"><img th:src="@{/assets/iconos/solicitud.png}" alt=""></span>
+          <span class="label">Solicitudes de proyectos</span>
+        </a>
 
-        <!-- Proyectos -->
-        <a class="nav-item active" th:href="@{/central}">
-          <span class="icon">
-            <img th:src="@{/assets/iconos/proyectos.png}" alt="">
-          </span>
+        <a class="nav-item" id="navProyectos" th:href="@{/central(view='proyectos')}">
+          <span class="icon"><img th:src="@{/assets/iconos/proyectos.png}" alt=""></span>
           <span class="label">Proyectos</span>
         </a>
 
-        <!-- Cerrar sesión -->
+        <button class="nav-item" id="navUsuarios" type="button"
+        th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
+        th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
+  
+  <span class="nav-left">
+    <span class="icon">
+      <img th:src="@{/assets/iconos/usuarios.png}" alt="">
+    </span>
+    <span class="label">Usuarios</span>
+  </span>
+
+  <span class="chev" aria-hidden="true">
+    <img th:src="@{/assets/iconos/desplegable.png}" alt="">
+  </span>
+</button>
+
+<div class="submenu" id="submenuUsuarios"
+     th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
+  <a class="sub-item" data-view="usuarios-supervisores"
+     th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
+     th:href="@{/central(view='usuarios-supervisores')}">Supervisores</a>
+
+  <a class="sub-item" data-view="usuarios-constructores"
+     th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
+     th:href="@{/central(view='usuarios-constructores')}">Constructores</a>
+
+  <a class="sub-item" data-view="usuarios-directores"
+     th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
+     th:href="@{/central(view='usuarios-directores')}">Directores</a>
+</div>
+
         <form th:action="@{/logout}" method="post" style="margin:0;">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <button class="nav-item" type="submit">
-            <span class="icon">
-              <img th:src="@{/assets/iconos/salir.png}" alt="">
-            </span>
+            <span class="icon"><img th:src="@{/assets/iconos/salir.png}" alt=""></span>
             <span class="label">Cerrar sesión</span>
           </button>
         </form>
-
       </nav>
     </aside>
 
-    <!-- CONTENT -->
     <main class="content">
 
       <header class="topbar">
-        <!-- Buscador visual-->
         <div class="search" role="search">
           <span class="s-icon" aria-hidden="true">
             <img th:src="@{/assets/iconos/buscar.png}" alt="">
           </span>
-          <input type="search" placeholder="Buscar proyecto..." autocomplete="off" />
+          <input id="searchCentral" type="search" placeholder="Buscar..." autocomplete="off" />
         </div>
 
-        <!-- Saludo -->
         <div class="userbox">
           <div class="hello">
             Hola, <span th:text="${nombreUsuario}">Usuario</span>!
@@ -73,7 +95,6 @@
             </div>
           </div>
 
-          <!-- Foto (solo UI) -->
           <button class="profile" type="button" title="Perfil" th:attr="data-foto=${fotoUrl}">
             <img th:if="${fotoUrl != null}" th:src="${fotoUrl}" alt="Foto de perfil">
             <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/usuarios.png}" alt="">
@@ -84,28 +105,206 @@
       <section class="panel" aria-label="Sección principal">
         <div class="panel-head">
           <div>
-            <h2 class="panel-title">Proyectos</h2>
-            <div class="panel-sub">Aquí se verán los proyectos</div>
+            <h2 class="panel-title" id="sectionTitle"
+                th:text="${ view=='solicitudes' ? 'Solicitudes de proyectos'
+                         : view=='proyectos' ? 'Proyectos'
+                         : view=='usuarios-supervisores' ? 'Supervisores'
+                         : view=='usuarios-constructores' ? 'Constructores'
+                         : view=='usuarios-directores' ? 'Directores'
+                         : 'Solicitudes' }">
+              Solicitudes de proyectos
+            </h2>
+
+            <div class="panel-sub" id="sectionSubtitle"
+                 th:text="${ view=='solicitudes' ? 'Revisa y decide solicitudes de proyecto'
+                          : view=='proyectos' ? 'Consulta y administra los proyectos registrados'
+                          : 'Gestiona usuarios del sistema' }">
+              Revisa y decide solicitudes de proyecto
+            </div>
           </div>
 
-          <!-- Botón visual (sin lógica por ahora) -->
-          <button class="add-btn" type="button" title="Nuevo proyecto (próximamente)" disabled>
-            <span class="add-plus">+</span>
+          <button class="add-btn" type="button" id="btnAdd" title="Agregar">
+            <img id="btnAddIcon" th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
           </button>
         </div>
 
-        <div class="cards">
+        <div id="panelContent">
 
-          <!-- Card placeholder vacío (sin lógica) -->
-          <div class="empty">
-            Aún no hay proyectos para mostrar.
+          <!-- SOLICITUDES -->
+          <div th:if="${view=='solicitudes'}">
+            <div class="tabs" id="tabsSolicitudes" role="tablist" aria-label="Filtros de solicitudes">
+              <button class="tab active" type="button" data-estado="PENDIENTE">Pendientes</button>
+              <button class="tab" type="button" data-estado="APROBADA">Aprobadas</button>
+              <button class="tab" type="button" data-estado="RECHAZADA">Rechazadas</button>
+            </div>
+
+            <div class="cards" id="solicitudesList">
+              <div class="empty" id="solicitudesEmpty">
+                Aún no hay solicitudes para mostrar.
+              </div>
+            </div>
           </div>
 
-         
+          <!-- PROYECTOS -->
+          <div th:if="${view=='proyectos'}">
+            <div class="tabs" id="tabsProyectos" role="tablist" aria-label="Filtros de proyectos">
+              <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+              <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+              <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+            </div>
+
+            <div class="cards" id="proyectosList">
+              <div class="empty" id="proyectosEmpty">
+                Aún no hay proyectos para mostrar.
+              </div>
+            </div>
+          </div>
+
+          <!-- USUARIOS -->
+          <div th:if="${#strings.startsWith(view,'usuarios-')}">
+            <div th:replace="~{central/_usuarios :: usuariosContent}"></div>
+          </div>
+
         </div>
       </section>
 
+      <!-- DETALLE -->
+      <div class="modal-backdrop" id="detalleBackdrop" aria-hidden="true"></div>
+      <div class="modal" id="detalleModal" role="dialog" aria-modal="true" aria-labelledby="detalleTitle" aria-hidden="true">
+        <div class="modal-card">
+          <div class="dg-head">
+            <span class="dg-chip" id="detalleTitle">Detalle</span>
+            <div class="dg-actions">
+              <button class="dg-close" type="button" id="btnCerrarDetalle" aria-label="Cerrar">✕</button>
+            </div>
+          </div>
+
+          <div class="detalle-top">
+            <div class="badge-state" id="badgeEstado">—</div>
+            <div class="detalle-meta" id="detalleMeta"></div>
+          </div>
+
+          <div class="detalle-body" id="detalleBody"></div>
+
+          <div class="action-row" id="detalleActions">
+            <button class="action-btn ok" type="button" id="btnAprobar">Aprobar</button>
+            <button class="action-btn bad" type="button" id="btnRechazar">Rechazar</button>
+          </div>
+
+          <div class="action-row" id="detalleProyectoActions" style="display:none;">
+            <button class="action-btn ok" type="button" id="btnProyectoActivo">Activo</button>
+            <button class="action-btn" type="button" id="btnProyectoInactivo">Inactivo</button>
+            <button class="action-btn bad" type="button" id="btnProyectoFinalizado">Finalizado</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUPERVISOR -->
+      <div class="modal-backdrop" id="supBackdrop" aria-hidden="true"></div>
+      <div class="modal mini" id="supModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-card mini-card">
+          <div class="mini-head">
+            <div class="mini-title">Seleccione al supervisor</div>
+            <button class="dg-close" type="button" id="btnCerrarSup" aria-label="Cerrar">✕</button>
+          </div>
+
+          <label class="dg-label">Supervisor<span class="req">*</span></label>
+          <select class="dg-select" id="selectSupervisor" required>
+            <option value="" selected disabled>Seleccionar</option>
+          </select>
+
+          <div class="mini-actions">
+            <button class="dg-btn" type="button" id="btnConfirmarAprobar">Confirmar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOTIVO -->
+      <div class="modal-backdrop" id="motivoBackdrop" aria-hidden="true"></div>
+      <div class="modal mini" id="motivoModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-card mini-card">
+          <div class="mini-head">
+            <div class="mini-title">Motivo de rechazo</div>
+            <button class="dg-close" type="button" id="btnCerrarMotivo" aria-label="Cerrar">✕</button>
+          </div>
+
+          <label class="dg-label">Motivo<span class="req">*</span></label>
+          <textarea class="dg-textarea" id="txtMotivo" rows="4" placeholder="Escribe el motivo..." required></textarea>
+
+          <div class="mini-actions">
+            <button class="dg-btn danger" type="button" id="btnConfirmarRechazo">Rechazar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL USUARIO -->
+      <div class="modal-backdrop" id="userModalBackdrop" aria-hidden="true"></div>
+      <div class="modal" id="userModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-card">
+          <div class="dg-head">
+            <span class="dg-chip" id="userModalTitle">Detalle de usuario</span>
+            <div class="dg-actions">
+              <button class="dg-close" type="button" id="userModalClose" aria-label="Cerrar">✕</button>
+            </div>
+          </div>
+
+          <div class="detalle-body">
+            <div class="ro-grid ro-2">
+              <div class="ro-field">
+                <label class="ro-label">Nombre</label>
+                <input class="ro-input" id="mNombre" type="text">
+              </div>
+              <div class="ro-field">
+                <label class="ro-label">Apellido</label>
+                <input class="ro-input" id="mApellido" type="text">
+              </div>
+            </div>
+
+            <div class="ro-grid ro-2">
+              <div class="ro-field">
+                <label class="ro-label">Username</label>
+                <input class="ro-input" id="mUsername" type="text">
+              </div>
+              <div class="ro-field">
+                <label class="ro-label">Email</label>
+                <input class="ro-input" id="mEmail" type="email">
+              </div>
+            </div>
+
+            <div class="ro-grid ro-2">
+              <div class="ro-field">
+                <label class="ro-label">Rol visible</label>
+                <input class="ro-input" id="mRol" type="text" readonly>
+              </div>
+              <div class="ro-field">
+                <label class="ro-label">Rol a guardar</label>
+                <select class="ro-input" id="mRolNombre">
+                  <option value="">Seleccionar</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="contratista">Constructor</option>
+                  <option value="direccion">Director</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="ro-grid ro-1">
+              <div class="ro-field password-wrap">
+                <label class="ro-label" id="lblPassword">Password</label>
+                <input class="ro-input" id="mPassword" type="password" placeholder="Deja vacío para no cambiar">
+              </div>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button class="action-btn ok" type="button" id="btnGuardarUsuario">Guardar cambios</button>
+            <button class="action-btn bad" type="button" id="btnEliminarUsuario">Eliminar usuario</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
+
+  <script th:src="@{/js/central/central.js}"></script>
 </body>
 </html>

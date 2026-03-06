@@ -13,7 +13,6 @@
 
 <!-- CSS --> 
 <link rel="stylesheet" th:href="@{/css/admin/admin.css}">
-
 <!-- CSRF -->
 <meta name="_csrf" th:content="${_csrf.token}" />
 <meta name="_csrf_header" th:content="${_csrf.headerName}" />
@@ -47,38 +46,40 @@
 				</button>
 
 				<!-- Usuarios -->
-				<button class="nav-item" id="navUsuarios" type="button"
-					th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
-					th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
-					<span class="icon"><img
-						th:src="@{/assets/iconos/usuarios.png}" alt=""></span> <span
-						class="label">Usuarios</span> <span class="chev"
-						aria-hidden="true"> <img
-						th:src="@{/assets/iconos/desplegable.png}" alt="">
-					</span>
-				</button>
+<button class="nav-item" id="navUsuarios" type="button"
+        th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
+        th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
+  <span class="icon">
+    <img th:src="@{/assets/iconos/usuarios.png}" alt="">
+  </span>
+  <span class="label">Usuarios</span>
+  <span class="chev" aria-hidden="true">
+    <img th:src="@{/assets/iconos/desplegable.png}" alt="">
+  </span>
+</button>
 
+<div class="submenu" id="submenuUsuarios"
+     th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
+  <a class="sub-item" data-view="usuarios-supervisores"
+   th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
+   th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
 
-				<div class="submenu" id="submenuUsuarios"
-					th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
-					<a class="sub-item" data-view="usuarios-supervisores"
-						th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
+<a class="sub-item" data-view="usuarios-constructores"
+   th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
+   th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
 
-					<a class="sub-item" data-view="usuarios-constructores"
-						th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
+<a class="sub-item" data-view="usuarios-directores"
+   th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
+   th:href="@{/admin(view='usuarios-directores')}">Directores</a>
 
-					<a class="sub-item" data-view="usuarios-directores"
-						th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-directores')}">Directores</a> <a
-						class="sub-item" data-view="usuarios-central"
-						th:classappend="${view=='usuarios-central'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-central')}">Central</a> <a
-						class="sub-item" data-view="usuarios-administrador"
-						th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
-				</div>
+<a class="sub-item" data-view="usuarios-central"
+   th:classappend="${view=='usuarios-central'} ? ' active' : ''"
+   th:href="@{/admin(view='usuarios-central')}">Central</a>
+
+<a class="sub-item" data-view="usuarios-administrador"
+   th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
+   th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
+</div>
 
 				<!-- Solicitudes pendientes -->
 				<button class="nav-item" id="navSolicitudes" type="button"
@@ -151,11 +152,7 @@
 							Supervisores</h2>
 					</div>
 
-					<!-- Icono para añadir usuarios y proyectos -->
-					<button class="add-btn" type="button" id="btnAdd" title="Agregar">
-						<img id="btnAddIcon"
-							th:src="@{/assets/iconos/agregar-usuario.png}" alt="">
-					</button>
+					
 				</div>
 
 				<div id="panelContent">

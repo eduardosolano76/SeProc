@@ -444,3 +444,10 @@ body{
   .modal-card{ padding: 16px; border-radius: 22px; }
   .dg-2, .dg-3{ grid-template-columns: 1fr; }
 }
+
+.modal-footer{
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 12px;
+}

@@ -40,7 +40,6 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 22px;
-	position: relative;
 }
 
 .brand {
@@ -102,21 +101,20 @@ body {
 	gap: 8px;
 }
 
-.nav-item {
+.nav-item{
 	width: 100%;
-	border: none;
+	border: 0;
 	background: transparent;
 	color: #fff;
-	text-align: left;
-	padding: 16px 18px;
+	font: inherit;
+	text-decoration: none;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
-	gap: 14px;
-	font-size: 18px;
-	border-radius: 0;
-	transition: background .15s ease;
-	line-height: 1;
+	gap: 12px;
+	padding: 12px 14px;
+	border-radius: 16px;
+	transition: background .15s ease, transform .05s ease;
 }
 
 .nav-item:hover {
@@ -127,32 +125,32 @@ body {
 	background: var(--active);
 }
 
-.nav-item .icon {
-	width: 28px;
-	height: 28px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex: 0 0 28px;
-}
-
-.nav-item .icon img {
+.nav-item .icon{
 	width: 26px;
 	height: 26px;
+	display: grid;
+	place-items:center;
+}
+
+.nav-item .icon img{
+	width: 22px;
+	height: 22px;
 	object-fit: contain;
 	display: block;
 	filter: brightness(0) invert(1);
 	transform: translateY(1px);
 }
 
-.nav-item .label {
+.nav-item .label{
 	flex: 1;
 	font-weight: 500;
+	font-size: 16px;
+	line-height: 1.2;
 }
 
-.nav-item .chev {
-	width: 18px;
-	height: 18px;
+.nav-item .chev{
+	width: 16px;
+	height: 16px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -160,9 +158,9 @@ body {
 	transition: transform .15s ease;
 }
 
-.nav-item .chev img {
-	width: 16px;
-	height: 16px;
+.nav-item .chev img{
+	width: 14px;
+	height: 14px;
 	object-fit: contain;
 	filter: brightness(0) invert(1);
 	transform: translateY(1px);
@@ -177,8 +175,8 @@ body {
 	display: none;
 	flex-direction: column;
 	gap: 6px;
-	padding: 0 0 10px 60px;
-	margin-top: -6px;
+	padding: 0 0 10px 54px;
+	margin-top: -4px;
 }
 
 .submenu.open {
@@ -191,9 +189,9 @@ body {
 	border: none;
 	color: #fff;
 	text-align: left;
-	padding: 10px 12px;
+	padding: 8px 10px;
 	border-radius: 10px;
-	font-size: 16px;
+	font-size: 15px;
 	cursor: pointer;
 	transition: background .15s ease;
 }
@@ -321,29 +319,7 @@ body {
 	font-size: 16px;
 }
 
-/* Botón agregar */
-.add-btn {
-	width: 44px;
-	height: 44px;
-	border-radius: 50%;
-	border: none;
-	background: var(--orange);
-	cursor: pointer;
-	display: grid;
-	place-items: center;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
-}
 
-.add-btn img {
-	width: 24px;
-	height: 24px;
-	object-fit: contain;
-	filter: brightness(0) invert(1);
-}
-
-.add-btn:hover {
-	background: var(--orange-2);
-}
 
 /* Tabla de pendientes */
 .pendientes-wrap {
@@ -396,10 +372,9 @@ body {
 	border-radius: 14px;
 }
 
-/* En pantallas pequeñas permite “scroll” sin aplastar */
 @media ( max-width : 768px) {
 	.table {
-		min-width: 720px; /* puedes subir/bajar: 650-900 */
+		min-width: 720px; 
 	}
 	.table th, .table td {
 		white-space: nowrap;
@@ -738,5 +713,256 @@ body {
 
 /* Cuando hay texto en password, se muestra */
 .password-wrap.show-eye .toggle-pass {
-  display: grid; /* porque tú lo centras con grid */
+  display: grid; 
+}
+
+
+.nav-item{
+  border-radius:22px;
+  padding:14px 16px;
+}
+
+.nav-item.active{
+  background:rgba(0,0,0,.18);
+  outline:2px solid rgba(255,255,255,.18);
+}
+
+.submenu{
+  gap:8px;
+  padding:0 0 10px 60px;
+}
+
+.sub-item{
+  border-radius:10px;
+  font-size:15px;
+  font-weight:600;
+}
+
+.search{
+  max-width:640px;
+  height:auto;
+  min-height:50px;
+  border-radius:999px;
+  background:#f8f8f8;
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:none;
+  padding:12px 16px;
+  position:relative;
+}
+
+.search input{
+  font-size:16px;
+}
+
+.panel{
+  border-radius:34px;
+  padding:24px 26px;
+}
+
+.panel-title{
+  font-size:22px;
+  font-weight:800;
+}
+
+.panel-sub{
+  font-size:16px;
+  color:var(--muted);
+}
+
+.add-btn{
+  width:48px;
+  height:48px;
+  border-radius:16px;
+  background:var(--orange);
+  box-shadow:none;
+}
+
+.add-btn img{
+  width:22px;
+  height:22px;
+}
+
+.table{
+  background:#fff;
+  border-radius:16px;
+  overflow:hidden;
+}
+
+.table th{
+  background:rgba(198, 106, 0, .15);
+  font-size:14px;
+}
+
+.table td{
+  font-size:14px;
+}
+
+.userbox .hello{
+  font-size:20px;
+  font-weight:700;
+}
+
+.role-line{
+  font-size:14px;
+  color:var(--muted);
+}
+
+
+.sidebar{
+  width: 300px !important;
+  background: var(--orange) !important;
+  padding: 26px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+}
+
+.brand{
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 0 18px !important;
+}
+
+.brand .logo{
+  width: 130px !important;
+  height: 130px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  overflow: hidden !important;
+  border: 6px solid #fff !important;
+  outline: 4px solid rgba(255,255,255,.25) !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.18) !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.brand .logo img{
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.nav{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 0 18px !important;
+  margin-top: 6px !important;
+}
+
+.sidebar .nav-item{
+  width: 100% !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 16px !important;
+  transition: background .15s ease, transform .05s ease !important;
+}
+
+.sidebar .nav-item:hover{
+  background: rgba(255,255,255,.12) !important;
+}
+
+.sidebar .nav-item.active{
+  background: rgba(0,0,0,.18) !important;
+  outline: 2px solid rgba(255,255,255,.18) !important;
+}
+
+.sidebar .nav-item .icon{
+  width: 28px !important;
+  height: 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 28px !important;
+}
+
+.sidebar .nav-item .icon img{
+  width: 26px !important;
+  height: 26px !important;
+  object-fit: contain !important;
+  display: block !important;
+  filter: brightness(0) invert(1) !important;
+  transform: translateY(1px) !important;
+}
+
+.sidebar .nav-item .label{
+  flex: 0 1 auto !important;
+  width: auto !important;
+  text-align: left !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+}
+
+.sidebar .nav-item .chev{
+  margin-left: auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: .9 !important;
+  transition: transform .15s ease !important;
+  flex: 0 0 18px !important;
+}
+
+.sidebar .nav-item .chev img{
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  filter: brightness(0) invert(1) !important;
+  transform: translateY(1px) !important;
+}
+
+.sidebar .nav-item[data-open="true"] .chev{
+  transform: rotate(180deg) !important;
+}
+
+.sidebar .submenu{
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 10px 60px !important;
+  margin-top: -6px !important;
+}
+
+.sidebar .submenu.open{
+  display: flex !important;
+}
+
+.sidebar .sub-item{
+  width: calc(100% - 18px) !important;
+  background: transparent !important;
+  border: none !important;
+  color: #fff !important;
+  text-align: left !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background .15s ease !important;
+  text-decoration: none !important;
+}
+
+.sidebar .sub-item:hover{
+  background: rgba(255,255,255,.14) !important;
+}
+
+.sidebar .sub-item.active{
+  background: rgba(255,255,255,.18) !important;
+  font-weight: 800 !important;
 }

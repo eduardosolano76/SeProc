@@ -9,11 +9,13 @@ import com.example.demo.modelo.Usuario;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByUsername(String username);
+    List<Usuario> findByRol_NombreIgnoreCase(String nombre); // "supervisor"
     
     List<Usuario> findByActivoFalse();
     
-    // Aprobados por rol (nombre del rol)
+    // Aprobados por rol 
     List<Usuario> findByActivoTrueAndRol_NombreIgnoreCase(String nombre);
+    
     
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);

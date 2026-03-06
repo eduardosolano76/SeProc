@@ -28,14 +28,15 @@ public class SecurityConfig {
                 // PÚBLICOS
                 .requestMatchers("/login","/auth/**","/public/**","/registro/**").permitAll()
 
-                // MÓDULOS POR ROL
-                .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/constructor/**").hasRole("CONTRATISTA")
-                .requestMatchers("/supervisor/**").hasRole("SUPERVISOR")
-                .requestMatchers("/central/**").hasRole("CENTRAL")
-                .requestMatchers("/direccion/**").hasRole("DIRECCION")
+             // MÓDULOS POR ROL
+                .requestMatchers("/admin", "/admin/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/constructor", "/constructor/**").hasRole("CONTRATISTA")
+                .requestMatchers("/supervisor", "/supervisor/**").hasRole("SUPERVISOR")
+                .requestMatchers("/central", "/central/**").hasRole("CENTRAL")
+                .requestMatchers("/api/central/**").hasRole("CENTRAL")
+                .requestMatchers("/direccion", "/direccion/**").hasRole("DIRECCION")
 
-                // TODO lo demás protegido
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
