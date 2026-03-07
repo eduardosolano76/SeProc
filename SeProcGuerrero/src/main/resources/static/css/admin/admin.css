@@ -775,6 +775,12 @@ body {
   border-radius:16px;
   background:var(--orange);
   box-shadow:none;
+  
+  border: none;           /* Elimina el borde negro nativo del navegador */
+  padding: 0;             /* Elimina el espaciado interno automático */
+  cursor: pointer;        /* Muestra la "manita" al pasar el mouse */
+  display: grid;          /* Ayuda a centrar el contenido */
+  place-items: center;    /* Centra el icono perfectamente al medio */
 }
 
 .add-btn img{
@@ -965,4 +971,30 @@ body {
 .sidebar .sub-item.active{
   background: rgba(255,255,255,.18) !important;
   font-weight: 800 !important;
+}
+
+/* Alertas y Confirmaciones */
+.alert-card {
+	width: min(400px, calc(100% - 28px));
+	text-align: center;
+}
+.alert-body {
+	padding: 34px 24px;
+}
+.alert-title {
+	margin: 0 0 8px;
+	font-size: 20px;
+	font-weight: 800;
+	color: var(--text);
+}
+.alert-msg {
+	color: var(--muted);
+	font-size: 15px;
+	margin: 0 0 24px;
+	line-height: 1.5;
+}
+.alert-actions {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
 }

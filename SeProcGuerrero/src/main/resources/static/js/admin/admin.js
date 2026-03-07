@@ -181,7 +181,7 @@ profileFile?.addEventListener('change', async (e) => {
     profileImg.style.display = 'block';
     profileFallback.style.display = 'none';
   } catch (err) {
-    alert(err.message || "Error al subir la foto.");
+    await showCustomAlert(err.message || "Error al subir la foto.", "Error");
   }
 });
 
@@ -311,7 +311,7 @@ async function showUserDetail(id) {
 
         openUserModal();
     } catch (e) {
-        alert("No se pudo cargar el usuario.");
+       await showCustomAlert("No se pudo cargar la información del usuario.", "Error");
     }
 }
 
@@ -374,7 +374,7 @@ document.getElementById('btnGuardarUsuario')?.addEventListener('click', async ()
 
     // Validación mínima (porque el backend exige password)
     if (!payload.password || payload.password.trim().length === 0) {
-      alert("Password es obligatorio para crear.");
+      await showCustomAlert("Password es obligatorio para crear.");
       return;
     }
 
@@ -384,7 +384,7 @@ document.getElementById('btnGuardarUsuario')?.addEventListener('click', async ()
     });
 
     if (!ok) {
-      alert(text || "No se pudo crear.");
+      await showCustomAlert(text || "No se pudo crear.");
       return;
     }
 
@@ -405,11 +405,11 @@ document.getElementById('btnGuardarUsuario')?.addEventListener('click', async ()
   });
 
   if (!ok) {
-    alert(text || "No se pudo actualizar.");
+    await showCustomAlert(text || "No se pudo actualizar.", "Error");
     return;
   }
 
-  alert("Usuario actualizado");
+  await showCustomAlert("Los datos fueron actualizados correctamente.", "Usuario actualizado");
   closeUserModal();
 
   const currentView = getParam('view') || 'proyectos';
@@ -420,34 +420,29 @@ document.getElementById('btnGuardarUsuario')?.addEventListener('click', async ()
 document.getElementById('btnEliminarUsuario')?.addEventListener('click', async () => {
     if (!currentUserId) return;
 
-    if (!confirm("¿Seguro que quieres eliminar este usuario?")) return;
+	const confirmado = await showCustomConfirm("¿Estás seguro de que deseas eliminar este usuario de forma permanente?", "Eliminar usuario");
+	    if (!confirmado) return;
 
     const { ok, text } = await fetchJson(`/admin/usuarios/${currentUserId}/eliminar`, {
         method: 'POST'
     });
 
     if (!ok) {
-        alert(text || "No se pudo eliminar.");
+		await showCustomAlert(text || "No se pudo eliminar el usuario.", "Error");
         return;
     }
 
-    alert("Usuario eliminado");
-    closeUserModal();
+	await showCustomAlert("El usuario fue eliminado correctamente.", "Eliminado");
+	closeUserModal();
 
     const currentView = getParam('view') || 'proyectos';
     loadPanelFromUrl(`/admin?view=${currentView}`, false);
 });
 
 // Crear (botón +) 
-btnAdd?.addEventListener('click', () => {
+btnAdd?.addEventListener('click', async () => {
     const action = btnAdd.dataset.action;
     const rol = btnAdd.dataset.rol || "";
-
-    if (action === 'proyecto') {
-        // Más adelante se hara el modal de proyecto o algo similar
-        alert("Aquí irá: Agregar proyecto (pendiente)");
-        return;
-    }
 
     // Crear usuario (reusa modal)
     currentUserId = null;
@@ -572,14 +567,10 @@ function syncAddButtonWithUrl(url) {
     }
 
     // Proyectos: mostrar + icono de proyecto
-    if (view === 'proyectos') {
-        if (btnAdd) btnAdd.style.display = 'grid';
-        if (btnAddIcon) btnAddIcon.src = '/assets/iconos/agregar-proyecto.png';
-        if (btnAdd) btnAdd.title = 'Agregar proyecto';
-        if (btnAdd) btnAdd.dataset.action = 'proyecto';
-        delete btnAdd?.dataset.rol;
-        return;
-    }
+	if (view === 'proyectos') {
+	        if (btnAdd) btnAdd.style.display = 'none'; 
+	        return;
+	    }
 
     // Usuarios por rol: mostrar + icono usuario + guardar rol
     if (view.startsWith('usuarios-')) {
@@ -593,5 +584,64 @@ function syncAddButtonWithUrl(url) {
 
     // Default: por seguridad
     if (btnAdd) btnAdd.style.display = 'grid';
+}
+
+// Sistema de alertas personalizadas 
+const customAlert = document.getElementById('customAlert');
+const customAlertTitle = document.getElementById('customAlertTitle');
+const customAlertMessage = document.getElementById('customAlertMessage');
+const customAlertOk = document.getElementById('customAlertOk');
+const customAlertCancel = document.getElementById('customAlertCancel');
+
+function showCustomAlert(message, title = "Atención") {
+    return new Promise((resolve) => {
+        customAlertTitle.textContent = title;
+        customAlertMessage.textContent = message;
+        customAlertCancel.style.display = 'none'; // Solo botón Aceptar
+        
+        customAlert.classList.add('open');
+        customAlert.setAttribute('aria-hidden', 'false');
+
+        const handleOk = () => {
+            closeCustomAlert();
+            customAlertOk.removeEventListener('click', handleOk);
+            resolve(true);
+        };
+        customAlertOk.addEventListener('click', handleOk);
+    });
+}
+
+function showCustomConfirm(message, title = "Confirmar acción") {
+    return new Promise((resolve) => {
+        customAlertTitle.textContent = title;
+        customAlertMessage.textContent = message;
+        customAlertCancel.style.display = 'inline-flex'; // Mostrar botón Cancelar
+        
+        customAlert.classList.add('open');
+        customAlert.setAttribute('aria-hidden', 'false');
+
+        const handleOk = () => {
+            cleanup();
+            resolve(true);
+        };
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+        
+        const cleanup = () => {
+            closeCustomAlert();
+            customAlertOk.removeEventListener('click', handleOk);
+            customAlertCancel.removeEventListener('click', handleCancel);
+        };
+
+        customAlertOk.addEventListener('click', handleOk);
+        customAlertCancel.addEventListener('click', handleCancel);
+    });
+}
+
+function closeCustomAlert() {
+    customAlert.classList.remove('open');
+    customAlert.setAttribute('aria-hidden', 'true');
 }
 

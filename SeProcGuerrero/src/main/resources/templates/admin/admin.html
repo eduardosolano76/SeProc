@@ -11,7 +11,7 @@
 	href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
 	rel="stylesheet">
 
-<!-- CSS --> 
+<!-- CSS -->
 <link rel="stylesheet" th:href="@{/css/admin/admin.css}">
 <!-- CSRF -->
 <meta name="_csrf" th:content="${_csrf.token}" />
@@ -46,40 +46,37 @@
 				</button>
 
 				<!-- Usuarios -->
-<button class="nav-item" id="navUsuarios" type="button"
-        th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
-        th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
-  <span class="icon">
-    <img th:src="@{/assets/iconos/usuarios.png}" alt="">
-  </span>
-  <span class="label">Usuarios</span>
-  <span class="chev" aria-hidden="true">
-    <img th:src="@{/assets/iconos/desplegable.png}" alt="">
-  </span>
-</button>
+				<button class="nav-item" id="navUsuarios" type="button"
+					th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' active' : ''"
+					th:attr="data-open=${#strings.startsWith(view,'usuarios-')} ? 'true' : 'false'">
+					<span class="icon"> <img
+						th:src="@{/assets/iconos/usuarios.png}" alt="">
+					</span> <span class="label">Usuarios</span> <span class="chev"
+						aria-hidden="true"> <img
+						th:src="@{/assets/iconos/desplegable.png}" alt="">
+					</span>
+				</button>
 
-<div class="submenu" id="submenuUsuarios"
-     th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
-  <a class="sub-item" data-view="usuarios-supervisores"
-   th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
-   th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
+				<div class="submenu" id="submenuUsuarios"
+					th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
+					<a class="sub-item" data-view="usuarios-supervisores"
+						th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
+						th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
 
-<a class="sub-item" data-view="usuarios-constructores"
-   th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
-   th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
+					<a class="sub-item" data-view="usuarios-constructores"
+						th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
+						th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
 
-<a class="sub-item" data-view="usuarios-directores"
-   th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
-   th:href="@{/admin(view='usuarios-directores')}">Directores</a>
-
-<a class="sub-item" data-view="usuarios-central"
-   th:classappend="${view=='usuarios-central'} ? ' active' : ''"
-   th:href="@{/admin(view='usuarios-central')}">Central</a>
-
-<a class="sub-item" data-view="usuarios-administrador"
-   th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
-   th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
-</div>
+					<a class="sub-item" data-view="usuarios-directores"
+						th:classappend="${view=='usuarios-directores'} ? ' active' : ''"
+						th:href="@{/admin(view='usuarios-directores')}">Directores</a> <a
+						class="sub-item" data-view="usuarios-central"
+						th:classappend="${view=='usuarios-central'} ? ' active' : ''"
+						th:href="@{/admin(view='usuarios-central')}">Central</a> <a
+						class="sub-item" data-view="usuarios-administrador"
+						th:classappend="${view=='usuarios-administrador'} ? ' active' : ''"
+						th:href="@{/admin(view='usuarios-administrador')}">Administrador</a>
+				</div>
 
 				<!-- Solicitudes pendientes -->
 				<button class="nav-item" id="navSolicitudes" type="button"
@@ -151,8 +148,11 @@
               'Proyectos' }">
 							Supervisores</h2>
 					</div>
-
 					
+					<button class="add-btn" id="btnAdd" type="button" style="display: none;">
+        			<img id="btnAddIcon" th:src="@{/assets/iconos/agregar-proyecto.png}" alt="Agregar">
+    </button>
+
 				</div>
 
 				<div id="panelContent">
@@ -227,13 +227,13 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr th:each="p : ${pendientes}" th:attr="data-id=${p.idUsuario}">
+									<tr th:each="p : ${pendientes}"
+										th:attr="data-id=${p.idUsuario}">
 										<td th:text="${p.nombre + ' ' + p.apellido}">Nombre</td>
 										<td th:text="${p.username}">user</td>
 										<td th:text="${p.email}">mail</td>
 
-										<td>
-										<select class="role-select"
+										<td><select class="role-select"
 											th:id="'rol-' + ${p.idUsuario}" required>
 												<option value="" selected disabled>Elegir rol</option>
 												<option value="supervisor">Supervisor</option>
@@ -241,8 +241,7 @@
 												<option value="direccion">Director</option>
 												<option value="central">Central</option>
 												<option value="administrador">Administrador</option>
-										</select>
-										</td>
+										</select></td>
 
 										<td>
 											<form th:id="'aprobar-' + ${p.idUsuario}"
@@ -331,6 +330,22 @@
 				<button class="btn-primary" type="button" id="btnGuardarUsuario">Guardar
 					cambios</button>
 				<button class="btn-danger" type="button" id="btnEliminarUsuario">Eliminar</button>
+			</div>
+		</div>
+	</div>
+	
+	<div class="modal" id="customAlert" aria-hidden="true">
+		<div class="modal-backdrop" id="customAlertBackdrop"></div>
+		
+		<div class="modal-card alert-card" role="dialog" aria-modal="true">
+			<div class="alert-body">
+				<h3 id="customAlertTitle" class="alert-title">Atención</h3>
+				<p id="customAlertMessage" class="alert-msg">Mensaje</p>
+				
+				<div class="alert-actions">
+					<button class="btn-secondary" type="button" id="customAlertCancel" style="display: none;">Cancelar</button>
+					<button class="btn-primary" type="button" id="customAlertOk">Aceptar</button>
+				</div>
 			</div>
 		</div>
 	</div>
