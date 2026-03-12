@@ -97,7 +97,7 @@
 
           <button class="profile" type="button" title="Perfil" th:attr="data-foto=${fotoUrl}">
             <img th:if="${fotoUrl != null}" th:src="${fotoUrl}" alt="Foto de perfil">
-            <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/usuarios.png}" alt="">
+            <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/sinFotoPerfil.png}" alt="">
           </button>
         </div>
       </header>

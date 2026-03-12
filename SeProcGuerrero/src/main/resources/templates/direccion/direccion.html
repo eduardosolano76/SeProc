@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- CSS del módulo -->
-  <link rel="stylesheet" th:href="@{/css/director/director.css}">
+  <link rel="stylesheet" th:href="@{/css/direccion/direccion.css}">
 
   <!-- CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}" />
@@ -76,7 +76,7 @@
           <!-- Foto (solo UI) -->
           <button class="profile" type="button" title="Perfil" th:attr="data-foto=${fotoUrl}">
             <img th:if="${fotoUrl != null}" th:src="${fotoUrl}" alt="Foto de perfil">
-            <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/usuarios.png}" alt="">
+            <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/sinFotoPerfil.png}" alt="">
           </button>
         </div>
       </header>

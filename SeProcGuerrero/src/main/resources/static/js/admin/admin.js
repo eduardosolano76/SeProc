@@ -134,12 +134,26 @@ const profileFile = document.getElementById('profileFile');
 const profileImg = document.getElementById('profileImg');
 const profileFallback = document.getElementById('profileFallback');
 
+function addCacheBuster(url) {
+  if (!url) return url;
+  return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const fotoUrl = profileBtn?.dataset?.foto;
   if (fotoUrl) {
-    profileImg.src = fotoUrl + "?t=" + Date.now();
-    profileImg.style.display = 'block';
-    profileFallback.style.display = 'none';
+    profileImg.onload = () => {
+      profileImg.style.display = 'block';
+      profileFallback.style.display = 'none';
+    };
+
+    profileImg.onerror = () => {
+      profileImg.style.display = 'none';
+      profileFallback.style.display = 'block';
+      console.error("No se pudo cargar la foto:", fotoUrl);
+    };
+
+    profileImg.src = addCacheBuster(fotoUrl);
   }
 });
 
@@ -160,14 +174,13 @@ async function uploadProfilePhoto(file) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.message || "No se pudo subir la foto.");
 
-  return data.url; // url pública
+  return data.url;
 }
 
 profileFile?.addEventListener('change', async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  // preview inmediato
   const previewUrl = URL.createObjectURL(file);
   profileImg.src = previewUrl;
   profileImg.style.display = 'block';
@@ -176,10 +189,13 @@ profileFile?.addEventListener('change', async (e) => {
   try {
     const url = await uploadProfilePhoto(file);
 
-    // usa la URL real (guardada en BD)
-    profileImg.src = url + "?t=" + Date.now(); // cache-bust
+    profileImg.src = addCacheBuster(url);
     profileImg.style.display = 'block';
     profileFallback.style.display = 'none';
+
+    if (profileBtn) {
+      profileBtn.dataset.foto = url;
+    }
   } catch (err) {
     await showCustomAlert(err.message || "Error al subir la foto.", "Error");
   }

@@ -4,7 +4,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface StorageService {
 	
-    String saveProfilePhoto(Long userId, MultipartFile file); // retorna "key" (ruta relativa)
+	String saveProfilePhoto(Long userId, String username, MultipartFile file);
     void deleteIfExists(String key);
     String publicUrl(String key); // construye la URL pública
 

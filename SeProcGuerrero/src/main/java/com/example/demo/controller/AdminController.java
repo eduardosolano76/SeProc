@@ -61,7 +61,11 @@ public class AdminController {
             String nombreCompleto = usuario.getNombre() /*+ " " + usuario.getApellido()*/;
             String rol = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "sin rol";
             
-            model.addAttribute("fotoUrl", storageService.publicUrl(usuario.getFoto()));
+            String fotoUrl = storageService.publicUrl(usuario.getFoto());
+            if (fotoUrl == null || fotoUrl.isBlank()) {
+                fotoUrl = "/assets/iconos/sinFotoPerfil.png";
+            }
+            model.addAttribute("fotoUrl", fotoUrl);
 
             model.addAttribute("nombreUsuario", nombreCompleto);
             model.addAttribute("rolUsuario", rol);
@@ -259,7 +263,7 @@ public class AdminController {
         // (opcional) borrar anterior
         storageService.deleteIfExists(u.getFoto());
 
-        String key = storageService.saveProfilePhoto(u.getIdUsuario(), file);
+        String key = storageService.saveProfilePhoto(u.getIdUsuario(), u.getUsername(), file);
         u.setFoto(key);
         usuarioRepo.save(u);
 
