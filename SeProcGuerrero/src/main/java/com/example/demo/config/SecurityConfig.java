@@ -31,11 +31,19 @@ public class SecurityConfig {
              // MÓDULOS POR ROL
                 .requestMatchers("/admin", "/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                
                 .requestMatchers("/constructor", "/constructor/**").hasRole("CONTRATISTA")
+                .requestMatchers("/api/constructor/**").hasRole("CONTRATISTA")
+                
                 .requestMatchers("/supervisor", "/supervisor/**").hasRole("SUPERVISOR")
+                .requestMatchers("/api/supervisor/**").hasRole("SUPERVISOR")
+                
                 .requestMatchers("/central", "/central/**").hasRole("CENTRAL")
                 .requestMatchers("/api/central/**").hasRole("CENTRAL")
+                
                 .requestMatchers("/direccion", "/direccion/**").hasRole("DIRECCION")
+                .requestMatchers("/api/direccion/**").hasRole("DIRECCION")
+
 
                 .anyRequest().authenticated()
             )

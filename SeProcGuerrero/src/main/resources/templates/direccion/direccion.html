@@ -31,7 +31,7 @@
       <nav class="nav" aria-label="Menú Director">
 
         <!-- Proyectos -->
-        <a class="nav-item active" th:href="@{/director}">
+        <a class="nav-item active" th:href="@{/direccion}">
           <span class="icon">
             <img th:src="@{/assets/iconos/proyectos.png}" alt="">
           </span>
@@ -97,9 +97,17 @@
         <div class="cards">
 
           <!-- Card placeholder vacío (sin lógica) -->
-          <div class="empty">
-            Aún no hay proyectos para mostrar.
-          </div>
+          <div class="tabs" id="tabsDireccion" role="tablist" aria-label="Filtros de proyectos">
+  <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+  <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+  <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+</div>
+
+<div class="cards" id="direccionProjectsList">
+  <div class="empty" id="direccionProjectsEmpty">
+    Aún no hay proyectos para mostrar.
+  </div>
+</div>
 
          
         </div>
@@ -107,5 +115,27 @@
 
     </main>
   </div>
+  
+  <div class="modal-backdrop" id="detalleBackdrop" aria-hidden="true"></div>
+
+<div class="modal" id="detalleModal" role="dialog" aria-modal="true" aria-labelledby="detalleTitle" aria-hidden="true">
+  <div class="modal-card">
+    <div class="dg-head">
+      <span class="dg-chip" id="detalleTitle">Detalle del proyecto</span>
+      <div class="dg-actions">
+        <button class="dg-close" type="button" id="btnCerrarDetalle" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+
+    <div class="detalle-top">
+      <div class="badge-state" id="badgeEstado">—</div>
+      <div class="detalle-meta" id="detalleMeta"></div>
+    </div>
+
+    <div class="detalle-body" id="detalleBody"></div>
+  </div>
+</div>
+
+<script th:src="@{/js/direccion/direccion.js}"></script>
 </body>
 </html>

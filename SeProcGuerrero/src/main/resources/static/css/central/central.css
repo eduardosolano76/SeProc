@@ -623,6 +623,12 @@ body{
   color: #111;
 }
 
+#detalleProyectoActions .action-btn{
+  padding: 6px 14px;
+  min-width: 95px;
+  font-size: 13px;
+}
+
 /* ====== Scroll interno del detalle (barra delgada) ====== */
 
 /* Limita el alto del modal grande */

@@ -58,11 +58,11 @@
       <header class="topbar">
         <!-- Buscador visual-->
         <div class="search" role="search">
-          <span class="s-icon" aria-hidden="true">
-            <img th:src="@{/assets/iconos/buscar.png}" alt="">
-          </span>
-          <input type="search" placeholder="Buscar proyecto..." autocomplete="off" />
-        </div>
+  <span class="s-icon" aria-hidden="true">
+    <img th:src="@{/assets/iconos/buscar.png}" alt="">
+  </span>
+  <input id="searchSupervisor" type="search" placeholder="Buscar proyecto..." autocomplete="off" />
+</div>
 
         <!-- Saludo -->
         <div class="userbox">
@@ -82,30 +82,52 @@
       </header>
 
       <section class="panel" aria-label="Sección principal">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">Proyectos</h2>
-            <div class="panel-sub">Aquí se verán los proyectos</div>
-          </div>
+  <div class="panel-head">
+    <div>
+      <h2 class="panel-title">Proyectos</h2>
+      <div class="panel-sub">Aquí se mostrarán únicamente los proyectos asignados al supervisor</div>
+    </div>
 
-          <!-- Botón visual (sin lógica por ahora) -->
-          <button class="add-btn" type="button" title="Nuevo proyecto (próximamente)" disabled>
-            <span class="add-plus">+</span>
-          </button>
-        </div>
+    <button class="add-btn" type="button" title="Sin acciones disponibles" disabled>
+      <span class="add-plus">+</span>
+    </button>
+  </div>
 
-        <div class="cards">
+  <div class="tabs" id="tabsSupervisor" role="tablist" aria-label="Filtros de proyectos">
+    <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+    <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+    <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+  </div>
 
-          <!-- Card placeholder vacío (sin lógica) -->
-          <div class="empty">
-            Aún no hay proyectos para mostrar.
-          </div>
-
-         
-        </div>
-      </section>
+  <div class="cards" id="supervisorProjectsList">
+    <div class="empty" id="supervisorProjectsEmpty">
+      Aún no hay proyectos asignados para mostrar.
+    </div>
+  </div>
+</section>
 
     </main>
   </div>
+  <div class="modal-backdrop" id="detalleBackdrop" aria-hidden="true"></div>
+
+<div class="modal" id="detalleModal" role="dialog" aria-modal="true" aria-labelledby="detalleTitle" aria-hidden="true">
+  <div class="modal-card">
+    <div class="dg-head">
+      <span class="dg-chip" id="detalleTitle">Detalle del proyecto</span>
+      <div class="dg-actions">
+        <button class="dg-close" type="button" id="btnCerrarDetalle" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+
+    <div class="detalle-top">
+      <div class="badge-state" id="badgeEstado">—</div>
+      <div class="detalle-meta" id="detalleMeta"></div>
+    </div>
+
+    <div class="detalle-body" id="detalleBody"></div>
+  </div>
+</div>
+
+<script th:src="@{/js/supervisor/supervisor.js}"></script>
 </body>
 </html>

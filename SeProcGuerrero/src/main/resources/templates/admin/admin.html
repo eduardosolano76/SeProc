@@ -159,10 +159,22 @@
 
 					<!-- Vista proyectos -->
 					<div th:if="${view=='proyectos'}">
-						<!-- Mensaje vacío -->
-						<div class="panel-sub" th:if="${#lists.isEmpty(proyectos)}">
-							No se ha registrado ningún proyecto</div>
-					</div>
+    <div class="panel-sub">
+        Consulta y administra todos los proyectos del sistema
+    </div>
+
+    <div class="tabs" id="adminProjectTabs" role="tablist" aria-label="Filtros de proyectos">
+        <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+        <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+        <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+    </div>
+
+    <div class="cards" id="adminProjectsList">
+        <div class="empty" id="adminProjectsEmpty">
+            Aún no hay proyectos para mostrar.
+        </div>
+    </div>
+</div>
 
 					<!-- Vista usuarios por rol -->
 					<div th:if="${#strings.startsWith(view,'usuarios-')}">
@@ -349,11 +361,37 @@
 			</div>
 		</div>
 	</div>
+	
+	<div class="modal" id="projectDetailModal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-card project-modal-card" role="dialog" aria-modal="true" aria-labelledby="projectDetailTitle">
+        <div class="modal-head">
+            <h3 id="projectDetailTitle">Detalle del proyecto</h3>
+            <button class="modal-close" type="button" id="projectDetailClose">✕</button>
+        </div>
+
+        <div class="project-top">
+            <div class="badge-state" id="projectBadgeEstado">—</div>
+            <div class="project-meta" id="projectDetalleMeta"></div>
+        </div>
+
+        <div class="project-detail-body" id="projectDetalleBody"></div>
+
+        <div class="action-row project-action-row">
+            <button class="action-btn ok" type="button" id="btnAdminProyectoActivo">Activo</button>
+            <button class="action-btn" type="button" id="btnAdminProyectoInactivo">Inactivo</button>
+            <button class="action-btn bad" type="button" id="btnAdminProyectoFinalizado">Finalizado</button>
+        </div>
+    </div>
+</div>
 
 	<script th:inline="javascript">
 		window.LOGGED_USERNAME = /*[[${loggedUsername}]]*/"";
 	</script>
 	<!-- JS -->
 	<script th:src="@{/js/admin/admin.js}" defer></script>
+	<script th:src="@{/js/admin/admin.js}" defer></script>
+	<script th:src="@{/js/admin/admin-projects.js}" defer></script>
 </body>
 </html>

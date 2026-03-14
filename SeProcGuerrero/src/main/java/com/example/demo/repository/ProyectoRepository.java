@@ -13,4 +13,12 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Integer> {
     Optional<Proyecto> findBySolicitud_IdSolicitud(Integer idSolicitud);
 
     List<Proyecto> findByEstadoProyectoOrderByFechaAprobacionDesc(String estadoProyecto);
+
+    List<Proyecto> findByIdUsuarioSupervisorAndEstadoProyectoOrderByFechaAprobacionDesc(
+            Long idUsuarioSupervisor, String estadoProyecto
+    );
+
+    List<Proyecto> findBySolicitud_IdUsuarioContratistaAndEstadoProyectoOrderByFechaAprobacionDesc(
+            Long idUsuarioContratista, String estadoProyecto
+    );
 }

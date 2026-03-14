@@ -55,11 +55,11 @@
       <header class="topbar">
         <!-- Buscador visual-->
         <div class="search" role="search">
-          <span class="s-icon" aria-hidden="true">
-            <img th:src="@{/assets/iconos/buscar.png}" alt="">
-          </span>
-          <input type="search" placeholder="Buscar proyecto..." autocomplete="off" />
-        </div>
+  <span class="s-icon" aria-hidden="true">
+    <img th:src="@{/assets/iconos/buscar.png}" alt="">
+  </span>
+  <input id="searchConstructor" type="search" placeholder="Buscar proyecto..." autocomplete="off" />
+</div>
 
         <!-- Saludo -->
         <div class="userbox">
@@ -91,12 +91,40 @@
           </button>
         </div>
 
-        <div class="cards">
-          <div class="empty">
-            Aún no hay proyectos para mostrar.
-          </div>
-        </div>
+        <div class="tabs" id="tabsConstructor" role="tablist" aria-label="Filtros de proyectos">
+  <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+  <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+  <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+</div>
+
+<div class="cards" id="constructorProjectsList">
+  <div class="empty" id="constructorProjectsEmpty">
+    Aún no hay proyectos para mostrar
+  </div>
+</div>
       </section>
+      
+            <!-- Detalle del proyecto -->
+      
+      <div class="modal-backdrop" id="detalleBackdrop" aria-hidden="true"></div>
+
+<div class="modal" id="detalleModal" role="dialog" aria-modal="true" aria-labelledby="detalleTitle" aria-hidden="true">
+  <div class="modal-card">
+    <div class="dg-head">
+      <span class="dg-chip" id="detalleTitle">Detalle del proyecto</span>
+      <div class="dg-actions">
+        <button class="dg-close" type="button" id="btnCerrarDetalle" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+
+    <div class="detalle-top">
+      <div class="badge-state" id="badgeEstado">—</div>
+      <div class="detalle-meta" id="detalleMeta"></div>
+    </div>
+
+    <div class="detalle-body" id="detalleBody"></div>
+  </div>
+</div>
 
       <!-- Solicitud de proyectos -->
       <div class="modal-backdrop" id="projModalBackdrop" aria-hidden="true"></div>

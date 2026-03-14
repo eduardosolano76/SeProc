@@ -660,4 +660,3 @@ function closeCustomAlert() {
     customAlert.classList.remove('open');
     customAlert.setAttribute('aria-hidden', 'true');
 }
-
