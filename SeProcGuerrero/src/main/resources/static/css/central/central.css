@@ -877,3 +877,140 @@ body{
   font-weight:700;
   color:#111;
 }
+
+/* Cambiar contraseña */
+.password-card{
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(0,0,0,.08);
+  margin:20px auto;
+  max-width:800px;
+  padding:30px 34px;
+}
+
+.password-head{
+  background:rgba(198,106,0,.08);
+  padding:16px 24px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+}
+
+.password-head h3{
+  margin:0;
+  font-size:18px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.password-body{
+  padding:24px;
+}
+
+.password-body .text-primary{
+  color:var(--orange-2);
+  font-weight:600;
+  font-size:14px;
+  margin:0 0 8px 0;
+}
+
+.password-body .text-muted{
+  color:var(--muted);
+  font-size:14px;
+  margin:0 0 24px 0;
+  line-height:1.5;
+}
+
+.password-form .form-group{
+  margin-bottom:20px;
+}
+
+.password-form label{
+  display:block;
+  font-size:14px;
+  font-weight:600;
+  color:#444;
+  margin-bottom:8px;
+}
+
+.password-form input{
+  width:100%;
+  height:44px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.15);
+  padding:0 16px;
+  outline:none;
+  font-size:15px;
+  transition:border .2s ease;
+  background:#fff;
+}
+
+.password-form input:focus{
+  border-color:var(--orange);
+}
+
+.form-actions-right{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:30px;
+}
+
+.password-submit-btn{
+  min-width:auto !important;
+  box-shadow:none !important;
+  color:#fff !important;
+}
+
+/* Alert modal */
+.alert-card{
+  width: min(400px, calc(100% - 28px));
+  background: #fff;
+  border-radius: 34px;
+  padding: 0;
+  box-shadow: 0 18px 40px rgba(0,0,0,.22);
+}
+
+.alert-body{
+  padding: 34px 24px;
+  text-align: center;
+}
+
+.alert-title{
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.alert-msg{
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.alert-actions{
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* botón igual al admin */
+.btn-primary{
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+  background: var(--orange);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn-primary:hover{
+  background: var(--orange-2);
+}

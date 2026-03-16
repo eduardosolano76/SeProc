@@ -61,7 +61,9 @@
 					th:classappend="${#strings.startsWith(view,'usuarios-')} ? ' open' : ''">
 					<a class="sub-item" data-view="usuarios-supervisores"
 						th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
-						th:href="@{/admin(view='usuarios-supervisores')}">Supervisores</a>
+						th:href="@{/admin(view='usuarios-supervisores')}">
+						Supervisores
+						</a>
 
 					<a class="sub-item" data-view="usuarios-constructores"
 						th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
@@ -84,6 +86,14 @@
 					<span class="icon"> <img
 						th:src="@{/assets/iconos/usuario_pendiente.png}" alt="">
 					</span> <span class="label">Solicitudes pendientes</span>
+				</button>
+				
+				<!-- Cambiar contraseña -->
+				<button class="nav-item" id="navPassword" type="button"
+					data-view="password" th:classappend="${view=='password'} ? ' active' : ''">
+					<span class="icon"> <img
+						th:src="@{/assets/iconos/cambiarContraseña.png}" alt="">
+					</span> <span class="label">Cambiar contraseña</span>
 				</button>
 
 				<!-- Cerrar sesión -->
@@ -135,7 +145,7 @@
 			</header>
 
 			<section class="panel" aria-label="Sección principal">
-				<div class="panel-head">
+				<div class="panel-head" th:style="${view == 'password' ? 'display: none;' : ''}">
 					<div>
 						<h2 class="panel-title" id="sectionTitle"
 							th:text="${ view=='proyectos' ? 'Proyectos' :
@@ -145,6 +155,7 @@
               view=='usuarios-directores' ? 'Directores' :
               view=='usuarios-central' ? 'Central' :
               view=='usuarios-administrador' ? 'Administrador' :
+              view=='password' ? 'Cambiar contraseña' :
               'Proyectos' }">
 							Supervisores</h2>
 					</div>
@@ -282,6 +293,43 @@
 							</table>
 						</div>
 					</div>
+					
+					<!-- Cambiar Contraseña -->
+					<div th:if="${view=='password'}">
+    <div class="password-card">
+        <div class="password-head">
+            <h3>Cambiar contraseña</h3>
+        </div>
+        <div class="password-body">
+            <p class="text-primary">Los campos con * son obligatorios</p>
+            <p class="text-muted">En seguida podrás cambiar tu contraseña actual del sistema, recuerda que debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.</p>
+            
+            <form id="formCambiarPassword" class="password-form">
+                <div class="form-group">
+                    <label>Contraseña actual*</label>
+                    <input type="password" id="passActual" name="passActual" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Contraseña nueva*</label>
+                    <input type="password" id="passNueva" name="passNueva" required minlength="8">
+                </div>
+                
+                <div class="form-group">
+                    <label>Repite la contraseña nueva*</label>
+                    <input type="password" id="passRepetida" name="passRepetida" required minlength="8">
+                </div>
+                
+                <div class="form-actions-right">
+                    <button type="submit" class="btn-primary">
+                        <img th:src="@{/assets/iconos/sincronizar.png}" alt="" style="width: 16px; margin-right: 6px; filter: brightness(0) invert(1);" onerror="this.style.display='none'">
+                        Cambiar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 				</div>
 			</section>
 		</main>
@@ -389,8 +437,8 @@
 	<script th:inline="javascript">
 		window.LOGGED_USERNAME = /*[[${loggedUsername}]]*/"";
 	</script>
+	
 	<!-- JS -->
-	<script th:src="@{/js/admin/admin.js}" defer></script>
 	<script th:src="@{/js/admin/admin.js}" defer></script>
 	<script th:src="@{/js/admin/admin-projects.js}" defer></script>
 </body>

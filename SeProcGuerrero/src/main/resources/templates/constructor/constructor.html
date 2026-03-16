@@ -28,12 +28,25 @@
       <nav class="nav" aria-label="Menú Constructor">
 
         <!-- Proyectos -->
-        <a class="nav-item active" th:href="@{/constructor}">
-          <span class="icon">
-            <img th:src="@{/assets/iconos/proyectos.png}" alt="">
-          </span>
-          <span class="label">Proyectos</span>
-        </a>
+<a class="nav-item"
+   th:classappend="${vistaActiva == 'projects'} ? ' active' : ''"
+   th:href="@{/constructor}">
+  <span class="icon">
+    <img th:src="@{/assets/iconos/proyectos.png}" alt="">
+  </span>
+  <span class="label">Proyectos</span>
+</a>
+        
+        <!-- Cambiar contraseña -->
+<a class="nav-item"
+   id="navPassword"
+   th:classappend="${vistaActiva == 'password'} ? ' active' : ''"
+   th:href="@{/constructor(view='password')}">
+  <span class="icon">
+    <img th:src="@{/assets/iconos/cambiarContraseña.png}" alt="">
+  </span>
+  <span class="label">Cambiar contraseña</span>
+</a>
 
         <!-- Cerrar sesión -->
         <form th:action="@{/logout}" method="post" style="margin:0;">
@@ -78,31 +91,77 @@
         </div>
       </header>
 
-      <section class="panel" aria-label="Sección principal">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">Proyectos</h2>
-            <div class="panel-sub">Aquí se verán los proyectos</div>
-          </div>
+<section class="panel" aria-label="Sección principal">
 
-          <!-- Botón para solicitar proyectos-->
-          <button class="add-btn" type="button" id="btnAddProyecto" title="Nuevo proyecto">
-            <span class="add-plus">+</span>
-          </button>
-        </div>
+<!-- Vista proyectos -->
+<div id="constructorProjectsView"
+     th:style="${vistaActiva == 'password'} ? 'display: none;' : 'display: block;'">
+  <div class="panel-head">
+    <div>
+      <h2 class="panel-title">Proyectos</h2>
+      <div class="panel-sub">Aquí se verán los proyectos</div>
+    </div>
 
-        <div class="tabs" id="tabsConstructor" role="tablist" aria-label="Filtros de proyectos">
-  <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
-  <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
-  <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
-</div>
+    <button class="add-btn" type="button" id="btnAddProyecto" title="Nuevo proyecto">
+      <span class="add-plus">+</span>
+    </button>
+  </div>
 
-<div class="cards" id="constructorProjectsList">
-  <div class="empty" id="constructorProjectsEmpty">
-    Aún no hay proyectos para mostrar
+  <div class="tabs" id="tabsConstructor" role="tablist" aria-label="Filtros de proyectos">
+    <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+    <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+    <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+  </div>
+
+  <div class="cards" id="constructorProjectsList">
+    <div class="empty" id="constructorProjectsEmpty">
+      Aún no hay proyectos para mostrar
+    </div>
   </div>
 </div>
-      </section>
+
+<!-- Vista cambiar contraseña -->
+<div id="constructorPasswordView"
+     th:style="${vistaActiva == 'password'} ? 'display: block;' : 'display: none;'">
+  <div class="password-card">
+    <div class="password-head">
+      <h3>Cambiar contraseña</h3>
+    </div>
+
+    <div class="password-body">
+      <p class="text-primary">Los campos con * son obligatorios</p>
+      <p class="text-muted">
+        En seguida podrás cambiar tu contraseña actual del sistema, recuerda que debe tener
+        8 caracteres como mínimo, 1 número y 1 carácter especial.
+      </p>
+
+      <form id="formCambiarPasswordConstructor" class="password-form">
+        <div class="form-group">
+          <label>Contraseña actual*</label>
+          <input type="password" id="passActualConstructor" name="passActual" required>
+        </div>
+
+        <div class="form-group">
+          <label>Contraseña nueva*</label>
+          <input type="password" id="passNuevaConstructor" name="passNueva" required minlength="8">
+        </div>
+
+        <div class="form-group">
+          <label>Repite la contraseña nueva*</label>
+          <input type="password" id="passRepetidaConstructor" name="passRepetida" required minlength="8">
+        </div>
+
+        <div class="form-actions-right">
+          <button type="submit" class="dg-btn">
+            Cambiar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</section>
       
             <!-- Detalle del proyecto -->
       
@@ -256,6 +315,23 @@
 
     </main>
   </div>
+  
+  <!-- Modal -->
+<div class="modal alert-modal" id="customAlert" aria-hidden="true">
+  <div class="modal-backdrop" id="customAlertBackdrop"></div>
+
+  <div class="modal-card alert-card" role="dialog" aria-modal="true">
+    <div class="alert-body">
+      <h3 id="customAlertTitle" class="alert-title">Atención</h3>
+      <p id="customAlertMessage" class="alert-msg">Mensaje</p>
+
+      <div class="alert-actions">
+        <button class="btn-secondary" type="button" id="customAlertCancel" style="display: none;">Cancelar</button>
+        <button class="btn-primary" type="button" id="customAlertOk">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- JS del constructor -->
   <script th:src="@{/js/constructor/constructor.js}"></script>

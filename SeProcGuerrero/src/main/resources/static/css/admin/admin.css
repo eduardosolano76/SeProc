@@ -1201,3 +1201,80 @@ body {
     width:100%;
   }
 }
+
+/* Cambiar Contraseña */
+.password-card {
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    margin: 40px auto;
+    max-width: 800px; /* Limita el ancho para que no se vea desproporcionado en pantallas grandes */
+    padding: 30px 34px;
+}
+
+.password-head {
+    /* Un naranja muy tenue para simular el lila de tu imagen de referencia */
+    background: rgba(198, 106, 0, 0.08); 
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.password-head h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.password-body {
+    padding: 24px;
+}
+
+.password-body .text-primary {
+    color: var(--orange-2);
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0 0 8px 0;
+}
+
+.password-body .text-muted {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.password-form .form-group {
+    margin-bottom: 20px;
+}
+
+.password-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 8px;
+}
+
+.password-form input {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    padding: 0 16px;
+    outline: none;
+    font-size: 15px;
+    transition: border 0.2s ease;
+}
+
+.password-form input:focus {
+    border-color: var(--orange);
+}
+
+.form-actions-right {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+

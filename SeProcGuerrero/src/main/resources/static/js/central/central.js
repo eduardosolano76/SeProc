@@ -47,8 +47,9 @@ function syncSidebarWithView(view) {
     navUsuarios?.setAttribute('data-open', 'false');
     submenuUsuarios?.classList.remove('open');
 
-    if (view === 'proyectos') setActiveNav('navProyectos');
-    else setActiveNav('navSolicitudes');
+	if (view === 'proyectos') setActiveNav('navProyectos');
+	else if (view === 'password') setActiveNav('navPassword');
+	else setActiveNav('navSolicitudes');
   }
 }
 
@@ -77,6 +78,13 @@ const sectionTitle = document.getElementById('sectionTitle');
 const sectionSubtitle = document.getElementById('sectionSubtitle');
 const searchInput = document.getElementById('searchCentral');
 
+const customAlert = document.getElementById('customAlert');
+const customAlertBackdrop = document.getElementById('customAlertBackdrop');
+const customAlertTitle = document.getElementById('customAlertTitle');
+const customAlertMessage = document.getElementById('customAlertMessage');
+const customAlertOk = document.getElementById('customAlertOk');
+
+
 async function loadPanelFromUrl(href, push = true) {
   if (!panelContent) {
     window.location.href = href;
@@ -85,7 +93,7 @@ async function loadPanelFromUrl(href, push = true) {
 
   const view = getViewFromUrl(href);
 
-  if (view === 'solicitudes' || view === 'proyectos') {
+  if (view === 'solicitudes' || view === 'proyectos' || view === 'password') {
     window.location.href = href;
     return;
   }
@@ -167,7 +175,7 @@ document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
 window.addEventListener('popstate', (e) => {
   const href = (e.state && e.state.href) ? e.state.href : window.location.href;
   const view = getViewFromUrl(href);
-  if (view === 'solicitudes' || view === 'proyectos') {
+  if (view === 'solicitudes' || view === 'proyectos' || view === 'password') {
     window.location.href = href;
     return;
   }
@@ -212,6 +220,37 @@ function closeModal(modalEl, backdropEl) {
   modalEl?.classList.remove('open');
   backdropEl?.classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function showCustomAlert(message, title = 'Atención') {
+  return new Promise((resolve) => {
+    if (!customAlert || !customAlertBackdrop) {
+      window.alert(message);
+      resolve(true);
+      return;
+    }
+
+    customAlertTitle.textContent = title;
+    customAlertMessage.textContent = message;
+
+    openModal(customAlert, customAlertBackdrop);
+    customAlert.setAttribute('aria-hidden', 'false');
+    customAlertBackdrop.setAttribute('aria-hidden', 'false');
+
+    const handleOk = () => {
+      customAlertOk?.removeEventListener('click', handleOk);
+      closeCustomAlert();
+      resolve(true);
+    };
+
+    customAlertOk?.addEventListener('click', handleOk);
+  });
+}
+
+function closeCustomAlert() {
+  closeModal(customAlert, customAlertBackdrop);
+  customAlert?.setAttribute('aria-hidden', 'true');
+  customAlertBackdrop?.setAttribute('aria-hidden', 'true');
 }
 
 function escapeHtml(str) {
@@ -480,7 +519,7 @@ async function openDetalleSolicitud(idSolicitud) {
     renderDetalleSolicitud(dto);
     openModal(detalleModal, detalleBackdrop);
   } catch (e) {
-    alert('No se pudo cargar detalle: ' + e.message);
+    await showCustomAlert('No se pudo cargar detalle: ' + e.message, 'Error');
   }
 }
 
@@ -491,7 +530,7 @@ async function openDetalleProyecto(idProyecto) {
     renderDetalleProyecto(dto);
     openModal(detalleModal, detalleBackdrop);
   } catch (e) {
-    alert('No se pudo cargar detalle del proyecto: ' + e.message);
+    await showCustomAlert('No se pudo cargar detalle del proyecto: ' + e.message, 'Error');
   }
 }
 
@@ -566,7 +605,7 @@ btnAprobar?.addEventListener('click', async () => {
     }
     openModal(supModal, supBackdrop);
   } catch (e) {
-    alert('No se pudieron cargar supervisores: ' + e.message);
+    await showCustomAlert('No se pudieron cargar supervisores: ' + e.message, 'Error');
   }
 });
 
@@ -579,7 +618,7 @@ btnRechazar?.addEventListener('click', () => {
 btnConfirmarAprobar?.addEventListener('click', async () => {
   const supId = selectSupervisor.value;
   if (!supId) {
-    alert('Selecciona un supervisor');
+    await showCustomAlert('Selecciona un supervisor' + e.message);
     return;
   }
 
@@ -851,3 +890,46 @@ syncSidebarWithView(currentView);
 syncAddButton(currentView);
 bindUserRowClicks();
 loadAndRender();
+
+// Cambiar contraseña
+document.addEventListener('submit', async (e) => {
+  if (e.target.id === 'formCambiarPassword') {
+    e.preventDefault();
+
+    const passActual = document.getElementById('passActual')?.value || '';
+    const passNueva = document.getElementById('passNueva')?.value || '';
+    const passRepetida = document.getElementById('passRepetida')?.value || '';
+
+    const tieneNumero = /[0-9]/.test(passNueva);
+    const tieneEspecial = /[^A-Za-z0-9]/.test(passNueva);
+
+    if (passNueva.length < 8 || !tieneNumero || !tieneEspecial) {
+		await showCustomAlert(
+		  'La nueva contraseña debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.',
+		  'Contraseña débil'
+		);
+      return;
+    }
+
+    if (passNueva !== passRepetida) {
+      await showCustomAlert('Las contraseñas nuevas no coinciden.', 'Error');
+      return;
+    }
+
+    const { ok, text } = await fetchJson('/central/perfil/password', {
+      method: 'POST',
+      body: JSON.stringify({
+        passActual,
+        passNueva
+      })
+    });
+
+    if (!ok) {
+      await showCustomAlert(text || 'Ocurrió un error al cambiar la contraseña.', 'Error');
+      return;
+    }
+
+    await showCustomAlert('Tu contraseña ha sido actualizada correctamente.', 'Éxito');
+    document.getElementById('formCambiarPassword').reset();
+  }
+});

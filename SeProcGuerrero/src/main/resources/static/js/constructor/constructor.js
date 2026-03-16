@@ -11,6 +11,124 @@ function buildHeaders(extra = {}) {
   return headers;
 }
 
+// 
+async function fetchText(url, options = {}) {
+  const headers = buildHeaders({ 'Content-Type': 'application/json', ...(options.headers || {}) });
+  const res = await fetch(url, { ...options, headers });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, text };
+}
+
+const projectsView = document.getElementById('constructorProjectsView');
+const passwordView = document.getElementById('constructorPasswordView');
+
+document.addEventListener('submit', async (e) => {
+  if (e.target.id === 'formCambiarPasswordConstructor') {
+    e.preventDefault();
+
+    const passActual = document.getElementById('passActualConstructor').value;
+    const passNueva = document.getElementById('passNuevaConstructor').value;
+    const passRepetida = document.getElementById('passRepetidaConstructor').value;
+
+    const tieneNumero = /[0-9]/.test(passNueva);
+    const tieneEspecial = /[^A-Za-z0-9]/.test(passNueva);
+
+    if (passNueva.length < 8 || !tieneNumero || !tieneEspecial) {
+      await showCustomAlert(
+        "La nueva contraseña debe tener 8 caracteres como mínimo, 1 número y 1 carácter especial.",
+        "Contraseña débil"
+      );
+      return;
+    }
+
+    if (passNueva !== passRepetida) {
+      await showCustomAlert("Las contraseñas nuevas no coinciden.", "Error");
+      return;
+    }
+
+    const payload = {
+      passActual: passActual,
+      passNueva: passNueva
+    };
+
+    const { ok, text } = await fetchText('/constructor/perfil/password', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (!ok) {
+      await showCustomAlert(text || "Ocurrió un error al cambiar la contraseña.", "Error");
+      return;
+    }
+
+    await showCustomAlert("Tu contraseña ha sido actualizada correctamente.", "Éxito");
+    document.getElementById('formCambiarPasswordConstructor').reset();
+  }
+});
+
+const customAlert = document.getElementById('customAlert');
+const customAlertTitle = document.getElementById('customAlertTitle');
+const customAlertMessage = document.getElementById('customAlertMessage');
+const customAlertOk = document.getElementById('customAlertOk');
+const customAlertCancel = document.getElementById('customAlertCancel');
+
+function closeCustomAlert() {
+  customAlert?.classList.remove('open');
+  customAlert?.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function showCustomAlert(message, title = "Atención") {
+  return new Promise((resolve) => {
+    customAlertTitle.textContent = title;
+    customAlertMessage.textContent = message;
+    customAlertCancel.style.display = 'none';
+
+    customAlert.classList.add('open');
+    customAlert.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    const handleOk = () => {
+      closeCustomAlert();
+      customAlertOk.removeEventListener('click', handleOk);
+      resolve(true);
+    };
+
+    customAlertOk.addEventListener('click', handleOk);
+  });
+}
+
+function showCustomConfirm(message, title = "Confirmar acción") {
+  return new Promise((resolve) => {
+    customAlertTitle.textContent = title;
+    customAlertMessage.textContent = message;
+    customAlertCancel.style.display = 'inline-flex';
+
+    customAlert.classList.add('open');
+    customAlert.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    const handleOk = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const cleanup = () => {
+      closeCustomAlert();
+      customAlertOk.removeEventListener('click', handleOk);
+      customAlertCancel.removeEventListener('click', handleCancel);
+    };
+
+    customAlertOk.addEventListener('click', handleOk);
+    customAlertCancel.addEventListener('click', handleCancel);
+  });
+}
+
 function openModal(modalEl, backdropEl) {
   modalEl?.classList.add('open');
   backdropEl?.classList.add('open');
@@ -188,7 +306,7 @@ async function openDetalleProyecto(idProyecto) {
     renderDetalleProyecto(dto);
     openModal(detalleModal, detalleBackdrop);
   } catch (e) {
-    alert('No se pudo cargar el detalle: ' + e.message);
+   await showCustomAlert('No se pudo cargar el detalle: ' + e.message, 'Error');
   }
 }
 
@@ -197,7 +315,7 @@ async function loadAndRenderProjects() {
     currentList = await fetchProyectos(currentEstado);
     renderCards(currentList);
   } catch (e) {
-    alert('No se pudieron cargar los proyectos: ' + e.message);
+    await showCustomAlert('No se pudieron cargar los proyectos: ' + e.message, 'Error');
   }
 }
 
@@ -333,9 +451,9 @@ document.getElementById('btnEnviarSolicitud')?.addEventListener('click', async (
     await postSolicitud();
     closeProjModal();
     form.reset();
-    alert('Solicitud enviada');
+    await showCustomAlert('Solicitud enviada correctamente.', 'Éxito');
   } catch (e) {
-    alert('No se pudo enviar: ' + e.message);
+    await showCustomAlert('No se pudo enviar: ' + e.message, 'Error');
   }
 });
 

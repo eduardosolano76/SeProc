@@ -1,4 +1,6 @@
-const searchSupervisor = document.getElementById('searchSupervisor');
+// =========================================
+// ELEMENTOS ESTÁTICOS (Modales)
+// =========================================
 const detalleModal = document.getElementById('detalleModal');
 const detalleBackdrop = document.getElementById('detalleBackdrop');
 const btnCerrarDetalle = document.getElementById('btnCerrarDetalle');
@@ -9,6 +11,119 @@ const badgeEstado = document.getElementById('badgeEstado');
 let currentEstado = 'ACTIVO';
 let currentList = [];
 
+// =========================================
+// NAVEGACIÓN AJAX (SPA)
+// =========================================
+function getParam(name, url = window.location.href) {
+    return new URL(url).searchParams.get(name);
+}
+
+function getViewFromUrl(url) {
+    return getParam('view', url) || 'proyectos';
+}
+
+function setActiveNav(view) {
+    document.querySelectorAll('.nav .nav-item').forEach(b => b.classList.remove('active'));
+    if (view === 'password') {
+        document.getElementById('navPassword')?.classList.add('active');
+    } else {
+        document.getElementById('navProyectos')?.classList.add('active');
+    }
+}
+
+async function loadPanelFromUrl(href, push = true) {
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) {
+        window.location.href = href; // Fallback si no encuentra el contenedor
+        return;
+    }
+
+    // Estado de carga temporal
+    mainContent.innerHTML = `<section class="panel"><div class="panel-sub">Cargando contenido...</div></section>`;
+
+    try {
+        const res = await fetch(href, { cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+
+        // Extraer el nuevo contenido y reemplazarlo
+        const newMainContent = doc.getElementById("mainContent");
+        if (newMainContent) {
+            mainContent.innerHTML = newMainContent.innerHTML;
+        } else {
+            window.location.href = href;
+            return;
+        }
+
+        if (push) history.pushState({ href }, "", href);
+
+        setActiveNav(getViewFromUrl(href));
+        initCurrentView(); // Reiniciar la lógica de la vista activa
+
+    } catch (e) {
+        window.location.href = href;
+    }
+}
+
+// Escuchar los botones de Atrás/Adelante del navegador
+window.addEventListener('popstate', (e) => {
+    const href = (e.state && e.state.href) ? e.state.href : window.location.href;
+    loadPanelFromUrl(href, false);
+});
+
+// =========================================
+// EVENTOS GLOBALES (Delegación)
+// =========================================
+// Al usar el document, los eventos sobreviven a la recarga de la página AJAX
+document.addEventListener('click', async (e) => {
+    
+    // 1. Interceptar clics en el menú lateral
+    const navProyectos = e.target.closest('#navProyectos');
+    const navPassword = e.target.closest('#navPassword');
+
+    if (navProyectos) {
+        e.preventDefault();
+        loadPanelFromUrl('/supervisor?view=proyectos', true);
+        return;
+    } 
+    if (navPassword) {
+        e.preventDefault();
+        loadPanelFromUrl('/supervisor?view=password', true);
+        return;
+    }
+
+    // 2. Interceptar clics en los Tabs de proyectos
+    const tab = e.target.closest('#tabsSupervisor .tab');
+    if (tab) {
+        document.querySelectorAll('#tabsSupervisor .tab').forEach(x => x.classList.remove('active'));
+        tab.classList.add('active');
+        currentEstado = tab.dataset.estado;
+        await loadAndRender();
+        return;
+    }
+});
+
+// Buscador
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'searchSupervisor') {
+        const q = (e.target.value || '').toLowerCase().trim();
+        if (!q) {
+            renderCards(currentList);
+            return;
+        }
+        const filtered = currentList.filter(x =>
+            (x.nombreEscuela ?? '').toLowerCase().includes(q) ||
+            (x.constructor ?? '').toLowerCase().includes(q)
+        );
+        renderCards(filtered);
+    }
+});
+
+// =========================================
+// LÓGICA DE PROYECTOS Y MODALES
+// =========================================
 function openModal(modalEl, backdropEl) {
   modalEl?.classList.add('open');
   backdropEl?.classList.add('open');
@@ -123,26 +238,20 @@ function renderDetalleProyecto(dto) {
           <div class="ph-label">Escuela</div>
           <div class="ph-value">${escapeHtml(dto.nombreEscuela)}</div>
         </div>
-
         <div class="ph-box">
           <div class="ph-label">Ubicación</div>
           <div class="ph-value">${escapeHtml(dto.estado)}, ${escapeHtml(dto.municipio)}, ${escapeHtml(dto.ciudad)}</div>
         </div>
-
         <div class="ph-box">
           <div class="ph-label">Tipo de obra</div>
           <div class="ph-value">${escapeHtml(dto.tipoObra)}</div>
         </div>
-
         <div class="ph-box">
           <div class="ph-label">Concepto</div>
           <div class="ph-value">${escapeHtml(dto.concepto)}</div>
         </div>
       </div>
-
-      <div class="ph-note">
-        aquí luego pondremos para que revise evidencias
-      </div>
+      <div class="ph-note">aquí luego pondremos para que revise evidencias</div>
     </div>
   `;
 }
@@ -166,31 +275,7 @@ async function loadAndRender() {
   }
 }
 
-document.querySelectorAll('#tabsSupervisor .tab').forEach(tab => {
-  tab.addEventListener('click', async () => {
-    document.querySelectorAll('#tabsSupervisor .tab').forEach(x => x.classList.remove('active'));
-    tab.classList.add('active');
-    currentEstado = tab.dataset.estado;
-    await loadAndRender();
-  });
-});
-
-searchSupervisor?.addEventListener('input', () => {
-  const q = (searchSupervisor.value || '').toLowerCase().trim();
-
-  if (!q) {
-    renderCards(currentList);
-    return;
-  }
-
-  const filtered = currentList.filter(x =>
-    (x.nombreEscuela ?? '').toLowerCase().includes(q) ||
-    (x.constructor ?? '').toLowerCase().includes(q)
-  );
-
-  renderCards(filtered);
-});
-
+// Eventos de cierre del modal
 btnCerrarDetalle?.addEventListener('click', () => closeModal(detalleModal, detalleBackdrop));
 detalleBackdrop?.addEventListener('click', () => closeModal(detalleModal, detalleBackdrop));
 
@@ -200,4 +285,106 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-loadAndRender();
+// =========================================
+// LÓGICA DE ALERTAS Y CONTRASEÑA
+// =========================================
+const customAlert = document.getElementById('customAlert');
+const customAlertTitle = document.getElementById('customAlertTitle');
+const customAlertMessage = document.getElementById('customAlertMessage');
+const customAlertOk = document.getElementById('customAlertOk');
+
+function showCustomAlert(message, title = "Atención") {
+    return new Promise((resolve) => {
+        if (!customAlertTitle || !customAlertMessage || !customAlert || !customAlertOk) {
+            alert(message);
+            resolve(true);
+            return;
+        }
+
+        customAlertTitle.textContent = title;
+        customAlertMessage.textContent = message;
+        
+        customAlert.classList.add('open');
+        document.getElementById('customAlertBackdrop')?.classList.add('open');
+
+        const handleOk = () => {
+            closeCustomAlert();
+            customAlertOk.removeEventListener('click', handleOk);
+            resolve(true);
+        };
+        customAlertOk.addEventListener('click', handleOk);
+    });
+}
+
+function closeCustomAlert() {
+    customAlert?.classList.remove('open');
+    document.getElementById('customAlertBackdrop')?.classList.remove('open');
+}
+
+function getCsrf() {
+    const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+    const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+    return { token, header };
+}
+
+async function fetchJsonPost(url, payload) {
+    const { token, header } = getCsrf();
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    if (token && header) headers.set(header, token);
+
+    const res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, text };
+}
+
+document.addEventListener('submit', async (e) => {
+    if (e.target.id === 'formCambiarPassword') {
+        e.preventDefault();
+        
+        const passActual = document.getElementById('passActual').value;
+        const passNueva = document.getElementById('passNueva').value;
+        const passRepetida = document.getElementById('passRepetida').value;
+
+        const tieneNumero = /[0-9]/.test(passNueva);
+        const tieneEspecial = /[^A-Za-z0-9]/.test(passNueva); 
+
+        if (passNueva.length < 8 || !tieneNumero || !tieneEspecial) {
+            await showCustomAlert("La nueva contraseña debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.", "Contraseña débil");
+            return;
+        }
+
+        if (passNueva !== passRepetida) {
+            await showCustomAlert("Las contraseñas nuevas no coinciden.", "Error");
+            return;
+        }
+
+        const payload = { passActual, passNueva };
+        const { ok, text } = await fetchJsonPost('/supervisor/perfil/password', payload);
+
+        if (!ok) {
+            await showCustomAlert(text || "Ocurrió un error al cambiar la contraseña.", "Error");
+            return;
+        }
+
+        await showCustomAlert("Tu contraseña ha sido actualizada correctamente.", "Éxito");
+        document.getElementById('formCambiarPassword').reset();
+    }
+});
+
+// =========================================
+// INICIALIZACIÓN PRINCIPAL
+// =========================================
+function initCurrentView() {
+    const view = getViewFromUrl(window.location.href);
+    
+    // Solo carga los proyectos si estamos en esa vista
+    if (view === 'proyectos') {
+        const activeTab = document.querySelector('#tabsSupervisor .tab.active');
+        currentEstado = activeTab ? activeTab.dataset.estado : 'ACTIVO';
+        loadAndRender();
+    }
+}
+
+// Ejecutar al cargar la página por primera vez
+initCurrentView();

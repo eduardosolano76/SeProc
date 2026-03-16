@@ -281,4 +281,30 @@ public class AdminController {
         String url = storageService.publicUrl(u.getFoto());
         return ResponseEntity.ok(Map.of("url", url));
     }
+    
+    // Cambiar contraseña del perfil logueado
+    @PostMapping("/admin/perfil/password")
+    @ResponseBody
+    public ResponseEntity<?> cambiarPassword(@RequestBody Map<String, String> payload, Principal principal) {
+        String username = principal.getName();
+        Usuario usuario = usuarioRepo.findByUsername(username).orElse(null);
+
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        String passActual = payload.get("passActual");
+        String passNueva = payload.get("passNueva");
+
+        // 1. Verificar que la contraseña actual ingresada coincida con la de la BD
+        if (!passwordEncoder.matches(passActual, usuario.getPassword())) {
+            return ResponseEntity.badRequest().body("La contraseña actual es incorrecta.");
+        }
+
+        // 2. Encriptar y guardar la nueva contraseña
+        usuario.setPassword(passwordEncoder.encode(passNueva));
+        usuarioRepo.save(usuario);
+
+        return ResponseEntity.ok().build();
+    }
 }

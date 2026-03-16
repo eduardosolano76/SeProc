@@ -60,6 +60,7 @@ async function loadPanelFromUrl(href, push = true) {
                 "usuarios-directores": "Directores",
                 "usuarios-central": "Central",
                 "usuarios-administrador": "Administrador",
+				"password": "Cambiar contraseña",
             };
             if (sectionTitle) sectionTitle.textContent = titles[view] || "Usuarios";
         }
@@ -117,6 +118,15 @@ document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
 
         loadPanelFromUrl(href, true);
     });
+});
+
+// Cambiar contraseña
+document.getElementById('navPassword')?.addEventListener('click', (ev) => {
+    ev.preventDefault?.();
+
+    closeUsuariosMenu(); // Cierra “Usuarios” y limpia activos
+    setActiveNav('navPassword');
+    loadPanelFromUrl('/admin?view=password', true);
 });
 
 // Back/Forward
@@ -225,6 +235,8 @@ if (v === 'pendientes') {
     submenuUsuarios?.classList.add('open');
     const link = document.querySelector(`#submenuUsuarios .sub-item[data-view="${v}"]`);
     setActiveSubItem(link);
+	} else if (v === 'password') {
+	    setActiveNav('navPassword');
 } else {
     setActiveNav('navProyectos');
 }
@@ -554,6 +566,12 @@ function syncSidebarWithUrl(url) {
         setActiveSubItem(link);
         return;
     }
+	
+	if (view === 'password') {
+	        closeUsuariosMenu();
+	        setActiveNav('navPassword');
+	        return;
+	    }
 
     closeUsuariosMenu();
     setActiveNav('navProyectos');
@@ -575,9 +593,19 @@ const roleByView = {
 
 function syncAddButtonWithUrl(url) {
     const view = getViewFromUrl(url);
+	const panelHead = document.querySelector('.panel-head');
+	
+	if (view === 'password') {
+	        if (panelHead) panelHead.style.display = 'none';
+	        if (btnAdd) btnAdd.style.display = 'none';
+	        return;
+	    }
+		
+		// Para todas las demás vistas, nos aseguramos de mostrar el bloque del título
+		    if (panelHead) panelHead.style.display = 'flex';
 
     // Pendientes: ocultar
-    if (view === 'pendientes') {
+    if (view === 'pendientes' || view=== 'password') {
         if (btnAdd) btnAdd.style.display = 'none';
         return;
     }
@@ -660,3 +688,50 @@ function closeCustomAlert() {
     customAlert.classList.remove('open');
     customAlert.setAttribute('aria-hidden', 'true');
 }
+
+// Validar y enviar contraseña
+document.addEventListener('submit', async (e) => {
+    if (e.target.id === 'formCambiarPassword') {
+        e.preventDefault();
+        
+        const passActual = document.getElementById('passActual').value;
+        const passNueva = document.getElementById('passNueva').value;
+        const passRepetida = document.getElementById('passRepetida').value;
+
+        // 1. Validar reglas de seguridad (8 caracteres, 1 número, 1 carácter especial)
+        const tieneNumero = /[0-9]/.test(passNueva);
+        const tieneEspecial = /[^A-Za-z0-9]/.test(passNueva); 
+
+        if (passNueva.length < 8 || !tieneNumero || !tieneEspecial) {
+            await showCustomAlert("La nueva contraseña debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.", "Contraseña débil");
+            return;
+        }
+
+        // 2. Validar que ambas contraseñas coincidan
+        if (passNueva !== passRepetida) {
+            await showCustomAlert("Las contraseñas nuevas no coinciden.", "Error");
+            return;
+        }
+
+        // 3. Enviar petición al Backend
+        const payload = {
+            passActual: passActual,
+            passNueva: passNueva
+        };
+
+        const { ok, text } = await fetchJson('/admin/perfil/password', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        // 4. Manejar la respuesta del servidor
+        if (!ok) {
+            await showCustomAlert(text || "Ocurrió un error al cambiar la contraseña.", "Error");
+            return;
+        }
+
+        // 5. Éxito
+        await showCustomAlert("Tu contraseña ha sido actualizada correctamente.", "Éxito");
+        document.getElementById('formCambiarPassword').reset(); // Limpia los campos del formulario
+    }
+});
