@@ -75,20 +75,25 @@
 </div>
 
         <!-- Saludo -->
-        <div class="userbox">
-          <div class="hello">
-            Hola, <span th:text="${nombreUsuario}">Usuario</span>!
-            <div class="role-line">
-              Rol: <span th:text="${rolUsuario}">contratista</span>
-            </div>
-          </div>
+<div class="userbox">
+  <div class="hello">
+    <div class="hello-name">
+      Hola, <span th:text="${nombreUsuario}">Usuario</span>!
+    </div>
+    <div class="hello-role">
+      Rol: <span th:text="${rolUsuario == 'contratista' ? 'Constructor' : rolUsuario}">constructor</span>
+    </div>
+  </div>
 
-          <!-- Foto (solo UI) -->
-          <button class="profile" type="button" title="Perfil" th:attr="data-foto=${fotoUrl}">
-            <img th:if="${fotoUrl != null}" th:src="${fotoUrl}" alt="Foto de perfil">
-            <img th:if="${fotoUrl == null}" th:src="@{/assets/iconos/sinFotoPerfil.png}" alt="">
-          </button>
-        </div>
+  <input id="profileFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+
+  <button class="profile" id="profileBtn" type="button"
+          title="Cambiar foto" th:attr="data-foto=${fotoUrl}">
+    <img id="profileImg" alt="Foto de perfil" style="display: none;">
+    <img id="profileFallback" th:src="@{/assets/iconos/sinFotoPerfil.png}" alt="Foto por defecto">
+  </button>
+</div>
+        
       </header>
 
 <section class="panel" aria-label="Sección principal">

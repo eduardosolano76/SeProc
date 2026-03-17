@@ -129,7 +129,7 @@
 						Hola, <span th:text="${nombreUsuario}">Usuario</span>!
 						<div
 							style="font-size: 14px; font-weight: 600; color: #6c6c6c; margin-top: 4px;">
-							Rol: <span th:text="${rolUsuario}">administrador</span>
+							Rol: <span th:text="${rolUsuario == 'administrador' ? 'Administrador' : rolUsuario}">administrador</span>
 						</div>
 					</div>
 

@@ -61,6 +61,7 @@ async function loadPanelFromUrl(href, push = true) {
 
         setActiveNav(getViewFromUrl(href));
         initCurrentView(); // Reiniciar la lógica de la vista activa
+		initProfilePhoto();
 
     } catch (e) {
         window.location.href = href;
@@ -338,6 +339,100 @@ async function fetchJsonPost(url, payload) {
     return { ok: res.ok, status: res.status, text };
 }
 
+// =========================================
+// FOTO DE PERFIL
+// =========================================
+const profileBtn = document.getElementById('profileBtn');
+const profileFile = document.getElementById('profileFile');
+const profileImg = document.getElementById('profileImg');
+const profileFallback = document.getElementById('profileFallback');
+
+function addCacheBuster(url) {
+    if (!url) return url;
+    return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+function renderProfilePhoto(url) {
+    if (!profileImg || !profileFallback) return;
+
+    if (!url || url.trim() === "") {
+        profileImg.style.display = 'none';
+        profileFallback.style.display = 'block';
+        return;
+    }
+
+    profileImg.onload = () => {
+        profileImg.style.display = 'block';
+        profileFallback.style.display = 'none';
+    };
+
+    profileImg.onerror = () => {
+        profileImg.style.display = 'none';
+        profileFallback.style.display = 'block';
+    };
+
+    profileImg.src = addCacheBuster(url);
+}
+
+async function uploadProfilePhoto(file) {
+    const { token, header } = getCsrf();
+
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch("/supervisor/perfil/foto", {
+        method: "POST",
+        body: form,
+        headers: token && header ? { [header]: token } : {}
+    });
+
+    const text = await res.text();
+    let data = {};
+
+    try {
+        data = text ? JSON.parse(text) : {};
+    } catch (e) {
+        data = {};
+    }
+
+    if (!res.ok) {
+        throw new Error(data?.message || text || "No se pudo subir la foto.");
+    }
+
+    return data.url;
+}
+
+function initProfilePhoto() {
+    const fotoUrl = profileBtn?.dataset?.foto;
+    renderProfilePhoto(fotoUrl);
+
+    profileBtn?.addEventListener('click', () => profileFile?.click());
+
+    profileFile?.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const previewUrl = URL.createObjectURL(file);
+        profileImg.src = previewUrl;
+        profileImg.style.display = 'block';
+        profileFallback.style.display = 'none';
+
+        try {
+            const url = await uploadProfilePhoto(file);
+            renderProfilePhoto(url);
+
+            if (profileBtn) {
+                profileBtn.dataset.foto = url;
+            }
+        } catch (err) {
+            renderProfilePhoto(profileBtn?.dataset?.foto || "");
+            await showCustomAlert(err.message || "Error al subir la foto.", "Error");
+        } finally {
+            profileFile.value = "";
+        }
+    });
+}
+
 document.addEventListener('submit', async (e) => {
     if (e.target.id === 'formCambiarPassword') {
         e.preventDefault();
@@ -388,3 +483,4 @@ function initCurrentView() {
 
 // Ejecutar al cargar la página por primera vez
 initCurrentView();
+initProfilePhoto();

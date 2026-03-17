@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.UsuarioRepository;
@@ -78,5 +80,52 @@ public class SupervisorController {
         usuarioRepo.save(usuario);
 
         return ResponseEntity.ok().build();
+    }
+    
+    // Subir foto
+    @PostMapping(value = "/supervisor/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
+
+        String username = principal.getName();
+        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
+        if (u == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        try {
+            // borrar foto anterior si existe
+            storageService.deleteIfExists(u.getFoto());
+
+            String key = storageService.saveProfilePhoto(u.getIdUsuario(), u.getUsername(), file);
+            u.setFoto(key);
+            usuarioRepo.save(u);
+
+            String url = storageService.publicUrl(key);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("No se pudo subir la foto.");
+        }
+    }
+
+    @GetMapping("/supervisor/perfil/foto")
+    @ResponseBody
+    public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
+        String username = principal.getName();
+        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
+
+        if (u == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        String url = storageService.publicUrl(u.getFoto());
+        if (url == null || url.isBlank()) {
+            url = "/assets/iconos/sinFotoPerfil.png";
+        }
+
+        return ResponseEntity.ok(Map.of("url", url));
     }
 }
