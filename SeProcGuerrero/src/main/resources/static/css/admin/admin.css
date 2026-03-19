@@ -299,8 +299,10 @@ body {
 .panel-sub {
 	margin-top: 18px;
 	color: var(--muted);
-	font-size: 16px;
-} /* Tabla de pendientes */
+	font-size: 14px;
+} 
+
+/* Tabla de pendientes */
 .pendientes-wrap {
 	margin-top: 18px;
 	background: rgba(255, 255, 255, .55);
@@ -317,7 +319,7 @@ body {
 .pendientes-note {
 	margin: 0 0 12px;
 	color: var(--muted);
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 }
 
@@ -732,8 +734,9 @@ body {
 }
 
 .panel-sub {
-	font-size: 16px;
+	font-size: 14px;
 	color: var(--muted);
+	font-weight: 600;
 }
 
 .add-btn {
@@ -865,6 +868,12 @@ body {
 	color: rgba(0, 0, 0, .60);
 	font-weight: 600;
 	font-size: 12px;
+}
+
+.cards {
+	display: flex;
+	flex-direction: column;
+	gap: 10px; /* Puedes aumentar o disminuir este número (ej. 20px o 12px)*/
 }
 
 .state-dot {
@@ -1168,4 +1177,57 @@ body {
 		background: rgba(255, 255, 255, .18);
 		font-weight: 800;
 	}
+}
+
+/* --- Estilos de; menu desplegable de perfil --- */
+.profile-dropdown {
+    position: absolute;
+    top: 60px; /* Se ajusta debajo de la foto */
+    right: 0;
+    background: rgb(255, 255, 255); 
+    border-radius: 16px;
+    padding: 8px 0;
+    width: 200px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: none; /* Oculto por defecto */
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.profile-dropdown.open {
+    display: flex;
+    animation: fadeInDropdown 0.2s ease-out;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(0, 0, 0); /* Texto gris claro */
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgb(192, 192, 192); /* Hover sutil claro */
+}
+
+.dropdown-item img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12); /* Línea separadora */
+    margin: 6px 0;
 }

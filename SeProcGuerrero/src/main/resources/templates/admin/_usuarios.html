@@ -11,6 +11,14 @@
 
 		<!-- Tabla usuarios -->
 		<div th:if="${!#lists.isEmpty(usuarios)}" style="margin-top: 14px;">
+
+			<!-- Instruciones para el admin -->
+			<p class="panel-sub"
+				style="margin-top: 0; margin-bottom: 14px; font-size: 14px;">
+				Selecciona un usuario de la tabla para ver su detalle o actualizar
+				su información.
+				</p>
+				
 			<table class="table">
 				<thead>
 					<tr>

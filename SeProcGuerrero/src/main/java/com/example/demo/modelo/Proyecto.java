@@ -1,10 +1,24 @@
 package com.example.demo.modelo;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "proyecto")
+@Getter
+@Setter
 public class Proyecto {
 
     @Id
@@ -30,20 +44,4 @@ public class Proyecto {
         if (fechaAprobacion == null) fechaAprobacion = LocalDateTime.now();
         if (estadoProyecto == null) estadoProyecto = "ACTIVO";
     }
-
-    // getters/setters
-    public Integer getIdProyecto() { return idProyecto; }
-    public void setIdProyecto(Integer idProyecto) { this.idProyecto = idProyecto; }
-
-    public SolicitudProyecto getSolicitud() { return solicitud; }
-    public void setSolicitud(SolicitudProyecto solicitud) { this.solicitud = solicitud; }
-
-    public Long getIdUsuarioSupervisor() { return idUsuarioSupervisor; }
-    public void setIdUsuarioSupervisor(Long idUsuarioSupervisor) { this.idUsuarioSupervisor = idUsuarioSupervisor; }
-
-    public String getEstadoProyecto() { return estadoProyecto; }
-    public void setEstadoProyecto(String estadoProyecto) { this.estadoProyecto = estadoProyecto; }
-
-    public LocalDateTime getFechaAprobacion() { return fechaAprobacion; }
-    public void setFechaAprobacion(LocalDateTime fechaAprobacion) { this.fechaAprobacion = fechaAprobacion; }
 }

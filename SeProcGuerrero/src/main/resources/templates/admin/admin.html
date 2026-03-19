@@ -62,10 +62,8 @@
 					<a class="sub-item" data-view="usuarios-supervisores"
 						th:classappend="${view=='usuarios-supervisores'} ? ' active' : ''"
 						th:href="@{/admin(view='usuarios-supervisores')}">
-						Supervisores
-						</a>
-
-					<a class="sub-item" data-view="usuarios-constructores"
+						Supervisores </a> <a class="sub-item"
+						data-view="usuarios-constructores"
 						th:classappend="${view=='usuarios-constructores'} ? ' active' : ''"
 						th:href="@{/admin(view='usuarios-constructores')}">Constructores</a>
 
@@ -87,10 +85,11 @@
 						th:src="@{/assets/iconos/usuario_pendiente.png}" alt="">
 					</span> <span class="label">Solicitudes pendientes</span>
 				</button>
-				
+
 				<!-- Cambiar contraseña -->
 				<button class="nav-item" id="navPassword" type="button"
-					data-view="password" th:classappend="${view=='password'} ? ' active' : ''">
+					data-view="password"
+					th:classappend="${view=='password'} ? ' active' : ''">
 					<span class="icon"> <img
 						th:src="@{/assets/iconos/cambiarContraseña.png}" alt="">
 					</span> <span class="label">Cambiar contraseña</span>
@@ -124,28 +123,49 @@
 				</div>
 
 				<!-- Saludo en el Perfil -->
-				<div class="userbox">
+				<div class="userbox" style="position: relative;">
+				
 					<div class="hello">
-						Hola, <span th:text="${nombreUsuario}">Usuario</span>!
+						Hola, <span th:text="${nombreUsuario}">Usuario</span>
 						<div
 							style="font-size: 14px; font-weight: 600; color: #6c6c6c; margin-top: 4px;">
-							Rol: <span th:text="${rolUsuario == 'administrador' ? 'Administrador' : rolUsuario}">administrador</span>
+							Rol: <span
+								th:text="${rolUsuario == 'administrador' ? 'Administrador' : rolUsuario}">administrador</span>
 						</div>
+						
 					</div>
 
-					<input id="profileFile" type="file" accept="image/*" hidden>
-
-					<button class="profile" id="profileBtn" type="button"
-						title="Cambiar foto" th:attr="data-foto=${fotoUrl}">
-						<img id="profileImg" alt="Foto de perfil" style="display: none;">
-						<img id="profileFallback" th:src="@{/assets/iconos/sinFotoPerfil.png}"
-							alt="">
+<button class="profile" id="profileBtn" type="button"
+						title="Opciones de foto de perfil" th:attr="data-foto=${fotoUrl}">
+                        <img id="profileImg" th:src="${fotoUrl}" alt="Foto de perfil"
+                             onerror="this.src='/assets/iconos/sinFotoPerfil.png';">
 					</button>
+					
+					<div class="profile-dropdown" id="profileMenuDropdown">
+						<div class="dropdown-item" id="btnViewPhoto">
+							<img th:src="@{/assets/iconos/verFoto.png}" alt="Ver foto">
+							<span>Ver foto</span>
+						</div>
+						<div class="dropdown-item" id="btnUploadPhoto">
+							<img th:src="@{/assets/iconos/subirFoto.png}" alt="Subir foto">
+							<span>Subir foto</span>
+						</div>
+						
+						<div class="dropdown-divider"></div>
+						
+						<div class="dropdown-item" id="btnDeletePhoto">
+							<img th:src="@{/assets/iconos/eliminar.png}" alt="Quitar foto">
+							<span>Quitar foto</span>
+						</div>
+					</div>
 				</div>
 			</header>
+			
+			<input id="profileFile" type="file" accept="image/*" hidden>
 
 			<section class="panel" aria-label="Sección principal">
-				<div class="panel-head" th:style="${view == 'password' ? 'display: none;' : ''}">
+				<div class="panel-head"
+					th:style="${view == 'password' ? 'display: none;' : ''}">
 					<div>
 						<h2 class="panel-title" id="sectionTitle"
 							th:text="${ view=='proyectos' ? 'Proyectos' :
@@ -159,10 +179,12 @@
               'Proyectos' }">
 							Supervisores</h2>
 					</div>
-					
-					<button class="add-btn" id="btnAdd" type="button" style="display: none;">
-        			<img id="btnAddIcon" th:src="@{/assets/iconos/agregar-proyecto.png}" alt="Agregar">
-    </button>
+
+					<button class="add-btn" id="btnAdd" type="button"
+						style="display: none;">
+						<img id="btnAddIcon"
+							th:src="@{/assets/iconos/agregar-proyecto.png}" alt="Agregar">
+					</button>
 
 				</div>
 
@@ -170,22 +192,21 @@
 
 					<!-- Vista proyectos -->
 					<div th:if="${view=='proyectos'}">
-    <div class="panel-sub">
-        Consulta y administra todos los proyectos del sistema
-    </div>
+						<div class="panel-sub">Consulta y administra todos los
+							proyectos del sistema</div>
 
-    <div class="tabs" id="adminProjectTabs" role="tablist" aria-label="Filtros de proyectos">
-        <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
-        <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
-        <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
-    </div>
+						<div class="tabs" id="adminProjectTabs" role="tablist"
+							aria-label="Filtros de proyectos">
+							<button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+							<button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+							<button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+						</div>
 
-    <div class="cards" id="adminProjectsList">
-        <div class="empty" id="adminProjectsEmpty">
-            Aún no hay proyectos para mostrar.
-        </div>
-    </div>
-</div>
+						<div class="cards" id="adminProjectsList">
+							<div class="empty" id="adminProjectsEmpty">Aún no hay
+								proyectos para mostrar.</div>
+						</div>
+					</div>
 
 					<!-- Vista usuarios por rol -->
 					<div th:if="${#strings.startsWith(view,'usuarios-')}">
@@ -197,6 +218,14 @@
 						<!-- Tabla usuarios -->
 						<div th:if="${!#lists.isEmpty(usuarios)}"
 							style="margin-top: 14px;">
+
+						<!-- Instrucciones para el admin -->
+							<p class="panel-sub"
+								style="margin-top: 0; margin-bottom: 14px; font-size: 14px;">
+								Selecciona un usuario de la tabla para ver su detalle o
+								actualizar su información.
+							</p>
+
 							<div class="table-wrap">
 								<table class="table">
 									<thead>
@@ -232,7 +261,8 @@
 							Selecciona un rol y aprueba al usuario. Hasta que lo apruebes, <b>no
 								podrá iniciar sesión</b>.
 						</p>
-
+						
+						
 						<!-- Mensaje vacío -->
 						<div th:if="${#lists.isEmpty(pendientes)}" class="badge">No
 							hay solicitudes pendientes.</div>
@@ -293,43 +323,47 @@
 							</table>
 						</div>
 					</div>
-					
+
 					<!-- Cambiar Contraseña -->
 					<div th:if="${view=='password'}">
-    <div class="password-card">
-        <div class="password-head">
-            <h3>Cambiar contraseña</h3>
-        </div>
-        <div class="password-body">
-            <p class="text-primary">Los campos con * son obligatorios</p>
-            <p class="text-muted">En seguida podrás cambiar tu contraseña actual del sistema, recuerda que debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.</p>
-            
-            <form id="formCambiarPassword" class="password-form">
-                <div class="form-group">
-                    <label>Contraseña actual*</label>
-                    <input type="password" id="passActual" name="passActual" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Contraseña nueva*</label>
-                    <input type="password" id="passNueva" name="passNueva" required minlength="8">
-                </div>
-                
-                <div class="form-group">
-                    <label>Repite la contraseña nueva*</label>
-                    <input type="password" id="passRepetida" name="passRepetida" required minlength="8">
-                </div>
-                
-                <div class="form-actions-right">
-                    <button type="submit" class="btn-primary">
-                        <img th:src="@{/assets/iconos/sincronizar.png}" alt="" style="width: 16px; margin-right: 6px; filter: brightness(0) invert(1);" onerror="this.style.display='none'">
-                        Cambiar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+						<div class="password-card">
+							<div class="password-head">
+								<h3>Cambiar contraseña</h3>
+							</div>
+							<div class="password-body">
+								<p class="text-primary">Los campos con * son obligatorios</p>
+								<p class="text-muted">En seguida podrás cambiar tu
+									contraseña actual del sistema, recuerda que debe tener 8
+									caracteres como mínimo, 1 número y 1 caracter especial.</p>
+
+								<form id="formCambiarPassword" class="password-form">
+									<div class="form-group">
+										<label>Contraseña actual*</label> <input type="password"
+											id="passActual" name="passActual" required>
+									</div>
+
+									<div class="form-group">
+										<label>Contraseña nueva*</label> <input type="password"
+											id="passNueva" name="passNueva" required minlength="8">
+									</div>
+
+									<div class="form-group">
+										<label>Repite la contraseña nueva*</label> <input
+											type="password" id="passRepetida" name="passRepetida"
+											required minlength="8">
+									</div>
+
+									<div class="form-actions-right">
+										<button type="submit" class="btn-primary">
+											<img th:src="@{/assets/iconos/sincronizar.png}" alt=""
+												style="width: 16px; margin-right: 6px; filter: brightness(0) invert(1);"
+												onerror="this.style.display='none'"> Cambiar
+										</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
 				</div>
 			</section>
 		</main>
@@ -393,53 +427,63 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<div class="modal" id="customAlert" aria-hidden="true">
 		<div class="modal-backdrop" id="customAlertBackdrop"></div>
-		
+
 		<div class="modal-card alert-card" role="dialog" aria-modal="true">
 			<div class="alert-body">
 				<h3 id="customAlertTitle" class="alert-title">Atención</h3>
 				<p id="customAlertMessage" class="alert-msg">Mensaje</p>
-				
+
 				<div class="alert-actions">
-					<button class="btn-secondary" type="button" id="customAlertCancel" style="display: none;">Cancelar</button>
+					<button class="btn-secondary" type="button" id="customAlertCancel"
+						style="display: none;">Cancelar</button>
 					<button class="btn-primary" type="button" id="customAlertOk">Aceptar</button>
 				</div>
 			</div>
 		</div>
 	</div>
-	
+
 	<div class="modal" id="projectDetailModal" aria-hidden="true">
-    <div class="modal-backdrop"></div>
+		<div class="modal-backdrop"></div>
 
-    <div class="modal-card project-modal-card" role="dialog" aria-modal="true" aria-labelledby="projectDetailTitle">
-        <div class="modal-head">
-            <h3 id="projectDetailTitle">Detalle del proyecto</h3>
-            <button class="modal-close" type="button" id="projectDetailClose">✕</button>
-        </div>
+		<div class="modal-card project-modal-card" role="dialog"
+			aria-modal="true" aria-labelledby="projectDetailTitle">
+			<div class="modal-head">
+				<h3 id="projectDetailTitle">Detalle del proyecto</h3>
+				<button class="modal-close" type="button" id="projectDetailClose">✕</button>
+			</div>
 
-        <div class="project-top">
-            <div class="badge-state" id="projectBadgeEstado">—</div>
-            <div class="project-meta" id="projectDetalleMeta"></div>
-        </div>
+			<div class="project-top">
+				<div class="badge-state" id="projectBadgeEstado">—</div>
+				<div class="project-meta" id="projectDetalleMeta"></div>
+			</div>
 
-        <div class="project-detail-body" id="projectDetalleBody"></div>
+			<div class="project-detail-body" id="projectDetalleBody"></div>
 
-        <div class="action-row project-action-row">
-            <button class="action-btn ok" type="button" id="btnAdminProyectoActivo">Activo</button>
-            <button class="action-btn" type="button" id="btnAdminProyectoInactivo">Inactivo</button>
-            <button class="action-btn bad" type="button" id="btnAdminProyectoFinalizado">Finalizado</button>
-        </div>
-    </div>
-</div>
+			<div class="action-row project-action-row">
+				<button class="action-btn ok" type="button"
+					id="btnAdminProyectoActivo">Activo</button>
+				<button class="action-btn" type="button"
+					id="btnAdminProyectoInactivo">Inactivo</button>
+				<button class="action-btn bad" type="button"
+					id="btnAdminProyectoFinalizado">Finalizado</button>
+			</div>
+		</div>
+	</div>
+	
 
 	<script th:inline="javascript">
 		window.LOGGED_USERNAME = /*[[${loggedUsername}]]*/"";
 	</script>
-	
+
 	<!-- JS -->
-	<script th:src="@{/js/admin/admin.js}" defer></script>
+
+	<!-- El script principal del admin, que maneja la navegación, el perfil y otras funciones comunes -->
+	<script type="module" th:src="@{/js/admin/app.js}" defer></script>
+
+	<!-- Solo para la vista de proyectos, así no cargamos el código innecesariamente en otras vistas -->
 	<script th:src="@{/js/admin/admin-projects.js}" defer></script>
 </body>
 </html>

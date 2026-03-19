@@ -4,12 +4,13 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,293 +19,211 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.example.demo.dto.CambiarPasswordDto;
 import com.example.demo.dto.UsuarioUpsertDto;
-import com.example.demo.modelo.Rol;
 import com.example.demo.modelo.Usuario;
-import com.example.demo.repository.RolRepository;
-import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.service.AdminService;
+import com.example.demo.service.PerfilService;
+import com.example.demo.service.UsuarioService;
 import com.example.demo.storage.StorageService;
 
 @Controller
 public class AdminController {
 
-    private final UsuarioRepository usuarioRepo;
-    private final RolRepository rolRepo;
-    
-    private final PasswordEncoder passwordEncoder;
-    
-    private final StorageService storageService;
+	// Inyección de dependencias a través del constructor
+	private final AdminService adminService;
+	private final UsuarioService usuarioService;
+	private final PerfilService perfilService;
+	private final StorageService storageService;
 
-    public AdminController(UsuarioRepository usuarioRepo, RolRepository rolRepo, PasswordEncoder passwordEncoder,
-    		StorageService storageService) {
-        this.usuarioRepo = usuarioRepo;
-        this.rolRepo = rolRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.storageService = storageService;
-    }
+	// Constructor para inyectar las dependencias
+	public AdminController(AdminService adminService, UsuarioService usuarioService, PerfilService perfilService,
+			StorageService storageService) {
+		this.adminService = adminService;
+		this.usuarioService = usuarioService;
+		this.perfilService = perfilService;
+		this.storageService = storageService;
+	}
 
-    @GetMapping("/admin")
-    public String admin(Model model, Principal principal,
-    		@RequestParam(value = "view", required = false, defaultValue = "proyectos") String view,
-            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
+	// Método para manejar las solicitudes GET a la ruta "/admin", 
+	//mostrando la vista del admin con la información del usuario logueado,
+	@GetMapping("/admin")
+	public String admin(Model model, Principal principal,
+			@RequestParam(value = "view", required = false, defaultValue = "proyectos") String view,
+			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
 
-        // username del que inició sesión
-        String username = principal.getName();
+		// username del que inició sesión
+		String username = principal.getName();
+		
+		// Para mostrar el username en el header del admin
+		model.addAttribute("loggedUsername", username);
+		
+		// Se intenta obtener el usuario para mostrar su nombre completo, rol y foto de perfil. 
+		//Si no se encuentra, se muestra el username y rol "sin rol" por defecto.
+		Usuario usuario = null;
         
-        model.addAttribute("loggedUsername", username);
-
-        // traer usuario de BD
-        var usuario = usuarioRepo.findByUsername(username).orElse(null);
-
+		// Se captura la excepción que lanza el servicio si el usuario no se encuentra, 
+		//para conservar el comportamiento actual sin mostrar errores en el admin.
+		try {
+            usuario = perfilService.obtenerUsuarioPorUsername(username);
+        } catch (ResponseStatusException ex) {
+            // Se conserva comportamiento actual
+        }
+		
+		// Si se encuentra el usuario, se obtiene su nombre completo, rol y foto de perfil. 
+		//Si no tiene foto, se muestra una imagen por defecto.
         if (usuario != null) {
-            String nombreCompleto = usuario.getNombre() /*+ " " + usuario.getApellido()*/;
+            String nombreCompleto = usuario.getNombre();
             String rol = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "sin rol";
-            
+
             String fotoUrl = storageService.publicUrl(usuario.getFoto());
             if (fotoUrl == null || fotoUrl.isBlank()) {
                 fotoUrl = "/assets/iconos/sinFotoPerfil.png";
             }
-            model.addAttribute("fotoUrl", fotoUrl);
 
+            model.addAttribute("fotoUrl", fotoUrl);
             model.addAttribute("nombreUsuario", nombreCompleto);
             model.addAttribute("rolUsuario", rol);
         } else {
+            model.addAttribute("fotoUrl", "/assets/iconos/sinFotoPerfil.png");
             model.addAttribute("nombreUsuario", username);
             model.addAttribute("rolUsuario", "sin rol");
         }
-        
-        // Pendientes para aprobar
-        model.addAttribute("pendientes", usuarioRepo.findByActivoFalse());
 
-        // View actual para que el HTML sepa qué mostrar
+        // Se obtiene la lista de usuarios pendientes de aprobación para mostrarla en la sección correspondiente del admin
+        model.addAttribute("pendientes", adminService.obtenerPendientes());
+        // Se agrega la vista solicitada al modelo para mostrarla en el admin
         model.addAttribute("view", view);
-
-        // Lista de usuarios para la vista de usuarios (por rol)
-        List<Usuario> usuarios = List.of();
         
-        switch (view) {
-        case "usuarios-supervisores":
-            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("supervisor");
-            break;
-        case "usuarios-constructores":
-            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("contratista"); // o "constructor" según tu BD
-            break;
-        case "usuarios-directores":
-            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("direccion");
-            break;
-        case "usuarios-central":
-            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("central");
-            break;
-        case "usuarios-administrador":
-            usuarios = usuarioRepo.findByActivoTrueAndRol_NombreIgnoreCase("administrador");
-            break;
-        default:
-            // proyectos / pendientes / etc.
-            break;
-    }
+        // Se obtiene la lista de usuarios activos según la vista solicitada, 
+        //utilizando el servicio de usuario, y se agrega al modelo para mostrarla en el admin
+        List<Usuario> usuarios = usuarioService.listarUsuariosPorView(view);
         model.addAttribute("usuarios", usuarios);
-        
+
         boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(requestedWith);
         if (isAjax && view != null && view.startsWith("usuarios-")) {
             return "admin/_usuarios :: usuariosContent";
         }
         
-        model.addAttribute("proyectos", List.of()); // temporal mientras se conecta la BD
-        
+        // Se agrega una lista vacía de proyectos al modelo para evitar errores en la vista del admin,
+        model.addAttribute("proyectos", List.of());
+        //y se devuelve la vista del admin para mostrarla al usuario
         return "admin/admin";
     }
-    
-    // Aprobar
+	
+	// Método para manejar las solicitudes POST a la ruta "/admin/usuarios/{id}/aprobar", 
+	//aprobando al usuario con el ID especificado y asignándole el rol indicado,
     @PostMapping("/admin/usuarios/{id}/aprobar")
     public String aprobarUsuario(@PathVariable Long id, @RequestParam String rolNombre) {
-
-        Usuario u = usuarioRepo.findById(id).orElseThrow();
-        Rol rol = rolRepo.findByNombre(rolNombre).orElseThrow();
-
-        u.setRol(rol);
-        u.setActivo(true);
-
-        usuarioRepo.save(u);
+        adminService.aprobarUsuario(id, rolNombre);
         return "redirect:/admin?view=pendientes";
     }
     
-    // Rechazar
+    // Método para manejar las solicitudes POST a la ruta "/admin/usuarios/{id}/rechazar"
     @PostMapping("/admin/usuarios/{id}/rechazar")
     public String rechazarUsuario(@PathVariable Long id) {
-
-        Usuario u = usuarioRepo.findById(id).orElseThrow();
-
-        // Solo seguridad: no dejes borrar al admin accidentalmente
-        if ("admin".equalsIgnoreCase(u.getUsername())) {
-            return "redirect:/admin?view=pendientes";
-        }
-
-        usuarioRepo.deleteById(id);
+        adminService.rechazarUsuario(id);
         return "redirect:/admin?view=pendientes";
     }
     
-    // Endpoint para traer un usuario por ID (JSON)
+    // Método para manejar las solicitudes GET a la ruta "/admin/usuarios/{id}", 
+    //devolviendo la información del usuario en formato JSON
     @GetMapping("/admin/usuarios/{id}")
     @ResponseBody
     public ResponseEntity<Usuario> verUsuario(@PathVariable Long id) {
-        Usuario u = usuarioRepo.findById(id).orElse(null);
-        if (u == null) return ResponseEntity.notFound().build();
-
-        // Nota: Como Usuario tiene rol ManyToOne EAGER, vendrá rol también.
+        Usuario u = usuarioService.obtenerPorId(id);
         return ResponseEntity.ok(u);
     }
     
-    // Actualizar
+    // Método para manejar las solicitudes POST a la ruta "/admin/usuarios/{id}/actualizar",
+    //actualizando la información del usuario con el ID especificado según los datos recibidos en formato JSON
     @PostMapping("/admin/usuarios/{id}/actualizar")
     @ResponseBody
     public ResponseEntity<?> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioUpsertDto dto) {
-        Usuario u = usuarioRepo.findById(id).orElse(null);
-        if (u == null) return ResponseEntity.notFound().build();
-
-        // No tocar admin por seguridad
-        if ("admin".equalsIgnoreCase(u.getUsername())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se puede editar el admin.");
-        }
-
-        // Validaciones simples
-        if (dto.getUsername() != null && !dto.getUsername().equalsIgnoreCase(u.getUsername())
-                && usuarioRepo.existsByUsername(dto.getUsername())) {
-            return ResponseEntity.badRequest().body("Username ya existe.");
-        }
-
-        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(u.getEmail())
-                && usuarioRepo.existsByEmail(dto.getEmail())) {
-            return ResponseEntity.badRequest().body("Email ya existe.");
-        }
-
-        u.setNombre(dto.getNombre());
-        u.setApellido(dto.getApellido());
-        u.setUsername(dto.getUsername());
-        u.setEmail(dto.getEmail());
-
-        // Si quieres permitir cambiar password desde modal
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            u.setPassword(passwordEncoder.encode(dto.getPassword()));
-        }
-
-        // Si quieres permitir cambiar rol desde modal
-        if (dto.getRolNombre() != null && !dto.getRolNombre().isBlank()) {
-            Rol rol = rolRepo.findByNombre(dto.getRolNombre()).orElse(null);
-            if (rol == null) return ResponseEntity.badRequest().body("Rol no válido.");
-            u.setRol(rol);
-        }
-
-        usuarioRepo.save(u);
-        return ResponseEntity.ok().build();
+    	try {
+    		usuarioService.actualizarUsuario(id, dto);
+    		return ResponseEntity.ok(Map.of("message", "Usuario actualizado correctamente."));
+    	}catch(ResponseStatusException ex) {
+			return ResponseEntity
+					.status(ex.getStatusCode())
+					.body(Map.of("message", ex.getReason()));
+		}
     }
     
-    // Eliminar
+    // Método para manejar las solicitudes POST a la ruta "/admin/usuarios/{id}/eliminar",
+    //eliminando al usuario con el ID especificado, con una validación para no 
+    //eliminar al usuario logueado, y devolviendo una respuesta JSON indicando el resultado de la operación
     @PostMapping("/admin/usuarios/{id}/eliminar")
     @ResponseBody
     public ResponseEntity<?> eliminarUsuario(@PathVariable Long id, Principal principal) {
-        Usuario u = usuarioRepo.findById(id).orElse(null);
-        if (u == null) return ResponseEntity.notFound().build();
-
-        // username del que está logueado
-        String loggedUsername = principal.getName();
-
-        // NO permitir auto-eliminación (aplica para admin y para cualquier rol)
-        if (u.getUsername() != null && u.getUsername().equalsIgnoreCase(loggedUsername)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No puedes eliminar tu propio usuario mientras estás logueado.");
+        try {
+            usuarioService.eliminarUsuario(id, principal.getName());
+            return ResponseEntity.ok(Map.of("message", "Usuario eliminado correctamente."));
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity
+            		.status(ex.getStatusCode())
+            		.body(Map.of("message", ex.getReason()));
+        }catch (DataIntegrityViolationException ex) {
+        	return ResponseEntity
+					.status(HttpStatus.CONFLICT)
+					.body(Map.of("message", "No se puede eliminar el usuario porque tiene datos relacionados."));
         }
-
-        usuarioRepo.deleteById(id);
-        return ResponseEntity.ok().build();
     }
     
-    // Crear
+    // Método para manejar las solicitudes POST a la ruta "/admin/usuarios/crear",
+	//creando un nuevo usuario según los datos recibidos en formato JSON
     @PostMapping("/admin/usuarios/crear")
     @ResponseBody
     public ResponseEntity<?> crearUsuario(@RequestBody UsuarioUpsertDto dto) {
-
-        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body("Password es obligatorio.");
+        try {
+            usuarioService.crearUsuario(dto);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Usuario creado correctamente."));
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity
+                    .status(ex.getStatusCode())
+                    .body(Map.of("message", ex.getReason()));
         }
-        if (usuarioRepo.existsByUsername(dto.getUsername())) {
-            return ResponseEntity.badRequest().body("Username ya existe.");
-        }
-        if (usuarioRepo.existsByEmail(dto.getEmail())) {
-            return ResponseEntity.badRequest().body("Email ya existe.");
-        }
-
-        Usuario u = new Usuario();
-        u.setNombre(dto.getNombre());
-        u.setApellido(dto.getApellido());
-        u.setUsername(dto.getUsername());
-        u.setEmail(dto.getEmail());
-        u.setPassword(passwordEncoder.encode(dto.getPassword()));
-        u.setActivo(true);
-
-        if (dto.getRolNombre() != null && !dto.getRolNombre().isBlank()) {
-            Rol rol = rolRepo.findByNombre(dto.getRolNombre()).orElse(null);
-            if (rol == null) return ResponseEntity.badRequest().body("Rol no válido.");
-            u.setRol(rol);
-        }
-
-        usuarioRepo.save(u);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
     
+    // Método para manejar las solicitudes POST a la ruta "/perfil/foto",
+    //subiendo una nueva foto de perfil para el usuario logueado, recibiendo
+    //el archivo de la foto en formato multipart/form-data, 
+    //y devolviendo una respuesta JSON con la URL pública de la nueva foto
     @PostMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody
     public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
-
-        String username = principal.getName();
-        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
-        if (u == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        // (opcional) borrar anterior
-        storageService.deleteIfExists(u.getFoto());
-
-        String key = storageService.saveProfilePhoto(u.getIdUsuario(), u.getUsername(), file);
-        u.setFoto(key);
-        usuarioRepo.save(u);
-
-        String url = storageService.publicUrl(key);
-        return ResponseEntity.ok(Map.of("url", url));
+        Map<String, String> response = perfilService.subirFotoPerfil(file, principal.getName());
+        return ResponseEntity.ok(response);
     }
-
+    
+    // Método para manejar las solicitudes GET a la ruta "/perfil/foto"
     @GetMapping("/perfil/foto")
     @ResponseBody
     public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
-        String username = principal.getName();
-        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
-        if (u == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        String url = storageService.publicUrl(u.getFoto());
-        return ResponseEntity.ok(Map.of("url", url));
+        Map<String, String> response = perfilService.obtenerFotoPerfil(principal.getName());
+        return ResponseEntity.ok(response);
     }
     
-    // Cambiar contraseña del perfil logueado
+    // Método para manejar las solicitudes POST a la ruta "/perfil/password",
+    //cambiando la contraseña del usuario logueado según los datos recibidos
     @PostMapping("/admin/perfil/password")
     @ResponseBody
-    public ResponseEntity<?> cambiarPassword(@RequestBody Map<String, String> payload, Principal principal) {
-        String username = principal.getName();
-        Usuario usuario = usuarioRepo.findByUsername(username).orElse(null);
-
-        if (usuario == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
-        }
-
-        String passActual = payload.get("passActual");
-        String passNueva = payload.get("passNueva");
-
-        // 1. Verificar que la contraseña actual ingresada coincida con la de la BD
-        if (!passwordEncoder.matches(passActual, usuario.getPassword())) {
-            return ResponseEntity.badRequest().body("La contraseña actual es incorrecta.");
-        }
-
-        // 2. Encriptar y guardar la nueva contraseña
-        usuario.setPassword(passwordEncoder.encode(passNueva));
-        usuarioRepo.save(usuario);
-
+    public ResponseEntity<?> cambiarPassword(@RequestBody CambiarPasswordDto dto, Principal principal) {
+        perfilService.cambiarPassword(principal.getName(), dto);
         return ResponseEntity.ok().build();
+    }
+    
+    // Método para manejar las solicitudes DELETE a la ruta "/perfil/foto"
+    @DeleteMapping("/perfil/foto")
+    @ResponseBody
+    public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
+        perfilService.eliminarFotoPerfil(principal.getName());
+        return ResponseEntity.ok(Map.of(
+            "message", "Foto eliminada correctamente", 
+            "url", "/assets/iconos/sinFotoPerfil.png"
+        ));
     }
 }
