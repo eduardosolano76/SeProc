@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -134,6 +135,25 @@ public class DireccionController {
         }
 
         return ResponseEntity.ok(Map.of("url", url));
+    }
+    
+    // Eliminar foto de perfil
+    @DeleteMapping("/direccion/perfil/foto")
+    @ResponseBody
+    public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
+        String username = principal.getName();
+        Usuario usuario = usuarioRepo.findByUsername(username).orElse(null);
+
+        if (usuario != null && usuario.getFoto() != null) {
+            storageService.deleteIfExists(usuario.getFoto());
+            usuario.setFoto(null);
+            usuarioRepo.save(usuario);
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Foto eliminada correctamente", 
+            "url", "/assets/iconos/sinFotoPerfil.png"
+        ));
     }
 
 }

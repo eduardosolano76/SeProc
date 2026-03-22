@@ -11,7 +11,8 @@ import {
 } from './navigation.js';
 
 let currentView = getParam('view') || 'solicitudes';
-let currentEstado = currentView === 'proyectos' ? 'ACTIVO' : 'PENDIENTE';
+let currentEstadoSolicitudes = 'PENDIENTE';
+let currentEstadoProyectos = 'ACTIVO';
 let currentList = [];
 
 let selectedSolicitudId = null;
@@ -28,18 +29,15 @@ function currentIsSolicitudView() {
   return currentView === 'solicitudes';
 }
 
-function updateCurrentEstadoByView() {
-  if (currentView === 'proyectos') {
-    currentEstado = currentEstado && ['ACTIVO', 'INACTIVO', 'FINALIZADO'].includes(currentEstado)
-      ? currentEstado
-      : 'ACTIVO';
-    return;
-  }
-
-  if (currentView === 'solicitudes') {
-    currentEstado = currentEstado && ['PENDIENTE', 'APROBADA', 'RECHAZADA'].includes(currentEstado)
-      ? currentEstado
-      : 'PENDIENTE';
+function syncTabsVisually() {
+  if (currentIsProjectView()) {
+    document.querySelectorAll('#tabsProyectos .tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`#tabsProyectos .tab[data-estado="${currentEstadoProyectos}"]`);
+    if (activeTab) activeTab.classList.add('active');
+  } else if (currentIsSolicitudView()) {
+    document.querySelectorAll('#tabsSolicitudes .tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`#tabsSolicitudes .tab[data-estado="${currentEstadoSolicitudes}"]`);
+    if (activeTab) activeTab.classList.add('active');
   }
 }
 
@@ -61,16 +59,20 @@ function drawCurrentList() {
 async function loadAndRender() {
   try {
     currentView = getParam('view') || 'solicitudes';
-    updateCurrentEstadoByView();
+    syncTabsVisually(); // Sincroniza la pestaña correcta
+
+    // Limpiamos el buscador
+    const searchInput = document.getElementById('searchCentral');
+    if (searchInput) searchInput.value = '';
 
     if (currentIsProjectView()) {
-      currentList = await api.fetchProyectos(currentEstado);
+      currentList = await api.fetchProyectos(currentEstadoProyectos); // Usa la variable de proyectos
       drawCurrentList();
       return;
     }
 
     if (currentIsSolicitudView()) {
-      currentList = await api.fetchSolicitudes(currentEstado);
+      currentList = await api.fetchSolicitudes(currentEstadoSolicitudes); // Usa la variable de solicitudes
       drawCurrentList();
     }
   } catch (e) {
@@ -113,14 +115,69 @@ function initProfilePhoto() {
   const profileBtn = document.getElementById('profileBtn');
   const profileFile = document.getElementById('profileFile');
 
+  const btnViewPhoto = document.getElementById('btnViewPhoto');
+  const btnUploadPhoto = document.getElementById('btnUploadPhoto');
+  const btnDeletePhoto = document.getElementById('btnDeletePhoto');
+
   const fotoUrl = profileBtn?.dataset?.foto || '';
   ui.renderProfilePhoto(fotoUrl);
 
-  profileBtn?.addEventListener('click', () => profileFile?.click());
+  // 1. Abrir/Cerrar menú
+  profileBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ui.toggleProfileMenu();
+  });
 
+  // 2. Subir foto
+  btnUploadPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    profileFile?.click();
+  });
+
+  // 3. Ver foto
+  btnViewPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+    if (currentFoto && !currentFoto.includes('sinFotoPerfil.png')) {
+      window.open(currentFoto, '_blank');
+    } else {
+      ui.showCustomAlert("Aún no has subido una foto de perfil.", "Ver foto");
+    }
+  });
+
+  // 4. Eliminar foto
+  btnDeletePhoto?.addEventListener('click', async () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+
+    if (!currentFoto || currentFoto.includes('sinFotoPerfil.png')) {
+      return ui.showCustomAlert("No tienes una foto de perfil personalizada para eliminar.", "Aviso");
+    }
+
+    const confirmado = await ui.showCustomConfirm("¿Estás seguro de que deseas eliminar tu foto de perfil?", "Eliminar foto");
+    if (!confirmado) return;
+
+    try {
+      const data = await api.deleteProfilePhoto();
+      const defaultUrl = data?.url || '/assets/iconos/sinFotoPerfil.png';
+      ui.renderProfilePhoto(defaultUrl);
+      if (profileBtn) profileBtn.dataset.foto = defaultUrl;
+      ui.showCustomAlert("Tu foto de perfil ha sido eliminada.", "Éxito");
+    } catch (err) {
+      ui.showCustomAlert(err.message, "Error");
+    }
+  });
+
+  // 5. Manejar cambio de archivo
   profileFile?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    const profileImg = document.getElementById('profileImg');
+    const profileFallback = document.getElementById('profileFallback');
+    profileImg.src = URL.createObjectURL(file);
+    profileImg.style.display = 'block';
+    profileFallback.style.display = 'none';
 
     try {
       const url = await api.uploadProfilePhoto(file);
@@ -267,21 +324,32 @@ async function handleDeleteUser() {
   }
 }
 
-/* navegacion*/
+/* Navegacion*/
 function bindNavigation() {
-  document.getElementById('navSolicitudes')?.addEventListener('click', (e) => {
+  document.getElementById('navSolicitudes')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/central?view=solicitudes';
+    await loadPanelFromUrl({
+      href: '/central?view=solicitudes',
+      push: true,
+      onAfterLoad: () => { bindTabs(); loadAndRender(); }
+    });
   });
 
-  document.getElementById('navProyectos')?.addEventListener('click', (e) => {
+  document.getElementById('navProyectos')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/central?view=proyectos';
+    await loadPanelFromUrl({
+      href: '/central?view=proyectos',
+      push: true,
+      onAfterLoad: () => { bindTabs(); loadAndRender(); }
+    });
   });
 
-  document.getElementById('navPassword')?.addEventListener('click', (e) => {
+  document.getElementById('navPassword')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/central?view=password';
+    await loadPanelFromUrl({
+      href: '/central?view=password',
+      push: true
+    });
   });
 
   const navUsuarios = document.getElementById('navUsuarios');
@@ -326,11 +394,6 @@ function bindNavigation() {
     const href = (e.state && e.state.href) ? e.state.href : window.location.href;
     const view = getViewFromUrl(href);
 
-    if (view === 'solicitudes' || view === 'proyectos' || view === 'password') {
-      window.location.href = href;
-      return;
-    }
-
     currentView = view;
     syncSidebarWithView(currentView);
     syncAddButton(currentView);
@@ -340,6 +403,8 @@ function bindNavigation() {
       push: false,
       onAfterLoad: () => {
         bindUserRowClicks();
+        bindTabs();
+        loadAndRender();
       }
     });
   });
@@ -354,7 +419,7 @@ function bindTabs() {
     t.addEventListener('click', async () => {
       document.querySelectorAll('#tabsSolicitudes .tab').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
-      currentEstado = t.dataset.estado;
+      currentEstadoSolicitudes = t.dataset.estado; // Guarda en solicitudes
       await loadAndRender();
     });
   });
@@ -366,7 +431,7 @@ function bindTabs() {
     t.addEventListener('click', async () => {
       document.querySelectorAll('#tabsProyectos .tab').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
-      currentEstado = t.dataset.estado;
+      currentEstadoProyectos = t.dataset.estado; // Guarda en proyectos
       await loadAndRender();
     });
   });

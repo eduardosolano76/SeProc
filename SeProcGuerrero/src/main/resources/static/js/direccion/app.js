@@ -1,6 +1,6 @@
 import * as api from './api.js';
 import * as ui from './ui.js';
-import { getParam, syncSidebarWithView } from './navigation.js';
+import { getParam, getViewFromUrl, syncSidebarWithView, loadPanelFromUrl } from './navigation.js';
 
 let currentView = getParam('view') || 'proyectos';
 let currentEstado = 'ACTIVO';
@@ -14,11 +14,22 @@ function updateCurrentEstadoByView() {
     : 'ACTIVO';
 }
 
+function syncTabsVisually() {
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.querySelector(`.tabs .tab[data-estado="${currentEstado}"]`);
+  if (activeTab) activeTab.classList.add('active');
+}
+
 async function loadAndRender() {
   if (currentView !== 'proyectos') return;
 
   try {
     updateCurrentEstadoByView();
+    syncTabsVisually();
+    
+    const searchDireccion = document.getElementById('searchDireccion');
+    if (searchDireccion) searchDireccion.value = '';
+
     currentList = await api.fetchProyectos(currentEstado);
     ui.renderCards(currentList, openDetalleProyecto);
   } catch (e) {
@@ -45,8 +56,6 @@ function bindTabs() {
     tab.dataset.bound = 'true';
 
     tab.addEventListener('click', async () => {
-      document.querySelectorAll('#tabsDireccion .tab').forEach(x => x.classList.remove('active'));
-      tab.classList.add('active');
       currentEstado = tab.dataset.estado;
       await loadAndRender();
     });
@@ -106,14 +115,69 @@ function initProfilePhoto() {
   const profileBtn = document.getElementById('profileBtn');
   const profileFile = document.getElementById('profileFile');
 
+  const btnViewPhoto = document.getElementById('btnViewPhoto');
+  const btnUploadPhoto = document.getElementById('btnUploadPhoto');
+  const btnDeletePhoto = document.getElementById('btnDeletePhoto');
+
   const fotoUrl = profileBtn?.dataset?.foto || '';
   ui.renderProfilePhoto(fotoUrl);
 
-  profileBtn?.addEventListener('click', () => profileFile?.click());
+  // 1. Abrir/Cerrar menú
+  profileBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ui.toggleProfileMenu();
+  });
 
+  // 2. Subir foto
+  btnUploadPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    profileFile?.click();
+  });
+
+  // 3. Ver foto
+  btnViewPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+    if (currentFoto && !currentFoto.includes('sinFotoPerfil.png')) {
+      window.open(currentFoto, '_blank');
+    } else {
+      ui.showCustomAlert("Aún no has subido una foto de perfil.", "Ver foto");
+    }
+  });
+
+  // 4. Eliminar foto
+  btnDeletePhoto?.addEventListener('click', async () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+
+    if (!currentFoto || currentFoto.includes('sinFotoPerfil.png')) {
+      return ui.showCustomAlert("No tienes una foto de perfil personalizada para eliminar.", "Aviso");
+    }
+
+    const confirmado = await ui.showCustomConfirm("¿Estás seguro de que deseas eliminar tu foto de perfil?", "Eliminar foto");
+    if (!confirmado) return;
+
+    try {
+      const data = await api.deleteProfilePhoto();
+      const defaultUrl = data?.url || '/assets/iconos/sinFotoPerfil.png';
+      ui.renderProfilePhoto(defaultUrl);
+      if (profileBtn) profileBtn.dataset.foto = defaultUrl;
+      ui.showCustomAlert("Tu foto de perfil ha sido eliminada.", "Éxito");
+    } catch (err) {
+      ui.showCustomAlert(err.message, "Error");
+    }
+  });
+
+  // 5. Manejar cambio de archivo
   profileFile?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    const profileImg = document.getElementById('profileImg');
+    const profileFallback = document.getElementById('profileFallback');
+    profileImg.src = URL.createObjectURL(file);
+    profileImg.style.display = 'block';
+    profileFallback.style.display = 'none';
 
     try {
       const url = await api.uploadProfilePhoto(file);
@@ -168,14 +232,45 @@ function bindPasswordForm() {
 }
 
 function bindNavigation() {
-  document.getElementById('navProyectos')?.addEventListener('click', (e) => {
+  document.querySelector('.nav-item[href*="view=proyectos"]')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/direccion?view=proyectos';
+    await loadPanelFromUrl({
+      href: '/direccion?view=proyectos',
+      push: true,
+      onAfterLoad: (newView) => {
+        currentView = newView;
+        bindTabs();
+        loadAndRender();
+      }
+    });
   });
 
-  document.getElementById('navPassword')?.addEventListener('click', (e) => {
+  document.querySelector('.nav-item[href*="view=password"]')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/direccion?view=password';
+    await loadPanelFromUrl({
+      href: '/direccion?view=password',
+      push: true,
+      onAfterLoad: (newView) => {
+        currentView = newView;
+      }
+    });
+  });
+  
+  window.addEventListener('popstate', async (e) => {
+    const href = (e.state && e.state.href) ? e.state.href : window.location.href;
+    const view = getViewFromUrl(href);
+
+    currentView = view;
+    syncSidebarWithView(currentView);
+
+    await loadPanelFromUrl({
+      href,
+      push: false,
+      onAfterLoad: () => {
+        bindTabs();
+        loadAndRender();
+      }
+    });
   });
 }
 

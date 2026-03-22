@@ -1225,9 +1225,3 @@ body {
     height: 20px;
     object-fit: contain;
 }
-
-.dropdown-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.12); /* Línea separadora */
-    margin: 6px 0;
-}

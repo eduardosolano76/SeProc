@@ -856,3 +856,54 @@ body{
   justify-content: center !important;
   gap: 12px !important;
 }
+
+/* --- Estilos del menú desplegable de perfil --- */
+.userbox {
+    position: relative;
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: 60px; /* Se ajusta debajo de la foto */
+    right: 0;
+    background: rgb(255, 255, 255); 
+    border-radius: 16px;
+    padding: 8px 0;
+    width: 200px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: none; /* Oculto por defecto */
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.profile-dropdown.open {
+    display: flex;
+    animation: fadeInDropdown 0.2s ease-out;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(0, 0, 0);
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgb(192, 192, 192);
+}
+
+.dropdown-item img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}

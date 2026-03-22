@@ -88,3 +88,19 @@ export async function postSolicitud(payload) {
     throw new Error(msg || 'Error al guardar');
   }
 }
+
+
+export async function deleteProfilePhoto() {
+  const headers = buildHeaders();
+  const res = await fetch('/constructor/perfil/foto', { 
+    method: 'DELETE', 
+    headers 
+  });
+  
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = {}; }
+  
+  if (!res.ok) throw new Error(data?.message || "No se pudo eliminar la foto.");
+  return data;
+}

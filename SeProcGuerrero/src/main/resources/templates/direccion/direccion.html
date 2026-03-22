@@ -32,6 +32,7 @@
 
         <!-- Proyectos -->
 <a class="nav-item"
+id="navProyectos"
    th:classappend="${view == 'proyectos'} ? ' active' : ''"
    th:href="@{/direccion(view='proyectos')}">
   <span class="icon">
@@ -42,6 +43,7 @@
         
         <!-- Cambiar contraseña -->
         <a class="nav-item"
+        id="navPassword"
    th:classappend="${view == 'password'} ? ' active' : ''"
    th:href="@{/direccion(view='password')}">
   <span class="icon">
@@ -77,8 +79,7 @@
         </div>
 
         <!-- Saludo -->
-<div class="userbox">
-  <div class="hello">
+<div class="userbox" style="position: relative;"> <div class="hello">
     <div class="hello-name">
       Hola, <span th:text="${nombreUsuario}">Usuario</span>!
     </div>
@@ -90,14 +91,29 @@
   <input id="profileFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
 
   <button class="profile" id="profileBtn" type="button"
-          title="Cambiar foto" th:attr="data-foto=${fotoUrl}">
+          title="Opciones de foto de perfil" th:attr="data-foto=${fotoUrl}">
     <img id="profileImg" alt="Foto de perfil" style="display: none;">
     <img id="profileFallback" th:src="@{/assets/iconos/sinFotoPerfil.png}" alt="Foto por defecto">
   </button>
+  
+  <div class="profile-dropdown" id="profileMenuDropdown">
+      <div class="dropdown-item" id="btnViewPhoto">
+          <img th:src="@{/assets/iconos/verFoto.png}" alt="Ver foto">
+          <span>Ver foto</span>
+      </div>
+      <div class="dropdown-item" id="btnUploadPhoto">
+          <img th:src="@{/assets/iconos/subirFoto.png}" alt="Subir foto">
+          <span>Subir foto</span>
+      </div>
+      <div class="dropdown-item" id="btnDeletePhoto">
+          <img th:src="@{/assets/iconos/eliminar.png}" alt="Quitar foto">
+          <span>Quitar foto</span>
+      </div>
+  </div>
 </div>
       </header>
 
-<section class="panel" aria-label="Sección principal">
+<section class="panel" id="panelContent" aria-label="Sección principal">
 
   <!-- Vista proyectos -->
   <div th:if="${view == 'proyectos'}">
@@ -202,9 +218,10 @@
       <h3 id="customAlertTitle" class="alert-title">Atención</h3>
       <p id="customAlertMessage" class="alert-msg">Mensaje</p>
 
-      <div class="alert-actions">
-        <button class="btn-primary" type="button" id="customAlertOk">Aceptar</button>
-      </div>
+<div class="alert-actions">
+  <button class="btn-secondary" type="button" id="customAlertCancel" style="display: none;">Cancelar</button>
+  <button class="btn-primary" type="button" id="customAlertOk">Aceptar</button>
+</div>
     </div>
   </div>
 </div>

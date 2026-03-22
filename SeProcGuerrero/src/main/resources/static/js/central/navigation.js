@@ -78,11 +78,6 @@ export async function loadPanelFromUrl({
 
   const view = getViewFromUrl(href);
 
-  if (view === 'solicitudes' || view === 'proyectos' || view === 'password') {
-    window.location.href = href;
-    return;
-  }
-
   panelContent.innerHTML = `<div class="panel-sub">Cargando...</div>`;
 
   try {
@@ -100,15 +95,30 @@ export async function loadPanelFromUrl({
     if (newPanelContent) panelContent.innerHTML = newPanelContent.innerHTML;
     else panelContent.innerHTML = html;
 
-    if (sectionTitle) {
-      sectionTitle.textContent =
-        view === 'usuarios-supervisores' ? 'Supervisores' :
-        view === 'usuarios-constructores' ? 'Constructores' :
-        view === 'usuarios-directores' ? 'Directores' : 'Usuarios';
-    }
-
-    if (sectionSubtitle) {
-      sectionSubtitle.textContent = 'Gestiona usuarios del sistema';
+    // --- AQUÍ ESTÁ LA MAGIA: Actualizamos el título y subtítulo para TODAS las vistas ---
+    if (sectionTitle && sectionSubtitle) {
+      if (view === 'solicitudes') {
+        sectionTitle.textContent = 'Solicitudes de proyectos';
+        sectionSubtitle.textContent = 'Revisa y decide solicitudes de proyecto';
+      } else if (view === 'proyectos') {
+        sectionTitle.textContent = 'Proyectos';
+        sectionSubtitle.textContent = 'Consulta y administra los proyectos registrados';
+      } else if (view === 'password') {
+        sectionTitle.textContent = 'Cambiar contraseña';
+        sectionSubtitle.textContent = 'Actualiza tu contraseña del sistema';
+      } else if (view === 'usuarios-supervisores') {
+        sectionTitle.textContent = 'Supervisores';
+        sectionSubtitle.textContent = 'Gestiona usuarios del sistema';
+      } else if (view === 'usuarios-constructores') {
+        sectionTitle.textContent = 'Constructores';
+        sectionSubtitle.textContent = 'Gestiona usuarios del sistema';
+      } else if (view === 'usuarios-directores') {
+        sectionTitle.textContent = 'Directores';
+        sectionSubtitle.textContent = 'Gestiona usuarios del sistema';
+      } else {
+        sectionTitle.textContent = 'Usuarios';
+        sectionSubtitle.textContent = 'Gestiona usuarios del sistema';
+      }
     }
 
     if (push) history.pushState({ href }, '', href);

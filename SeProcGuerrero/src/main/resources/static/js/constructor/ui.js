@@ -232,3 +232,21 @@ export function syncSidebarWithUrl(view) {
         setActiveNav('navProyectos');
     }
 }
+
+// Menú desplegable de la foto de perfil
+const profileMenuDropdown = document.getElementById('profileMenuDropdown');
+
+export function closeProfileMenu() {
+    profileMenuDropdown?.classList.remove('open');
+}
+
+export function toggleProfileMenu() {
+    profileMenuDropdown?.classList.toggle('open');
+}
+
+// Escuchar clics en todo el documento para cerrar el menú
+document.addEventListener('click', (e) => {
+    if (profileMenuDropdown?.classList.contains('open') && !e.target.closest('.userbox')) {
+        closeProfileMenu();
+    }
+});

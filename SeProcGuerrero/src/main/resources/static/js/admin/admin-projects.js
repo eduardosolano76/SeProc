@@ -1,7 +1,5 @@
 // admin-projects.js
 (function() {
-    const searchInput = document.getElementById('searchInput');
-
     const projectModal = document.getElementById('projectDetailModal');
     const projectDetailClose = document.getElementById('projectDetailClose');
     const projectDetalleMeta = document.getElementById('projectDetalleMeta');
@@ -12,7 +10,8 @@
     const btnAdminProyectoInactivo = document.getElementById('btnAdminProyectoInactivo');
     const btnAdminProyectoFinalizado = document.getElementById('btnAdminProyectoFinalizado');
 
-    let currentEstado = 'ACTIVO';
+ 	// Agregamos una variable de memoria para el estado actual 
+    let currentEstadoMemoria = 'ACTIVO'; 
     let currentList = [];
     let selectedProjectId = null;
 
@@ -234,7 +233,7 @@
         if (!isProjectsView()) return;
 
         try {
-            currentList = await fetchProjects(currentEstado);
+            currentList = await fetchProjects(currentEstadoMemoria); // Usa la memoria, no el HTML
             renderCards(currentList);
         } catch (e) {
             alert('No se pudieron cargar los proyectos: ' + e.message);
@@ -249,7 +248,7 @@
             tab.addEventListener('click', async () => {
                 document.querySelectorAll('#adminProjectTabs .tab').forEach(x => x.classList.remove('active'));
                 tab.classList.add('active');
-                currentEstado = tab.dataset.estado;
+                currentEstadoMemoria = tab.dataset.estado; // Actualizamos la memoria
                 await loadProjects();
             });
         });
@@ -258,9 +257,8 @@
     function filterProjects() {
         if (!isProjectsView()) return;
 
-        // Busca el input fresco en el DOM en lugar de usar la constante global
         const currentSearchInput = document.getElementById('searchInput');
-        const q = (searchInput?.value || '').toLowerCase().trim();
+        const q = (currentSearchInput?.value || '').toLowerCase().trim();
 
         if (!q) {
             renderCards(currentList);
@@ -279,17 +277,23 @@
     function initProjectsView() {
         if (!document.getElementById('adminProjectsList')) return;
 
-        // 1. Buscamos qué pestaña viene con la clase 'active' en el HTML recién inyectado
-        const tabActiva = document.querySelector('#adminProjectTabs .tab.active');
-
-        // 2. Sincronizamos nuestra variable de memoria con el DOM
-        if (tabActiva) {
-            currentEstado = tabActiva.dataset.estado;
+        // Forzamos visualmente la pestaña basada en MEMORIA 
+        document.querySelectorAll('#adminProjectTabs .tab').forEach(t => t.classList.remove('active'));
+        const targetTab = document.querySelector(`#adminProjectTabs .tab[data-estado="${currentEstadoMemoria}"]`);
+        
+        if (targetTab) {
+            targetTab.classList.add('active');
         } else {
-            currentEstado = 'ACTIVO'; // Respaldo por si acaso
+            // Si la memoria tiene algo raro, forzamos ACTIVO
+            currentEstadoMemoria = 'ACTIVO';
+            const defaultTab = document.querySelector(`#adminProjectTabs .tab[data-estado="ACTIVO"]`);
+            if (defaultTab) defaultTab.classList.add('active');
         }
 
-		// 3. Ahora sí, enlazamos los clics y cargamos
+        // Limpiamos el buscador al cambiar de vista para no ocultar resultados
+        const currentSearchInput = document.getElementById('searchInput');
+        if (currentSearchInput) currentSearchInput.value = '';
+
         bindTabs();
         loadProjects();
     }
@@ -302,7 +306,7 @@
         try {
             await changeProjectState(selectedProjectId, 'ACTIVO');
             closeProjectModal();
-            currentEstado = 'ACTIVO';
+            currentEstadoMemoria = 'ACTIVO';
             const tab = document.querySelector('#adminProjectTabs .tab[data-estado="ACTIVO"]');
             document.querySelectorAll('#adminProjectTabs .tab').forEach(x => x.classList.remove('active'));
             tab?.classList.add('active');
@@ -317,7 +321,7 @@
         try {
             await changeProjectState(selectedProjectId, 'INACTIVO');
             closeProjectModal();
-            currentEstado = 'INACTIVO';
+            currentEstadoMemoria = 'INACTIVO';
             const tab = document.querySelector('#adminProjectTabs .tab[data-estado="INACTIVO"]');
             document.querySelectorAll('#adminProjectTabs .tab').forEach(x => x.classList.remove('active'));
             tab?.classList.add('active');
@@ -332,7 +336,7 @@
         try {
             await changeProjectState(selectedProjectId, 'FINALIZADO');
             closeProjectModal();
-            currentEstado = 'FINALIZADO';
+            currentEstadoMemoria = 'FINALIZADO';
             const tab = document.querySelector('#adminProjectTabs .tab[data-estado="FINALIZADO"]');
             document.querySelectorAll('#adminProjectTabs .tab').forEach(x => x.classList.remove('active'));
             tab?.classList.add('active');
@@ -342,11 +346,11 @@
         }
     });
 
-    searchInput?.addEventListener('input', filterProjects);
+    const initialSearchInput = document.getElementById('searchInput');
+    initialSearchInput?.addEventListener('input', filterProjects);
 
     document.addEventListener('DOMContentLoaded', initProjectsView);
 
-    // Escuchamos el evento personalizado que lanzamos desde navigation.js cada vez que se carga un panel
     window.addEventListener('panelLoaded', (e) => {
         if (e.detail && e.detail.view === 'proyectos') {
             initProjectsView();

@@ -76,3 +76,22 @@ export async function changePassword(payload) {
     body: JSON.stringify(payload)
   });
 }
+
+// Eliminar foto de perfil
+export async function deleteProfilePhoto() {
+  const headers = buildHeaders();
+  const res = await fetch('/direccion/perfil/foto', {
+    method: 'DELETE',
+    headers
+  });
+
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = {}; }
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudo eliminar la foto.");
+  }
+
+  return data;
+}

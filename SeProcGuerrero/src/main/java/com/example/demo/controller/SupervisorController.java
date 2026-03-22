@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -127,5 +128,23 @@ public class SupervisorController {
         }
 
         return ResponseEntity.ok(Map.of("url", url));
+    }
+    
+    @DeleteMapping("/supervisor/perfil/foto")
+    @ResponseBody
+    public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
+        String username = principal.getName();
+        Usuario u = usuarioRepo.findByUsername(username).orElse(null);
+        
+        if (u != null && u.getFoto() != null) {
+            storageService.deleteIfExists(u.getFoto());
+            u.setFoto(null);
+            usuarioRepo.save(u);
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Foto eliminada correctamente", 
+            "url", "/assets/iconos/sinFotoPerfil.png"
+        ));
     }
 }

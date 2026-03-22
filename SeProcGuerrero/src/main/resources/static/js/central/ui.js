@@ -65,6 +65,7 @@ export function showCustomAlert(message, title = 'Atención') {
   const customAlertTitle = document.getElementById('customAlertTitle');
   const customAlertMessage = document.getElementById('customAlertMessage');
   const customAlertOk = document.getElementById('customAlertOk');
+  const customAlertCancel = document.getElementById('customAlertCancel');
 
   return new Promise((resolve) => {
     if (!customAlert || !customAlertBackdrop) {
@@ -75,6 +76,7 @@ export function showCustomAlert(message, title = 'Atención') {
 
     if (customAlertTitle) customAlertTitle.textContent = title;
     if (customAlertMessage) customAlertMessage.textContent = message;
+    if (customAlertCancel) customAlertCancel.style.display = 'none';
 
     openModal(customAlert, customAlertBackdrop);
     customAlert.setAttribute('aria-hidden', 'false');
@@ -87,6 +89,42 @@ export function showCustomAlert(message, title = 'Atención') {
     };
 
     customAlertOk?.addEventListener('click', handleOk);
+  });
+}
+
+export function showCustomConfirm(message, title = 'Confirmar acción') {
+  const customAlert = document.getElementById('customAlert');
+  const customAlertBackdrop = document.getElementById('customAlertBackdrop');
+  const customAlertTitle = document.getElementById('customAlertTitle');
+  const customAlertMessage = document.getElementById('customAlertMessage');
+  const customAlertOk = document.getElementById('customAlertOk');
+  const customAlertCancel = document.getElementById('customAlertCancel');
+
+  return new Promise((resolve) => {
+    if (!customAlert || !customAlertBackdrop || !customAlertCancel) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    if (customAlertTitle) customAlertTitle.textContent = title;
+    if (customAlertMessage) customAlertMessage.textContent = message;
+    customAlertCancel.style.display = 'inline-flex';
+
+    openModal(customAlert, customAlertBackdrop);
+    customAlert.setAttribute('aria-hidden', 'false');
+    customAlertBackdrop.setAttribute('aria-hidden', 'false');
+
+    const handleOk = () => { cleanup(); resolve(true); };
+    const handleCancel = () => { cleanup(); resolve(false); };
+
+    const cleanup = () => {
+      customAlertOk?.removeEventListener('click', handleOk);
+      customAlertCancel?.removeEventListener('click', handleCancel);
+      closeCustomAlert();
+    };
+
+    customAlertOk?.addEventListener('click', handleOk);
+    customAlertCancel?.addEventListener('click', handleCancel);
   });
 }
 
@@ -327,3 +365,19 @@ export function setUserModalMode(mode) {
     if (btnDelete) btnDelete.style.display = 'inline-flex';
   }
 }
+
+// --- Menú desplegable de la foto de perfil ---
+export function closeProfileMenu() {
+    document.getElementById('profileMenuDropdown')?.classList.remove('open');
+}
+
+export function toggleProfileMenu() {
+    document.getElementById('profileMenuDropdown')?.classList.toggle('open');
+}
+
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('profileMenuDropdown');
+    if (dropdown?.classList.contains('open') && !e.target.closest('.userbox')) {
+        closeProfileMenu();
+    }
+});

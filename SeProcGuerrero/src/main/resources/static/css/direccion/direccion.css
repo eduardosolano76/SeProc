@@ -627,7 +627,7 @@ body{
   margin-top:30px;
 }
 
-.btn-primary{
+.btn-primary, .btn-secondary{
   height:40px;
   border:none;
   border-radius:999px;
@@ -636,6 +636,11 @@ body{
   cursor:pointer;
   background: var(--orange);
   color:#fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .btn-primary:hover{
@@ -672,4 +677,67 @@ body{
 .alert-actions{
   display:flex;
   justify-content:center;
+  gap: 12px;
+}
+
+/* --- Estilos del menú desplegable de perfil --- */
+.userbox {
+    position: relative;
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    background: rgb(255, 255, 255); 
+    border-radius: 16px;
+    padding: 8px 0;
+    width: 200px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.profile-dropdown.open {
+    display: flex;
+    animation: fadeInDropdown 0.2s ease-out;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(0, 0, 0);
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgb(192, 192, 192);
+}
+
+.dropdown-item img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+/* Modificamos tu .btn-secondary para que se vea la manita */
+.btn-secondary {
+    background: rgba(0, 0, 0, .08);
+    color: #222;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 0, 0, .12);
 }

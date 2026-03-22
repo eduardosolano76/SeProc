@@ -20,3 +20,46 @@ export function syncSidebarWithView(view) {
 
   setActiveNav('navProyectos');
 }
+
+export async function loadPanelFromUrl({
+  href,
+  push = true,
+  onAfterLoad = null
+}) {
+  const panelContent = document.getElementById('panelContent');
+
+  if (!panelContent) {
+    window.location.href = href;
+    return;
+  }
+
+  const view = getViewFromUrl(href);
+
+  panelContent.innerHTML = `<div class="panel-sub">Cargando...</div>`;
+
+  try {
+    const res = await fetch(href, {
+      cache: 'no-store',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const newPanelContent = doc.getElementById('panelContent');
+
+    if (newPanelContent) panelContent.innerHTML = newPanelContent.innerHTML;
+    else panelContent.innerHTML = html;
+
+    if (push) history.pushState({ href }, '', href);
+
+    syncSidebarWithView(view);
+
+    if (typeof onAfterLoad === 'function') {
+      onAfterLoad(view);
+    }
+  } catch (e) {
+    window.location.href = href;
+  }
+}

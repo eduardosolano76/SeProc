@@ -82,15 +82,6 @@ function bindPanelEvents() {
                 await loadAndRenderProjects();
             });
         });
-
-        // 3. Forzamos a que visualmente y en el estado, la pestaña activa al cargar sea "ACTIVO" 
-        // a menos que vengamos de otra vista. (Por defecto, al cargar el panel de proyectos, queremos ver los activos).
-        const activeTab = document.querySelector('#tabsConstructor .tab.active');
-        if (activeTab) {
-            currentEstado = activeTab.dataset.estado;
-        } else {
-            currentEstado = 'ACTIVO';
-        }
     }
 }
 
@@ -141,6 +132,24 @@ function registerGlobalEvents() {
 // --- Funciones de Proyectos ---
 async function loadAndRenderProjects() {
     try {
+        // 1. Limpiamos visualmente TODAS las pestañas
+        document.querySelectorAll('#tabsConstructor .tab').forEach(t => t.classList.remove('active'));
+        
+        // 2. Iluminamos la pestaña correcta basada en currentEstado
+        const targetTab = document.querySelector(`#tabsConstructor .tab[data-estado="${currentEstado}"]`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+        } else {
+            // Fallback: Si por alguna razón currentEstado tiene un valor raro, forzamos ACTIVO
+            currentEstado = 'ACTIVO';
+            const defaultTab = document.querySelector(`#tabsConstructor .tab[data-estado="ACTIVO"]`);
+            if (defaultTab) defaultTab.classList.add('active');
+        }
+
+        // 3. Limpiamos el buscador para que no oculte resultados nuevos
+        if (searchConstructor) searchConstructor.value = '';
+
+        // 4. Pedimos los proyectos y los pintamos
         currentList = await api.fetchProyectos(currentEstado);
         ui.renderCards(currentList, openDetalleProyecto);
     } catch (e) {
@@ -292,14 +301,65 @@ async function handlePasswordChange() {
 
 // --- Perfil ---
 function initProfilePhoto() {
+    const btnViewPhoto = document.getElementById('btnViewPhoto');
+    const btnUploadPhoto = document.getElementById('btnUploadPhoto');
+    const btnDeletePhoto = document.getElementById('btnDeletePhoto');
+
     const fotoUrl = profileBtn?.dataset?.foto;
     ui.renderProfilePhoto(fotoUrl);
-    profileBtn?.addEventListener('click', () => profileFile?.click());
     
+    // 1. Alternar menú desplegable
+    profileBtn?.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        ui.toggleProfileMenu();
+    });
+
+    // 2. Subir foto (abre el explorador)
+    btnUploadPhoto?.addEventListener('click', () => {
+        ui.closeProfileMenu();
+        profileFile?.click();
+    });
+
+    // 3. Ver foto
+    btnViewPhoto?.addEventListener('click', () => {
+        ui.closeProfileMenu();
+        const currentFoto = profileBtn?.dataset?.foto;
+        if (currentFoto && !currentFoto.includes('sinFotoPerfil.png')) {
+            window.open(currentFoto, '_blank');
+        } else {
+            ui.showCustomAlert("Aún no has subido una foto de perfil.", "Ver foto");
+        }
+    });
+
+    // 4. Eliminar foto
+    btnDeletePhoto?.addEventListener('click', async () => {
+        ui.closeProfileMenu();
+        const currentFoto = profileBtn?.dataset?.foto;
+        
+        if (!currentFoto || currentFoto.includes('sinFotoPerfil.png')) {
+            return ui.showCustomAlert("No tienes una foto de perfil personalizada para eliminar.", "Aviso");
+        }
+
+        const confirmado = await ui.showCustomConfirm("¿Estás seguro de que deseas eliminar tu foto de perfil?", "Eliminar foto");
+        if (!confirmado) return;
+
+        try {
+            const data = await api.deleteProfilePhoto();
+            const defaultUrl = data?.url || '/assets/iconos/sinFotoPerfil.png';
+            ui.renderProfilePhoto(defaultUrl);
+            if (profileBtn) profileBtn.dataset.foto = defaultUrl;
+            ui.showCustomAlert("Tu foto de perfil ha sido eliminada.", "Éxito");
+        } catch (err) {
+            ui.showCustomAlert(err.message, "Error");
+        }
+    });
+
+    // 5. Manejar el cambio de archivo
     profileFile?.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Previsualización
         document.getElementById('profileImg').src = URL.createObjectURL(file);
         document.getElementById('profileImg').style.display = 'block';
         document.getElementById('profileFallback').style.display = 'none';
