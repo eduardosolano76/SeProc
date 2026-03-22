@@ -45,7 +45,7 @@ th:href="@{/supervisor(view='proyectos')}"> <span
 				<a id="navPassword" class="nav-item"
 					th:classappend="${view == 'password'} ? ' active' : ''"
 					th:href="@{/supervisor(view='password')}"> <span class="icon">
-						<img th:src="@{/assets/iconos/cambiarContraseña.png}" alt="">
+						<img th:src="@{/assets/iconos/cambiar-contrasena.png}" alt="">
 				</span> <span class="label">Cambiar contraseña</span>
 				</a>
 
@@ -207,6 +207,6 @@ th:href="@{/supervisor(view='proyectos')}"> <span
     </div>
 </div>
 
-	<script th:src="@{/js/supervisor/supervisor.js}"></script>
+	<script type="module" th:src="@{/js/supervisor/app.js}" defer></script>
 </body>
 </html>

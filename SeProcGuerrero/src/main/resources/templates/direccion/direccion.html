@@ -45,7 +45,7 @@
    th:classappend="${view == 'password'} ? ' active' : ''"
    th:href="@{/direccion(view='password')}">
   <span class="icon">
-    <img th:src="@{/assets/iconos/cambiarContraseña.png}" alt="">
+    <img th:src="@{/assets/iconos/cambiar-contrasena.png}" alt="">
   </span>
   <span class="label">Cambiar contraseña</span>
 </a>
@@ -209,6 +209,6 @@
   </div>
 </div>
 
-<script th:src="@{/js/direccion/direccion.js}"></script>
+<script type="module" th:src="@{/js/direccion/app.js}" defer></script>
 </body>
 </html>

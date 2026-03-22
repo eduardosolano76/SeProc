@@ -811,58 +811,64 @@ body{
 /* ===== TABLA USUARIOS ===== */
 .table-wrap{
   width:100%;
-  margin-top:18px;
   overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border-radius:14px;
 }
 
 .table{
   width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:transparent;
+  border-collapse:collapse;
+  overflow:hidden;
+  border-radius:14px;
+  background:rgba(255,255,255,.80);
 }
 
-.table thead th{
+.table th,
+.table td{
+  padding:10px 12px;
   text-align:left;
-  font-size:16px;
-  font-weight:700;
+  font-size:14px;
+}
+
+.table th{
+  background:rgba(198,106,0,.18);
+  font-weight:900;
   color:#111;
-  padding:10px 18px 12px 18px;
 }
 
-.table tbody td{
-  font-size:15px;
+.table td{
   color:#111;
-  padding:12px 18px;
-  vertical-align:middle;
 }
 
-.table tbody tr{
-  background:#ffffff;
-  border-radius:16px;
-  transition:.2s ease;
-}
-
-.table tbody tr:hover{
-  background:#f8f5f1;
-}
-
-.table tbody tr td:first-child{
-  border-top-left-radius:14px;
-  border-bottom-left-radius:14px;
-}
-
-.table tbody tr td:last-child{
-  border-top-right-radius:14px;
-  border-bottom-right-radius:14px;
+.table tr + tr td{
+  border-top:1px solid rgba(0,0,0,.06);
 }
 
 .user-row{
   cursor:pointer;
+  transition:background .2s ease;
 }
 
-.user-row + .user-row td{
-  border-top:8px solid transparent;
+.user-row:hover td{
+  background:#f8f5f1;
+}
+
+.panel-note{
+  margin-top:0;
+  margin-bottom:14px;
+  font-size:14px;
+}
+
+@media (max-width: 768px){
+  .table{
+    min-width:720px;
+  }
+
+  .table th,
+  .table td{
+    white-space:nowrap;
+  }
 }
 
 /* ===== PANEL DE USUARIOS ===== */

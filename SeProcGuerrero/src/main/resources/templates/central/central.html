@@ -70,7 +70,7 @@
 <a class="nav-item" id="navPassword"
    th:classappend="${view == 'password'} ? ' active' : ''"
    th:href="@{/central(view='password')}">
-  <span class="icon"><img th:src="@{/assets/iconos/cambiarContraseña.png}" alt=""></span>
+  <span class="icon"><img th:src="@{/assets/iconos/cambiar-contrasena.png}" alt=""></span>
   <span class="label">Cambiar contraseña</span>
 </a>
 
@@ -374,6 +374,6 @@
   </div>
 </div>
 
-  <script th:src="@{/js/central/central.js}"></script>
+  <script type="module" th:src="@{/js/central/app.js}" defer></script>
 </body>
 </html>
