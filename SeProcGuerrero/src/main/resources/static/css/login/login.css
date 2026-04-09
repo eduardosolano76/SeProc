@@ -1,7 +1,7 @@
     :root{
-      --bg: #f6efe6;
-      --card: #fbf6ee;
-      --accent: #c66a00;
+      --bg: #eef4fb;
+      --card: #f8fbff;
+      --accent: #155093;
       --text: #1a1a1a;
     }
     *{ box-sizing: border-box; }

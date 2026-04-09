@@ -93,7 +93,9 @@ public class AdminProyectosApiController {
         dto.put("numInmueblesEvaluar", s.getNumInmueblesEvaluar());
         dto.put("numEntreEjes", s.getNumEntreEjes());
         dto.put("tipoObra", s.getTipoObra());
-        dto.put("concepto", s.getConcepto());
+        dto.put("tipoEdificacion", s.getTipoEdificacion() != null
+                ? s.getTipoEdificacion().getNombre()
+                : "");
 
         return ResponseEntity.ok(dto);
     }

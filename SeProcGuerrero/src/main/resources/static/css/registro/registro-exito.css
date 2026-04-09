@@ -1,4 +1,4 @@
-    :root{ --accent:#c66a00; --card:#fbf6ee; --text:#1a1a1a; }
+    :root{ --accent: #155093; --card:#fbf6ee; --text:#1a1a1a; }
     *{ box-sizing:border-box; }
     body{
       margin:0; min-height:100vh;

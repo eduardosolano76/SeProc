@@ -1,14 +1,13 @@
 :root{
-  --orange: #c66a00;
-  --orange-2:#b55f00;
-  --active: #7a6049;
+  --orange: #155093;
+  --orange-2: #103f74;
+  --active: #0d3c6e;
   --bg: #ffffff;
   --panel: #eceae6;
   --text: #111;
-  --muted:#6c6c6c;
+  --muted: #6c6c6c;
   --radius: 34px;
 }
-
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 

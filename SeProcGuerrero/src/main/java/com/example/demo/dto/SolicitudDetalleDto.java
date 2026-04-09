@@ -25,7 +25,7 @@ public class SolicitudDetalleDto {
     public Integer numEntreEjes;
 
     public String tipoObra;
-    public String concepto;
+    public String tipoEdificacion;
 
-    public String supervisorAsignado; // si ya está aprobado el proyecto
+    public String supervisorAsignado;
 }

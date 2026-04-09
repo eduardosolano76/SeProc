@@ -274,8 +274,8 @@ function renderDetalleForm(dto) {
         <input class="ro-input" value="${escapeHtml(dto.tipoObra)}" readonly>
       </div>
       <div class="ro-field">
-        <label class="ro-label">Concepto</label>
-        <input class="ro-input" value="${escapeHtml(dto.concepto)}" readonly>
+	  <label class="ro-label">Tipo de edificación</label>
+	  <input class="ro-input" value="${escapeHtml(dto.tipoEdificacion ?? '')}" readonly>
       </div>
       <div class="ro-field">
         <label class="ro-label">No. de entre ejes</label>

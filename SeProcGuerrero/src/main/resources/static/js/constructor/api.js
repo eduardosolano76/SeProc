@@ -104,3 +104,9 @@ export async function deleteProfilePhoto() {
   if (!res.ok) throw new Error(data?.message || "No se pudo eliminar la foto.");
   return data;
 }
+
+export async function fetchTiposEdificacion() {
+  const res = await fetch('/api/catalogos/tipos-edificacion');
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}

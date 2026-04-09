@@ -102,8 +102,7 @@
 				</div>
 			</header>
 
-			<section class="panel" id="panelContent"
-				aria-label="Sección principal">
+			<section class="panel panel-scroll" id="panelContent" aria-label="Sección principal">
 
 				<div id="constructorProjectsView"
 					th:style="${vistaActiva == 'password'} ? 'display: none;' : 'display: block;'">
@@ -170,6 +169,14 @@
 						</div>
 					</div>
 				</div>
+				
+				<div id="constructorProcesoView" style="display:none;">
+        <div id="constructorProcesoContent"></div>
+    </div>
+    
+    <div id="constructorBloqueView" style="display:none;">
+    <div id="constructorBloqueContent"></div>
+</div>
 
 			</section>
 
@@ -285,31 +292,29 @@
 						</div>
 
 						<div class="dg-row dg-3">
-							<div class="dg-field">
-								<label class="dg-label">Tipo de obra<span class="req">*</span></label>
-								<select class="dg-select" name="tipoObra" required>
-									<option value="" selected disabled>Seleccionar</option>
-									<option value="Edificación">Edificación</option>
-									<option value="Barda perimetral">Barda perimetral</option>
-									<option value="Techado">Techado</option>
-									<option value="Pisos">Pisos</option>
-								</select>
-							</div>
+	<div class="dg-field">
+		<label class="dg-label">Tipo de obra<span class="req">*</span></label>
+		<select class="dg-select" name="tipoObra" required>
+			<option value="" selected disabled>Seleccionar</option>
+			<option value="Edificación">Edificación</option>
+			<option value="Barda perimetral">Barda perimetral</option>
+			<option value="Techado">Techado</option>
+			<option value="Pisos">Pisos</option>
+		</select>
+	</div>
 
-							<div class="dg-field">
-								<label class="dg-label">Concepto<span class="req">*</span></label>
-								<div class="dg-concepto-wrap">
-									<input class="dg-input" type="text" name="concepto" required />
-									<button class="dg-plus" type="button" title="Agregar concepto">+</button>
-								</div>
-							</div>
+	<div class="dg-field">
+		<label class="dg-label">Tipo de edificación<span class="req">*</span></label>
+		<select class="dg-select" name="tipoEdificacion" required>
+			<option value="" selected disabled>Seleccionar</option>
+		</select>
+	</div>
 
-							<div class="dg-field">
-								<label class="dg-label">No. de entre ejes<span
-									class="req">*</span></label> <input class="dg-input" type="number"
-									name="numEntreEjes" min="1" required />
-							</div>
-						</div>
+	<div class="dg-field">
+		<label class="dg-label">No. de entre ejes<span class="req">*</span></label>
+		<input class="dg-input" type="number" name="numEntreEjes" min="1" required />
+	</div>
+</div>
 
 						<div class="dg-foot">
 							<span class="dg-hint">Los campos con <span class="req">*</span>

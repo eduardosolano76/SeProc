@@ -1,12 +1,15 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.SolicitudDetalleDto;
-import com.example.demo.modelo.*;
-import com.example.demo.repository.*;
+import com.example.demo.modelo.Proyecto;
+import com.example.demo.repository.ProyectoRepository;
+import com.example.demo.repository.SolicitudProyectoRepository;
+import com.example.demo.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
@@ -28,7 +31,9 @@ public class CentralSolicitudesApiController {
     @GetMapping("/{id}")
     public ResponseEntity<?> detalle(@PathVariable Integer id) {
         var solOpt = solRepo.findById(id);
-        if (solOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (solOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
 
         var s = solOpt.get();
         SolicitudDetalleDto dto = new SolicitudDetalleDto();
@@ -40,17 +45,18 @@ public class CentralSolicitudesApiController {
                 ? s.getFechaSolicitud().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 : null;
 
-        // quien envía
         var uEnv = usuarioRepo.findById(s.getIdUsuarioContratista()).orElse(null);
-        dto.quienEnvia = (uEnv != null) ? (uEnv.getNombre() + " " + uEnv.getApellido()) : "—";
+        dto.quienEnvia = (uEnv != null)
+                ? (uEnv.getNombre() + " " + uEnv.getApellido())
+                : "—";
 
         dto.nombreEscuela = s.getNombreEscuela();
         dto.cct1 = s.getCct1();
         dto.cct2 = s.getCct2();
 
-        dto.estado = s.getEstado().getNombre();
-        dto.municipio = s.getMunicipio().getNombre();
-        dto.ciudad = s.getLocalidad().getNombre();
+        dto.estado = s.getEstado() != null ? s.getEstado().getNombre() : "";
+        dto.municipio = s.getMunicipio() != null ? s.getMunicipio().getNombre() : "";
+        dto.ciudad = s.getLocalidad() != null ? s.getLocalidad().getNombre() : "";
 
         dto.calleNumero = s.getCalleNumero();
         dto.cp = s.getCp();
@@ -61,28 +67,29 @@ public class CentralSolicitudesApiController {
         dto.numEntreEjes = s.getNumEntreEjes();
 
         dto.tipoObra = s.getTipoObra();
-        dto.concepto = s.getConcepto();
+        dto.tipoEdificacion = s.getTipoEdificacion() != null
+                ? s.getTipoEdificacion().getNombre()
+                : "";
 
-        // supervisor asignado si existe proyecto
-        
         var p = proyectoRepo.findBySolicitud_IdSolicitud(id).orElse(null);
 
-        if (p != null) {
+        if (p != null && p.getIdUsuarioSupervisor() != null) {
             var sup = usuarioRepo.findById(p.getIdUsuarioSupervisor()).orElse(null);
-            dto.supervisorAsignado = sup != null ? (sup.getNombre() + " " + sup.getApellido()) : "—";
+            dto.supervisorAsignado = sup != null
+                    ? (sup.getNombre() + " " + sup.getApellido())
+                    : "—";
         } else {
             dto.supervisorAsignado = null;
         }
 
         return ResponseEntity.ok(dto);
     }
-    
+
     @GetMapping
     public ResponseEntity<?> listar(@RequestParam("estado") String estado) {
         var items = solRepo.findByEstadoSolicitudOrderByFechaSolicitudDesc(estado.toUpperCase())
                 .stream()
                 .map(s -> {
-               
                     var u = usuarioRepo.findById(s.getIdUsuarioContratista()).orElse(null);
 
                     return new java.util.HashMap<String, Object>() {{
@@ -90,7 +97,7 @@ public class CentralSolicitudesApiController {
                         put("nombreEscuela", s.getNombreEscuela());
                         put("constructor", u != null ? (u.getNombre() + " " + u.getApellido()) : "—");
                         put("fechaSolicitud", s.getFechaSolicitud() != null
-                                ? s.getFechaSolicitud().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                                ? s.getFechaSolicitud().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                                 : "");
                         put("estadoSolicitud", s.getEstadoSolicitud());
                     }};
@@ -99,7 +106,7 @@ public class CentralSolicitudesApiController {
 
         return ResponseEntity.ok(items);
     }
-    
+
     @GetMapping("/supervisores")
     public ResponseEntity<?> supervisores() {
         var list = usuarioRepo.findByRol_NombreIgnoreCase("supervisor")
@@ -119,7 +126,10 @@ public class CentralSolicitudesApiController {
                                      Authentication auth) {
 
         var solOpt = solRepo.findById(id);
-        if (solOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (solOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
         var s = solOpt.get();
 
         if (!"PENDIENTE".equalsIgnoreCase(s.getEstadoSolicitud())) {
@@ -130,18 +140,17 @@ public class CentralSolicitudesApiController {
             return ResponseEntity.badRequest().body("Ya existe un proyecto para esta solicitud");
         }
 
-        // central que aprueba
         var central = usuarioRepo.findByUsername(auth.getName()).orElse(null);
-        if (central == null) return ResponseEntity.badRequest().body("Central no encontrado");
+        if (central == null) {
+            return ResponseEntity.badRequest().body("Central no encontrado");
+        }
 
-        // set solicitud aprobada
         s.setEstadoSolicitud("APROBADA");
         s.setIdUsuarioCentral(central.getIdUsuario());
         s.setMotivoRechazo(null);
-        s.setFechaResolucion(java.time.LocalDateTime.now());
+        s.setFechaResolucion(LocalDateTime.now());
         solRepo.save(s);
 
-        // crear proyecto
         Proyecto p = new Proyecto();
         p.setSolicitud(s);
         p.setIdUsuarioSupervisor(supervisorId);
@@ -161,7 +170,10 @@ public class CentralSolicitudesApiController {
         }
 
         var solOpt = solRepo.findById(id);
-        if (solOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (solOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
         var s = solOpt.get();
 
         if (!"PENDIENTE".equalsIgnoreCase(s.getEstadoSolicitud())) {
@@ -169,12 +181,14 @@ public class CentralSolicitudesApiController {
         }
 
         var central = usuarioRepo.findByUsername(auth.getName()).orElse(null);
-        if (central == null) return ResponseEntity.badRequest().body("Central no encontrado");
+        if (central == null) {
+            return ResponseEntity.badRequest().body("Central no encontrado");
+        }
 
         s.setEstadoSolicitud("RECHAZADA");
         s.setIdUsuarioCentral(central.getIdUsuario());
         s.setMotivoRechazo(motivo.trim());
-        s.setFechaResolucion(java.time.LocalDateTime.now());
+        s.setFechaResolucion(LocalDateTime.now());
         solRepo.save(s);
 
         return ResponseEntity.ok("OK");

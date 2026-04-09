@@ -110,7 +110,9 @@ public class SupervisorProyectosApiController {
         dto.put("municipio", s.getMunicipio().getNombre());
         dto.put("ciudad", s.getLocalidad().getNombre());
         dto.put("tipoObra", s.getTipoObra());
-        dto.put("concepto", s.getConcepto());
+        dto.put("tipoEdificacion", s.getTipoEdificacion() != null
+                ? s.getTipoEdificacion().getNombre()
+                : "");
 
         return ResponseEntity.ok(dto);
     }

@@ -200,11 +200,149 @@ export function renderDetalleProyecto(dto) {
           <div class="ph-value">${escapeHtml(dto.tipoObra)}</div>
         </div>
         <div class="ph-box">
-          <div class="ph-label">Concepto</div>
-          <div class="ph-value">${escapeHtml(dto.concepto)}</div>
+		<div class="ph-label">Tipo de edificación</div>
+		<div class="ph-value">${escapeHtml(dto.tipoEdificacion ?? '')}</div>
         </div>
       </div>
       <div class="ph-note">aqui después para subir evidencias</div>
+    </div>
+  `;
+}
+
+export function renderProcesoProyecto(dto) {
+  const container = document.getElementById('constructorProcesoContent');
+  if (!container) return;
+
+  const iconDone = '/assets/iconos/listo.png';
+  const iconCurrent = '/assets/iconos/proceso.png';
+  const iconLocked = '/assets/iconos/bloqueado.png';
+
+  container.innerHTML = `
+    <div class="process-mini-shell">
+      <div class="process-mini-top">
+        <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">←</button>
+        <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
+        <div class="process-mini-spacer"></div>
+      </div>
+
+      <div class="process-mini-summary">
+        <div class="process-mini-left">
+          <div class="process-mini-school">${escapeHtml(dto.nombreEscuela ?? '')}</div>
+          <div class="process-mini-meta">Tipo de obra: <span>${escapeHtml(dto.tipoObra ?? '')}</span></div>
+          <div class="process-mini-meta">Tipo de edificación: <span>${escapeHtml(dto.tipoEdificacion ?? '')}</span></div>
+          <div class="process-mini-meta">Etapa actual: <span>Cimentación</span></div>
+        </div>
+
+        <div class="process-mini-right">
+          <div class="process-mini-progress-label">Avance en %</div>
+          <div class="process-mini-track">
+            <div class="process-mini-fill" style="width: 25%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="process-mini-list">
+        <button class="process-mini-stage status-done" type="button" data-bloque="preliminares">
+          <span class="process-mini-stage-icon">
+            <img src="${iconDone}" alt="Completado">
+          </span>
+          <span class="process-mini-stage-label">Trabajos preliminares</span>
+        </button>
+
+        <button class="process-mini-stage status-current" type="button" data-bloque="cimentacion">
+          <span class="process-mini-stage-icon">
+            <img src="${iconCurrent}" alt="En proceso">
+          </span>
+          <span class="process-mini-stage-label">Cimentación</span>
+        </button>
+
+        <button class="process-mini-stage status-locked" type="button" data-bloque="estructura">
+          <span class="process-mini-stage-icon">
+            <img src="${iconLocked}" alt="Bloqueado">
+          </span>
+          <span class="process-mini-stage-label">Estructura</span>
+        </button>
+
+        <button class="process-mini-stage status-locked" type="button" data-bloque="acabados">
+          <span class="process-mini-stage-icon">
+            <img src="${iconLocked}" alt="Bloqueado">
+          </span>
+          <span class="process-mini-stage-label">Albañilería y acabados</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+
+//etapa de los conceptos por bloques
+export function renderBloqueProyecto(dto, bloque) {
+  const container = document.getElementById('constructorBloqueContent');
+  if (!container) return;
+
+  const iconDone = '/assets/iconos/listo.png';
+  const iconCurrent = '/assets/iconos/proceso.png';
+  const iconLocked = '/assets/iconos/bloqueado.png';
+
+  let titulo = 'Bloque';
+  let items = [];
+
+  if (bloque === 'cimentacion') {
+    titulo = 'Cimentación';
+    items = [
+      { nombre: 'Excavación', estado: 'done', icono: iconDone },
+      { nombre: 'Plantilla de concreto', estado: 'current', icono: iconCurrent },
+      { nombre: 'Habilitado del acero de refuerzo', estado: 'locked', icono: iconLocked },
+      { nombre: 'Cimbra y murete de enrase', estado: 'locked', icono: iconLocked },
+      { nombre: 'Concreto', estado: 'locked', icono: iconLocked },
+	  { nombre: 'Habilitado de cadenas', estado: 'locked', icono: iconLocked },
+	  { nombre: 'Relleno', estado: 'locked', icono: iconLocked }
+    ];
+  } else if (bloque === 'estructura') {
+    titulo = 'Estructura';
+
+    const niveles = ['Estructura nivel 1'];
+    const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
+
+    if (tipo === 'U2C' || tipo === 'U3C') niveles.push('Estructura nivel 2');
+    if (tipo === 'U3C') niveles.push('Estructura nivel 3');
+
+    items = niveles.map((nombre, idx) => ({
+      nombre,
+      estado: idx === 0 ? 'locked' : 'locked',
+      icono: iconLocked
+    }));
+  } else if (bloque === 'preliminares') {
+    titulo = 'Trabajos preliminares';
+    items = [
+      { nombre: 'Limpieza, trazo y nivelación', estado: 'done', icono: iconDone }
+    ];
+  } else if (bloque === 'acabados') {
+    titulo = 'Albañilería y acabados';
+    items = [
+      { nombre: 'Pisos', estado: 'locked', icono: iconLocked },
+      { nombre: 'Guarnición', estado: 'locked', icono: iconLocked }
+    ];
+  }
+
+  container.innerHTML = `
+    <div class="process-mini-shell">
+      <div class="process-mini-top">
+        <button class="process-mini-back" id="btnBackBloque" type="button" aria-label="Volver">←</button>
+        <div class="process-mini-chip">${escapeHtml(titulo)}</div>
+        <div class="process-mini-spacer"></div>
+      </div>
+
+      <div class="process-mini-list">
+        ${items.map(item => `
+          <button class="process-mini-stage status-${item.estado}" type="button">
+            <span class="process-mini-stage-icon">
+              <img src="${item.icono}" alt="">
+            </span>
+            <span class="process-mini-stage-label">${escapeHtml(item.nombre)}</span>
+          </button>
+        `).join('')}
+      </div>
     </div>
   `;
 }

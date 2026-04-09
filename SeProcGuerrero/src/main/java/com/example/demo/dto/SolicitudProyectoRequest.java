@@ -3,7 +3,7 @@ package com.example.demo.dto;
 public class SolicitudProyectoRequest {
     public String nombreEscuela;
     public String cct1;
-    public String cct2; 
+    public String cct2;
 
     public Integer idEstado;
     public Integer idMunicipio;
@@ -18,6 +18,7 @@ public class SolicitudProyectoRequest {
     public Integer numInmuebles;
     public Integer numEntreEjes;
 
+    public Integer idTipoEdificacion;
+
     public String tipoObra;
-    public String concepto;
 }

@@ -211,8 +211,8 @@
         </div>
 
         <div class="ph-box">
-          <div class="ph-label">Concepto</div>
-          <div class="ph-value">${escapeHtml(dto.concepto)}</div>
+		<div class="ph-label">Tipo de edificación</div>
+		<div class="ph-value">${escapeHtml(dto.tipoEdificacion ?? '')}</div>
         </div>
       </div>
     `;

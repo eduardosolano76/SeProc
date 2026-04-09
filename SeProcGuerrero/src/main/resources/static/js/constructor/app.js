@@ -5,6 +5,7 @@ import * as nav from './navigation.js';
 
 let currentEstado = 'ACTIVO';
 let currentList = [];
+let currentProcesoDto = null;
 
 // Elementos Globales (fuera del panel)
 const profileBtn = document.getElementById('profileBtn');
@@ -52,40 +53,57 @@ window.addEventListener('panelLoaded', () => {
 });
 
 
-// --- Lógica de Vista (Re-vinculable) ---
+// --- Lógica de Vista ---
 function bindPanelEvents() {
-    // 1. Botón Agregar Proyecto (Dentro del panel)
+    // Botón agregar proyecto dentro del panel
     const btnAdd = document.getElementById('btnAddProyecto');
     if (btnAdd) {
-        // Removemos el listener anterior si existiera para no duplicarlo, luego lo agregamos
         btnAdd.removeEventListener('click', openProjModal);
         btnAdd.addEventListener('click', openProjModal);
     }
 
-    // 2. Pestañas (Activos, Inactivos...) (Dentro del panel)
+    // Pestañas activos e inactivos 
     const tabs = document.querySelectorAll('#tabsConstructor .tab');
     if (tabs.length > 0) {
         tabs.forEach(tab => {
-            // Reemplazamos el nodo para limpiar listeners fantasmas
             const newTab = tab.cloneNode(true);
             tab.parentNode.replaceChild(newTab, tab);
 
-            // Añadimos el nuevo evento
             newTab.addEventListener('click', async () => {
                 document.querySelectorAll('#tabsConstructor .tab').forEach(x => x.classList.remove('active'));
                 newTab.classList.add('active');
                 
-                // Actualizamos el estado global
                 currentEstado = newTab.dataset.estado;
                 
-                // Disparamos la carga de datos
                 await loadAndRenderProjects();
             });
         });
     }
+	
+	const btnBackProceso = document.getElementById('btnBackProceso');
+	if (btnBackProceso) {
+	    btnBackProceso.removeEventListener('click', volverAListaProyectos);
+	    btnBackProceso.addEventListener('click', volverAListaProyectos);
+	}
+	
+	const btnBackBloque = document.getElementById('btnBackBloque');
+	if (btnBackBloque) {
+	    btnBackBloque.removeEventListener('click', volverAProcesoConstructor);
+	    btnBackBloque.addEventListener('click', volverAProcesoConstructor);
+	}
+
+	const procesoContent = document.getElementById('constructorProcesoContent');
+	if (procesoContent && !procesoContent.dataset.boundStages) {
+	    procesoContent.addEventListener('click', (e) => {
+	        const btn = e.target.closest('.process-mini-stage[data-bloque]');
+	        if (!btn) return;
+	        openBloqueConstructor(btn.dataset.bloque);
+	    });
+	    procesoContent.dataset.boundStages = '1';
+	}
 }
 
-// --- Eventos Globales (Solo se registran una vez) ---
+// Solo se registran una vez ---
 function registerGlobalEvents() {
     nav.initGlobalEscape({ detalleModal, detalleBackdrop, projModal, projModalBackdrop });
 
@@ -113,7 +131,7 @@ function registerGlobalEvents() {
         ui.renderCards(filtered, openDetalleProyecto);
     });
 
-    // Delegación de formularios (Sobrevive a la recarga del panel)
+    // Delegación de formularios 
     document.addEventListener('submit', async (e) => {
         if (e.target.id === 'formCambiarPasswordConstructor') {
             e.preventDefault();
@@ -129,27 +147,53 @@ function registerGlobalEvents() {
     });
 }
 
+
+function showConstructorView(viewName) {
+    const projectsView = document.getElementById('constructorProjectsView');
+    const passwordView = document.getElementById('constructorPasswordView');
+    const procesoView = document.getElementById('constructorProcesoView');
+    const bloqueView = document.getElementById('constructorBloqueView');
+
+    if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
+    if (passwordView) passwordView.style.display = viewName === 'password' ? 'block' : 'none';
+    if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
+    if (bloqueView) bloqueView.style.display = viewName === 'bloque' ? 'block' : 'none';
+}
+
+function volverAListaProyectos() {
+    showConstructorView('projects');
+}
+
+function volverAProcesoConstructor() {
+    showConstructorView('proceso');
+}
+
+function openBloqueConstructor(bloque) {
+    if (!currentProcesoDto) return;
+
+    ui.renderBloqueProyecto(currentProcesoDto, bloque);
+    showConstructorView('bloque');
+    bindPanelEvents();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // --- Funciones de Proyectos ---
 async function loadAndRenderProjects() {
     try {
-        // 1. Limpiamos visualmente TODAS las pestañas
+        // se limpian las pestañas
         document.querySelectorAll('#tabsConstructor .tab').forEach(t => t.classList.remove('active'));
         
-        // 2. Iluminamos la pestaña correcta basada en currentEstado
         const targetTab = document.querySelector(`#tabsConstructor .tab[data-estado="${currentEstado}"]`);
         if (targetTab) {
             targetTab.classList.add('active');
         } else {
-            // Fallback: Si por alguna razón currentEstado tiene un valor raro, forzamos ACTIVO
             currentEstado = 'ACTIVO';
             const defaultTab = document.querySelector(`#tabsConstructor .tab[data-estado="ACTIVO"]`);
             if (defaultTab) defaultTab.classList.add('active');
         }
 
-        // 3. Limpiamos el buscador para que no oculte resultados nuevos
         if (searchConstructor) searchConstructor.value = '';
 
-        // 4. Pedimos los proyectos y los pintamos
         currentList = await api.fetchProyectos(currentEstado);
         ui.renderCards(currentList, openDetalleProyecto);
     } catch (e) {
@@ -160,16 +204,20 @@ async function loadAndRenderProjects() {
 async function openDetalleProyecto(idProyecto) {
     try {
         const dto = await api.fetchDetalleProyecto(idProyecto);
-        ui.renderDetalleProyecto(dto);
-        ui.openModal(detalleModal, detalleBackdrop);
+        currentProcesoDto = dto;
+        ui.renderProcesoProyecto(dto);
+        showConstructorView('proceso');
+        bindPanelEvents();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
         await ui.showCustomAlert('No se pudo cargar el detalle: ' + e.message, 'Error');
     }
 }
 
-function openProjModal() {
+async function openProjModal() {
     ui.openModal(projModal, projModalBackdrop);
-    loadEstados().catch(console.error);
+    await loadEstados();
+    await loadTiposEdificacion();
 }
 
 function closeProjModal() {
@@ -190,8 +238,8 @@ async function handleProjectSubmit(form) {
         contacto: form.contacto.value.trim(),
         numInmuebles: parseInt(form.numInmuebles.value, 10),
         numEntreEjes: parseInt(form.numEntreEjes.value, 10),
-        tipoObra: form.tipoObra.value,
-        concepto: form.concepto.value.trim()
+        idTipoEdificacion: parseInt(form.tipoEdificacion.value, 10),
+        tipoObra: form.tipoObra.value
     };
 
     try {
@@ -297,6 +345,14 @@ async function handlePasswordChange() {
         // Atrapamos el error y lo mostramos en tu modal personalizado
         await ui.showCustomAlert(error.message, "Error");
     }
+}
+
+async function loadTiposEdificacion() {
+    const selTipoEdificacion = document.querySelector('#formSolicitudProyecto select[name="tipoEdificacion"]');
+    if (!selTipoEdificacion) return;
+
+    const data = await api.fetchTiposEdificacion();
+    ui.fillSelect(selTipoEdificacion, data);
 }
 
 // --- Perfil ---
