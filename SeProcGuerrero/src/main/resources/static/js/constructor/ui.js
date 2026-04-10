@@ -348,7 +348,7 @@ export function renderBloqueProyecto(dto, bloque) {
             ${stageBtn('Habilitado para losa', `estructura_n${nivel}_habilitado_losa`)}
             ${stageBtn('Concreto', `estructura_n${nivel}_concreto_losa`)}
           </div>
-        </div>
+        </div> 
 
         ${incluirOtros ? `
           <div class="structure-accordion nested">
