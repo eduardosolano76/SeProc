@@ -241,6 +241,58 @@ function openEtapaConstructor(etapaKey, etapaNombre) {
 
     const etapaView = document.getElementById('constructorEtapaView');
     if (etapaView) etapaView.scrollTop = 0;
+	
+	const btnUpload = document.getElementById(`btnUploadReporte_${etapaKey}`);
+	    const fileInput = document.getElementById(`reporteFile_${etapaKey}`);
+
+	    if (btnUpload && fileInput) {
+	        // Al hacer clic en el botón, abrimos el selector de archivos
+	        btnUpload.addEventListener('click', () => {
+	            fileInput.click();
+	        });
+
+	        // Cuando el usuario selecciona un archivo
+	        fileInput.addEventListener('change', async (e) => {
+	            const file = e.target.files[0];
+	            if (!file) return;
+
+	            if (file.type !== "application/pdf") {
+	                return ui.showCustomAlert("Por favor selecciona un archivo PDF válido.", "Error de formato");
+	            }
+
+	            try {
+	                // Cambiamos el texto del botón temporalmente
+	                const textoOriginal = btnUpload.textContent;
+	                btnUpload.textContent = "Subiendo...";
+	                btnUpload.disabled = true;
+
+	                const response = await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
+	                
+					await ui.showCustomAlert('Reporte subido correctamente.', 'Éxito');
+					                
+					                // Inyectamos el link dentro de la tarjeta "Tu trabajo"
+					                const linkContainer = document.getElementById(`enlaceReporte_${etapaKey}`);
+					                if(linkContainer) {
+					                    linkContainer.innerHTML = `
+					                        <div style="background: #f4f4f4; padding: 10px; border-radius: 12px; border: 1px solid #d3d0ca; display: inline-block;">
+
+					                            <a href="${response.url}" target="_blank" style="color: #155093; font-weight: 700; text-decoration: none; font-size: 14px;">
+					                                📄 Ver Reporte PDF
+					                            </a>
+					                        </div>
+					                    `;
+					                }
+
+	            } catch (err) {
+	                await ui.showCustomAlert(err.message, 'Error al subir');
+	            } finally {
+	                // Restauramos el botón
+	                btnUpload.textContent = "+ Agregar reporte";
+	                btnUpload.disabled = false;
+	                fileInput.value = ''; // Limpiamos el input
+	            }
+	        });
+	    }
 }
 
 async function loadAndRenderProjects() {

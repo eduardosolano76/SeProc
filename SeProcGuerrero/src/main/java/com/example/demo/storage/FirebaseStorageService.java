@@ -1,23 +1,27 @@
 package com.example.demo.storage;
 
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.Bucket;
-import com.google.firebase.cloud.StorageClient;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Bucket;
+import com.google.firebase.cloud.StorageClient;
+
 @Service
 @Primary
 public class FirebaseStorageService implements StorageService {
 
     private static final Set<String> ALLOWED = Set.of("image/png", "image/jpeg", "image/webp");
+    
+    // Añade esta constante al inicio de tu clase
+    private static final Set<String> ALLOWED_PDF = Set.of("application/pdf");
 
     @Override
     public String saveProfilePhoto(Long userId, String username, MultipartFile file) {
@@ -88,5 +92,31 @@ public class FirebaseStorageService implements StorageService {
         return value.trim()
                 .toLowerCase()
                 .replaceAll("[^a-z0-9_-]", "_");
+    }
+    
+    @Override
+    public String saveReportePdf(Long userId, String username, Integer idProyecto, String etapa, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Archivo vacío.");
+        }
+        if (!ALLOWED_PDF.contains(file.getContentType())) {
+            throw new IllegalArgumentException("Formato no permitido. Solo se aceptan archivos PDF.");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) { // Límite de 5MB para PDFs
+            throw new IllegalArgumentException("El PDF no debe superar los 5MB.");
+        }
+
+        String safeUsername = sanitize(username);
+        // Estructura: usuarios/1_juan/proyectos/15/cimentacion/reporte_abc123.pdf
+        String folder = "usuarios/" + userId + "_" + safeUsername + "/proyectos/" + idProyecto + "/" + etapa;
+        String filename = folder + "/reporte_" + UUID.randomUUID() + ".pdf";
+
+        try {
+            Bucket bucket = StorageClient.getInstance().bucket();
+            bucket.create(filename, file.getInputStream(), file.getContentType());
+            return filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Error al subir el reporte a Firebase", e);
+        }
     }
 }

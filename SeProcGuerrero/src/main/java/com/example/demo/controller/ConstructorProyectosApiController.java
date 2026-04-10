@@ -1,16 +1,30 @@
 package com.example.demo.controller;
 
-import com.example.demo.modelo.Proyecto;
-import com.example.demo.modelo.SolicitudProyecto;
-import com.example.demo.repository.ProyectoRepository;
-import com.example.demo.repository.UsuarioRepository;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import com.example.demo.modelo.Proyecto;
+import com.example.demo.modelo.ProyectoEtapa;
+import com.example.demo.modelo.ProyectoEtapaEntrega;
+import com.example.demo.modelo.SolicitudProyecto;
+import com.example.demo.repository.ProyectoEtapaEntregaRepository;
+import com.example.demo.repository.ProyectoEtapaRepository;
+import com.example.demo.repository.ProyectoRepository;
+import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.storage.StorageService;
 
 @RestController
 @RequestMapping("/api/constructor/proyectos")
@@ -18,11 +32,20 @@ public class ConstructorProyectosApiController {
 
     private final ProyectoRepository proyectoRepo;
     private final UsuarioRepository usuarioRepo;
+    private final StorageService storageService;
+    private final ProyectoEtapaRepository proyectoEtapaRepo;
+    private final ProyectoEtapaEntregaRepository entregaRepo;
 
     public ConstructorProyectosApiController(ProyectoRepository proyectoRepo,
-                                             UsuarioRepository usuarioRepo) {
+                                             UsuarioRepository usuarioRepo, 
+                                             StorageService storageService,
+                                             ProyectoEtapaRepository proyectoEtapaRepo,
+                                             ProyectoEtapaEntregaRepository entregaRepo) {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
+        this.storageService = storageService;
+        this.proyectoEtapaRepo = proyectoEtapaRepo;
+        this.entregaRepo = entregaRepo;
     }
 
     @GetMapping
@@ -114,5 +137,66 @@ public class ConstructorProyectosApiController {
                 : "");
 
         return ResponseEntity.ok(dto);
+    }
+    
+    @PostMapping("/{id}/etapas/{etapa}/reporte")
+    public ResponseEntity<?> subirReporteEtapa(@PathVariable Integer id,
+                                               @PathVariable String etapa,
+                                               @RequestParam("file") MultipartFile file,
+                                               Authentication auth) {
+        
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        var usuario = usuarioOpt.get();
+
+        // Validar que el proyecto le pertenece al constructor
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+        
+        Proyecto p = pOpt.get();
+        if (!usuario.getIdUsuario().equals(p.getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto.");
+        }
+
+        try {
+            // 1. Subimos a Firebase (Lo que ya tienes)
+            String key = storageService.saveReportePdf(usuario.getIdUsuario(), usuario.getUsername(), id, etapa, file);
+            String publicUrl = storageService.publicUrl(key);
+            
+            // --- NUEVO: GUARDAR EN BASE DE DATOS ---
+            
+            // 2. Buscar la etapa del proyecto (Necesitas un método en tu ProyectoEtapaRepository)
+            // Ejemplo: Buscar por ID del proyecto y alguna clave interna de la etapa
+         // Cambia la línea donde buscas la etapa por esta:
+            ProyectoEtapa etapaActual = proyectoEtapaRepo.findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInterna(id, etapa)
+                .orElseThrow(() -> new RuntimeException("Etapa no encontrada en la base de datos"));
+
+            // 3. Crear el registro de la entrega
+            ProyectoEtapaEntrega entrega = new ProyectoEtapaEntrega();
+            entrega.setProyectoEtapa(etapaActual);
+            entrega.setUsuarioConstructor(usuario);
+            entrega.setNombreArchivoOriginal(file.getOriginalFilename());
+            entrega.setExtensionArchivo("pdf");
+            entrega.setProviderArchivo("FIREBASE"); // Según tu ENUM
+            entrega.setArchivoStoragePath(key);
+            entrega.setArchivoUrl(publicUrl);
+            entrega.setEstadoEntrega("ENTREGADO"); // O "EN_REVISION" según tu ENUM
+            entrega.setFechaSubida(LocalDateTime.now());
+            
+            // 4. Guardar en MySQL
+            entregaRepo.save(entrega);
+
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Reporte subido y guardado correctamente",
+                "url", publicUrl
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al subir el reporte.");
+        }
     }
 }

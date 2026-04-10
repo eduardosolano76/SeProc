@@ -110,3 +110,22 @@ export async function fetchTiposEdificacion() {
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
+
+export async function uploadReportPdf(idProyecto, etapa, file) {
+  const { token, header } = getCsrf();
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${etapa}/reporte`, {
+    method: "POST",
+    body: form,
+    headers: token && header ? { [header]: token } : {}
+  });
+
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (e) { data = {}; }
+
+  if (!res.ok) throw new Error(data.message || text || "No se pudo subir el reporte.");
+  return data;
+}
