@@ -722,10 +722,10 @@ body{
 .btn-secondary {
     background: rgba(0, 0, 0, .08);
     color: #222;
-    cursor: pointer; /* Obligamos a que muestre la manita */
+    cursor: pointer; 
 }
 
 .btn-secondary:hover {
-    background: rgba(0, 0, 0, .12); /* Le da el efecto al pasar el mouse */
+    background: rgba(0, 0, 0, .12); 
 }
 

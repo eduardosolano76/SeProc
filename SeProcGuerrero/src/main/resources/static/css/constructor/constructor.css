@@ -461,11 +461,16 @@ body{
   height:32px;
   border:none;
   background:transparent;
-  font-size:24px;
   cursor:pointer;
-  color:#111;
   display:grid;
   place-items:center;
+  padding:0;
+}
+
+.process-mini-back img{
+  width:20px;
+  height:20px;
+  object-fit:contain;
 }
 .process-mini-chip{
   background:#d8d4cd;
@@ -609,4 +614,191 @@ body{
 #constructorProcesoView::-webkit-scrollbar-thumb:hover,
 #constructorBloqueView::-webkit-scrollbar-thumb:hover{
   background: #aca59c;
+}
+
+#constructorEtapaView{
+  display:none;
+}
+
+.etapa-mini-shell{
+  padding: 8px 2px 4px;
+}
+
+.etapa-mini-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.etapa-mini-history{
+  width:32px;
+  height:32px;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+}
+
+.etapa-mini-history img{
+  max-width:24px;
+  max-height:24px;
+  object-fit:contain;
+}
+
+.etapa-mini-grid{
+  display:grid;
+  grid-template-columns: 1.3fr 0.8fr;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+.etapa-card{
+  background:#fff;
+  border-radius:18px;
+  padding:16px 18px;
+  min-height:180px;
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.etapa-card-title{
+  text-align:center;
+  font-size:16px;
+  font-weight:600;
+  margin-bottom:14px;
+}
+
+.etapa-empty{
+  color:#8d8a84;
+  font-size:13px;
+  text-align:center;
+  margin-top:48px;
+}
+
+.etapa-upload-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  margin-top:20px;
+}
+
+.etapa-btn-upload,
+.etapa-btn-send{
+  min-width:160px;
+  height:42px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+  padding:0 18px;
+}
+
+.etapa-btn-upload{
+  border:1px solid #d3d0ca;
+  background:#fff;
+  color:#111;
+  cursor:pointer;
+}
+
+.etapa-btn-send{
+  border:none;
+  background:#155093;
+  color:#fff;
+  cursor:pointer;
+}
+
+.etapa-upload-panel{
+  min-height:260px;
+  border-radius:20px;
+}
+
+.etapa-upload-placeholder{
+  color:#8d8a84;
+  font-size:13px;
+  padding:10px 4px;
+}
+
+@media (max-width: 980px){
+  .etapa-mini-grid{
+    grid-template-columns: 1fr;
+  }
+}
+.structure-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.structure-accordion{
+  background:#d8d4cd;
+  border-radius:22px;
+  overflow:hidden;
+}
+
+.structure-accordion.nested{
+  background:#ece8e2;
+  margin-top:10px;
+}
+
+.structure-accordion-toggle{
+  width:100%;
+  border:none;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  cursor:pointer;
+  font:inherit;
+}
+
+.structure-accordion-title{
+  font-size:16px;
+  font-weight:700;
+  color:#111;
+  text-align:left;
+}
+
+.structure-accordion-arrow{
+  width:20px;
+  height:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:rotate(-90deg);
+  transition:transform .18s ease;
+  flex:0 0 20px;
+}
+
+.structure-accordion-arrow img{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+}
+
+.structure-accordion.open > .structure-accordion-toggle .structure-accordion-arrow{
+  transform:rotate(0deg);
+}
+
+.structure-accordion-body{
+  display:none;
+  padding:0 14px 14px;
+}
+
+.structure-accordion.open > .structure-accordion-body{
+  display:block;
+}
+
+.compact-stage{
+  min-height:64px;
+  padding:12px 18px;
+  border-radius:20px;
+  margin-top:10px;
+}
+
+.compact-stage .process-mini-stage-label{
+  font-size:16px;
 }
