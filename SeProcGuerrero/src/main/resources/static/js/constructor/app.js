@@ -8,6 +8,8 @@ let currentList = [];
 let currentProcesoDto = null;
 let currentBloqueKey = null;
 let bloqueStack = [];
+let currentEtapaKey = null;
+let currentEtapaNombre = null;
 
 // Elementos Globales (fuera del panel)
 const profileBtn = document.getElementById('profileBtn');
@@ -85,13 +87,15 @@ function bindPanelEvents() {
     const btnBackEtapa = document.getElementById('btnBackEtapa');
     if (btnBackEtapa) btnBackEtapa.onclick = volverABloqueConstructor;
 
-    const processContent = document.getElementById('constructorProcesoContent');
-    if (processContent) {
-        const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
-        bloques.forEach(btn => {
-            btn.onclick = () => openBloqueConstructor(btn.dataset.bloque);
-        });
-    }
+	const processContent = document.getElementById('constructorProcesoContent');
+	if (processContent) {
+	    const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
+	    bloques.forEach(btn => {
+	        btn.onclick = () => {
+	            openBloqueConstructor(btn.dataset.bloque);
+	        };
+	    });
+	}
 
     const bloqueContent = document.getElementById('constructorBloqueContent');
     if (bloqueContent) {
@@ -103,18 +107,40 @@ function bindPanelEvents() {
             };
         });
 
-        const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
-        subBloques.forEach(btn => {
-            btn.onclick = () => openSubBloqueConstructor(btn.dataset.subbloque);
-        });
+		const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
+		subBloques.forEach(btn => {
+		    btn.onclick = () => {
+		        openSubBloqueConstructor(btn.dataset.subbloque);
+		    };
+		});
 
-        const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');
-        etapas.forEach(btn => {
-            btn.onclick = () => {
-                openEtapaConstructor(btn.dataset.etapa, btn.dataset.nombre || btn.textContent.trim());
-            };
-        });
+		const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');
+		etapas.forEach(btn => {
+		    btn.onclick = () => {
+		        const estado = (btn.dataset.estado || '').toLowerCase();
+
+		        // solo las etapas finales bloqueadas no abren la pestaña de evidencias
+		        if (estado === 'locked') return;
+
+		        openEtapaConstructor(
+		            btn.dataset.etapa,
+		            btn.dataset.nombre || btn.textContent.trim()
+		        );
+		    };
+		});
     }
+	
+	const btnHistoryEtapa = document.getElementById('btnHistoryEtapa');
+	if (btnHistoryEtapa) {
+	    btnHistoryEtapa.onclick = openHistorialConstructor;
+	}
+
+	const btnBackHistorial = document.getElementById('btnBackHistorial');
+	if (btnBackHistorial) {
+	    btnBackHistorial.onclick = volverAEtapaConstructor;
+	}
+	
+	
 }
 
 function registerGlobalEvents() {
@@ -162,12 +188,14 @@ function showConstructorView(viewName) {
     const procesoView = document.getElementById('constructorProcesoView');
     const bloqueView = document.getElementById('constructorBloqueView');
     const etapaView = document.getElementById('constructorEtapaView');
+    const historialView = document.getElementById('constructorHistorialView');
 
     if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
     if (passwordView) passwordView.style.display = viewName === 'password' ? 'block' : 'none';
     if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
     if (bloqueView) bloqueView.style.display = viewName === 'bloque' ? 'block' : 'none';
     if (etapaView) etapaView.style.display = viewName === 'etapa' ? 'block' : 'none';
+    if (historialView) historialView.style.display = viewName === 'historial' ? 'block' : 'none';
 }
 
 function volverAListaProyectos() {
@@ -232,67 +260,68 @@ function volverABloqueConstructor() {
     showConstructorView('bloque');
 }
 
-function openEtapaConstructor(etapaKey, etapaNombre) {
+async function openEtapaConstructor(etapaKey, etapaNombre) {
     if (!currentProcesoDto) return;
 
-    ui.renderEtapaProyecto(currentProcesoDto, etapaKey, etapaNombre);
-    showConstructorView('etapa');
-    bindPanelEvents();
+    try {
+        currentEtapaKey = etapaKey;
+        currentEtapaNombre = etapaNombre;
 
-    const etapaView = document.getElementById('constructorEtapaView');
-    if (etapaView) etapaView.scrollTop = 0;
-	
-	const btnUpload = document.getElementById(`btnUploadReporte_${etapaKey}`);
-	    const fileInput = document.getElementById(`reporteFile_${etapaKey}`);
+        const detalleEtapa = await api.fetchDetalleEtapa(currentProcesoDto.idProyecto, etapaKey);
 
-	    if (btnUpload && fileInput) {
-	        // Al hacer clic en el botón, abrimos el selector de archivos
-	        btnUpload.addEventListener('click', () => {
-	            fileInput.click();
-	        });
+        ui.renderEtapaProyecto(currentProcesoDto, etapaKey, etapaNombre, detalleEtapa);
+        showConstructorView('etapa');
+        bindPanelEvents();
 
-	        // Cuando el usuario selecciona un archivo
-	        fileInput.addEventListener('change', async (e) => {
-	            const file = e.target.files[0];
-	            if (!file) return;
+        const etapaView = document.getElementById('constructorEtapaView');
+        if (etapaView) etapaView.scrollTop = 0;
 
-	            if (file.type !== "application/pdf") {
-	                return ui.showCustomAlert("Por favor selecciona un archivo PDF válido.", "Error de formato");
-	            }
+        const btnUpload = document.getElementById(`btnUploadReporte_${etapaKey}`);
+        const fileInput = document.getElementById(`reporteFile_${etapaKey}`);
+        const btnSend = document.getElementById(`btnSendReporte_${etapaKey}`);
 
-	            try {
-	                // Cambiamos el texto del botón temporalmente
-	                const textoOriginal = btnUpload.textContent;
-	                btnUpload.textContent = "Subiendo...";
-	                btnUpload.disabled = true;
+        if (!btnUpload || !fileInput) {
+            return;
+        }
 
-	                const response = await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
-	                
-					await ui.showCustomAlert('Reporte subido correctamente.', 'Éxito');
-					                
-					                // Inyectamos el link dentro de la tarjeta "Tu trabajo"
-					                const linkContainer = document.getElementById(`enlaceReporte_${etapaKey}`);
-					                if(linkContainer) {
-					                    linkContainer.innerHTML = `
-					                        <div style="background: #f4f4f4; padding: 10px; border-radius: 12px; border: 1px solid #d3d0ca; display: inline-block;">
+        btnUpload.onclick = () => {
+            fileInput.click();
+        };
 
-					                            <a href="${response.url}" target="_blank" style="color: #155093; font-weight: 700; text-decoration: none; font-size: 14px;">
-					                                📄 Ver Reporte PDF
-					                            </a>
-					                        </div>
-					                    `;
-					                }
+        fileInput.onchange = async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-	            } catch (err) {
-	                await ui.showCustomAlert(err.message, 'Error al subir');
-	            } finally {
-	                // Restauramos el botón
-	                btnUpload.textContent = "+ Agregar reporte";
-	                btnUpload.disabled = false;
-	                fileInput.value = ''; // Limpiamos el input
-	            }
-	        });
-	    }
+            if (file.type !== 'application/pdf') {
+                return ui.showCustomAlert('Por favor selecciona un archivo PDF válido.', 'Error de formato');
+            }
+
+            try {
+                const textoOriginal = btnUpload.textContent;
+                btnUpload.textContent = 'Subiendo...';
+                btnUpload.disabled = true;
+                if (btnSend) btnSend.disabled = true;
+
+                await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
+                await ui.showCustomAlert('Reporte subido correctamente.', 'Éxito');
+
+                await openEtapaConstructor(etapaKey, etapaNombre);
+
+                btnUpload.textContent = textoOriginal;
+                btnUpload.disabled = false;
+                if (btnSend) btnSend.disabled = false;
+            } catch (err) {
+                await ui.showCustomAlert(err.message, 'Error al subir');
+                btnUpload.textContent = '+ Agregar reporte';
+                btnUpload.disabled = false;
+                if (btnSend) btnSend.disabled = false;
+            } finally {
+                fileInput.value = '';
+            }
+        };
+    } catch (e) {
+        await ui.showCustomAlert('No se pudo cargar la etapa: ' + e.message, 'Error');
+    }
 }
 
 async function loadAndRenderProjects() {
@@ -536,4 +565,24 @@ function initProfilePhoto() {
             profileFile.value = '';
         }
     });
+}
+
+function volverAEtapaConstructor() {
+    showConstructorView('etapa');
+}
+
+async function openHistorialConstructor() {
+    if (!currentProcesoDto || !currentEtapaKey) return;
+
+    try {
+        const historial = await api.fetchHistorialEtapa(currentProcesoDto.idProyecto, currentEtapaKey);
+        ui.renderHistorialProyecto(historial);
+        showConstructorView('historial');
+        bindPanelEvents();
+
+        const historialView = document.getElementById('constructorHistorialView');
+        if (historialView) historialView.scrollTop = 0;
+    } catch (e) {
+        await ui.showCustomAlert('No se pudo cargar el historial: ' + e.message, 'Error');
+    }
 }

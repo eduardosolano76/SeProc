@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.modelo.Proyecto;
+import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.SolicitudProyecto;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.service.ProyectoEtapaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,11 +20,14 @@ public class SupervisorProyectosApiController {
 
     private final ProyectoRepository proyectoRepo;
     private final UsuarioRepository usuarioRepo;
+    private final ProyectoEtapaService proyectoEtapaService;
 
     public SupervisorProyectosApiController(ProyectoRepository proyectoRepo,
-                                            UsuarioRepository usuarioRepo) {
+                                            UsuarioRepository usuarioRepo,
+                                            ProyectoEtapaService proyectoEtapaService) {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
+        this.proyectoEtapaService = proyectoEtapaService;
     }
 
     @GetMapping
@@ -113,7 +118,120 @@ public class SupervisorProyectosApiController {
         dto.put("tipoEdificacion", s.getTipoEdificacion() != null
                 ? s.getTipoEdificacion().getNombre()
                 : "");
+        dto.put("modoVista", "SUPERVISOR");
+        dto.put("soloLectura", false);
+        dto.put("puedeSubir", false);
+        dto.put("puedeComentar", true);
+        dto.put("puedeAprobar", true);
+        dto.put("estadosEtapa", proyectoEtapaService.obtenerEstadosVisuales(id));
 
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/{id}/etapas/{etapa}/observar")
+    public ResponseEntity<?> observarEtapa(@PathVariable Integer id,
+                                           @PathVariable String etapa,
+                                           @RequestParam("comentario") String comentario,
+                                           Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Supervisor no encontrado");
+        }
+
+        var supervisor = usuarioOpt.get();
+        Long supervisorId = supervisor.getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Proyecto p = pOpt.get();
+        if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        proyectoEtapaService.registrarObservacion(etapaActual, supervisor, comentario);
+
+        return ResponseEntity.ok("Observación registrada");
+    }
+
+    @PostMapping("/{id}/etapas/{etapa}/aprobar")
+    public ResponseEntity<?> aprobarEtapa(@PathVariable Integer id,
+                                          @PathVariable String etapa,
+                                          Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Supervisor no encontrado");
+        }
+
+        var supervisor = usuarioOpt.get();
+        Long supervisorId = supervisor.getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Proyecto p = pOpt.get();
+        if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        proyectoEtapaService.aprobarEtapaYHabilitarSiguiente(etapaActual, supervisor);
+
+        return ResponseEntity.ok("Etapa aprobada");
+    }
+    
+    @GetMapping("/{id}/etapas/{etapa}")
+    public ResponseEntity<?> detalleEtapa(@PathVariable Integer id,
+                                          @PathVariable String etapa,
+                                          Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Supervisor no encontrado");
+        }
+
+        Long supervisorId = usuarioOpt.get().getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Proyecto p = pOpt.get();
+        if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        return ResponseEntity.ok(proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual));
+    }
+    
+    @GetMapping("/{id}/etapas/{etapa}/historial")
+    public ResponseEntity<?> historialEtapa(@PathVariable Integer id,
+                                            @PathVariable String etapa,
+                                            Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Supervisor no encontrado");
+        }
+
+        Long supervisorId = usuarioOpt.get().getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Proyecto p = pOpt.get();
+        if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
     }
 }

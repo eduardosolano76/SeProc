@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.SolicitudDetalleDto;
+
 import com.example.demo.modelo.Proyecto;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.SolicitudProyectoRepository;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
+import com.example.demo.service.ProyectoEtapaService;
 @RestController
 @RequestMapping("/api/central/solicitudes")
 public class CentralSolicitudesApiController {
@@ -19,13 +20,16 @@ public class CentralSolicitudesApiController {
     private final SolicitudProyectoRepository solRepo;
     private final UsuarioRepository usuarioRepo;
     private final ProyectoRepository proyectoRepo;
+    private final ProyectoEtapaService proyectoEtapaService;
 
     public CentralSolicitudesApiController(SolicitudProyectoRepository solRepo,
                                            UsuarioRepository usuarioRepo,
-                                           ProyectoRepository proyectoRepo) {
+                                           ProyectoRepository proyectoRepo,
+                                           ProyectoEtapaService proyectoEtapaService) {
         this.solRepo = solRepo;
         this.usuarioRepo = usuarioRepo;
         this.proyectoRepo = proyectoRepo;
+        this.proyectoEtapaService = proyectoEtapaService;
     }
 
     @GetMapping("/{id}")
@@ -155,7 +159,9 @@ public class CentralSolicitudesApiController {
         p.setSolicitud(s);
         p.setIdUsuarioSupervisor(supervisorId);
         p.setEstadoProyecto("ACTIVO");
-        proyectoRepo.save(p);
+
+        Proyecto proyectoGuardado = proyectoRepo.save(p);
+        proyectoEtapaService.inicializarEtapasProyecto(proyectoGuardado);
 
         return ResponseEntity.ok("OK");
     }

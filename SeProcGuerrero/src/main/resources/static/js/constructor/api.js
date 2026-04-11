@@ -129,3 +129,15 @@ export async function uploadReportPdf(idProyecto, etapa, file) {
   if (!res.ok) throw new Error(data.message || text || "No se pudo subir el reporte.");
   return data;
 }
+
+export async function fetchDetalleEtapa(idProyecto, etapa) {
+    const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar el detalle de la etapa');
+    return await res.json();
+}
+
+export async function fetchHistorialEtapa(idProyecto, etapa) {
+    const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar el historial de la etapa');
+    return await res.json();
+}

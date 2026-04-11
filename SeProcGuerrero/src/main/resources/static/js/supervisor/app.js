@@ -5,6 +5,11 @@ import { getParam, getViewFromUrl, syncSidebarWithView, loadPanelFromUrl } from 
 let currentView = getParam('view') || 'proyectos';
 let currentEstado = 'ACTIVO';
 let currentList = [];
+let currentProcesoDto = null;
+let currentBloqueKey = null;
+let bloqueStack = [];
+let currentEtapaKey = null;
+let currentEtapaNombre = null;
 
 function updateCurrentEstadoByView() {
   if (currentView !== 'proyectos') return;
@@ -21,6 +26,7 @@ function syncTabsVisually() {
 }
 
 async function loadAndRender() {
+	showSupervisorView('projects');
   if (currentView !== 'proyectos') return;
 
   try {
@@ -41,11 +47,16 @@ async function loadAndRender() {
 async function openDetalleProyecto(idProyecto) {
   try {
     const dto = await api.fetchDetalleProyecto(idProyecto);
-    ui.renderDetalleProyecto(dto);
-    ui.openModal(
-      document.getElementById('detalleModal'),
-      document.getElementById('detalleBackdrop')
-    );
+    currentProcesoDto = dto;
+    bloqueStack = [];
+    currentBloqueKey = null;
+
+    ui.renderProcesoSupervisor(dto);
+    showSupervisorView('proceso');
+    bindPanelEventsSupervisor();
+
+    const procesoView = document.getElementById('supervisorProcesoView');
+    if (procesoView) procesoView.scrollTop = 0;
   } catch (e) {
     await ui.showCustomAlert(`No se pudo cargar el detalle: ${e.message}`, 'Error');
   }
@@ -275,12 +286,229 @@ function bindNavigation() {
   });
 }
 
+function bindPanelEventsSupervisor() {
+  const btnBackProceso = document.getElementById('btnBackProcesoSupervisor');
+  if (btnBackProceso) btnBackProceso.onclick = volverAListaProyectosSupervisor;
+
+  const btnBackBloque = document.getElementById('btnBackBloqueSupervisor');
+  if (btnBackBloque) btnBackBloque.onclick = volverAProcesoSupervisor;
+
+  const btnBackEtapa = document.getElementById('btnBackEtapaSupervisor');
+  if (btnBackEtapa) btnBackEtapa.onclick = volverABloqueSupervisor;
+
+  const btnBackHistorial = document.getElementById('btnBackHistorialSupervisor');
+  if (btnBackHistorial) btnBackHistorial.onclick = volverAEtapaSupervisor;
+
+  const btnHistory = document.getElementById('btnHistorySupervisor');
+  if (btnHistory) btnHistory.onclick = openHistorialSupervisor;
+
+  const processContent = document.getElementById('supervisorProcesoContent');
+  if (processContent) {
+    const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
+    bloques.forEach(btn => {
+      btn.onclick = () => openBloqueSupervisor(btn.dataset.bloque);
+    });
+  }
+
+  const bloqueContent = document.getElementById('supervisorBloqueContent');
+  if (bloqueContent) {
+    const toggles = bloqueContent.querySelectorAll('.structure-accordion-toggle');
+    toggles.forEach(toggle => {
+      toggle.onclick = () => {
+        const item = toggle.closest('.structure-accordion');
+        if (item) item.classList.toggle('open');
+      };
+    });
+
+	const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
+	subBloques.forEach(btn => {
+	  btn.onclick = () => openSubBloqueSupervisor(btn.dataset.subbloque);
+	});
+
+	const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');
+	etapas.forEach(btn => {
+	  btn.onclick = () => {
+	    const estado = (btn.dataset.estado || '').toLowerCase();
+
+	    if (estado === 'locked') return;
+
+	    openEtapaSupervisor(
+	      btn.dataset.etapa,
+	      btn.dataset.nombre || btn.textContent.trim()
+	    );
+	  };
+	});
+  }
+
+  const btnSendObservation = document.getElementById('btnSendObservationSupervisor');
+  if (btnSendObservation) {
+    btnSendObservation.onclick = async () => {
+      const txt = document.getElementById('txtObservationSupervisor');
+      const msg = txt?.value?.trim() || '';
+
+      if (!msg) {
+        await ui.showCustomAlert('Escribe una observación.', 'Aviso');
+        return;
+      }
+
+      try {
+        await api.observarEtapa(currentProcesoDto.idProyecto, currentEtapaKey, msg);
+        await ui.showCustomAlert('Observación guardada correctamente.', 'Éxito');
+        await openEtapaSupervisor(currentEtapaKey, currentEtapaNombre);
+      } catch (e) {
+        await ui.showCustomAlert(e.message, 'Error');
+      }
+    };
+  }
+
+  const btnApproveReport = document.getElementById('btnApproveReportSupervisor');
+  if (btnApproveReport) {
+    btnApproveReport.onclick = async () => {
+      try {
+        await api.aprobarEtapa(currentProcesoDto.idProyecto, currentEtapaKey);
+        await ui.showCustomAlert('Etapa aprobada correctamente.', 'Éxito');
+
+        const dto = await api.fetchDetalleProyecto(currentProcesoDto.idProyecto);
+        currentProcesoDto = dto;
+        bloqueStack = [];
+        currentBloqueKey = null;
+
+        ui.renderProcesoSupervisor(dto);
+        showSupervisorView('proceso');
+        bindPanelEventsSupervisor();
+      } catch (e) {
+        await ui.showCustomAlert(e.message, 'Error');
+      }
+    };
+  }
+}
+
+function showSupervisorView(viewName) {
+  const projectsView = document.getElementById('supervisorProjectsView');
+  const passwordView = document.getElementById('supervisorPasswordView');
+  const procesoView = document.getElementById('supervisorProcesoView');
+  const bloqueView = document.getElementById('supervisorBloqueView');
+  const etapaView = document.getElementById('supervisorEtapaView');
+  const historialView = document.getElementById('supervisorHistorialView');
+
+  if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
+  if (passwordView) passwordView.style.display = viewName === 'password' ? 'block' : 'none';
+  if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
+  if (bloqueView) bloqueView.style.display = viewName === 'bloque' ? 'block' : 'none';
+  if (etapaView) etapaView.style.display = viewName === 'etapa' ? 'block' : 'none';
+  if (historialView) historialView.style.display = viewName === 'historial' ? 'block' : 'none';
+}
+
+function volverAListaProyectosSupervisor() {
+  bloqueStack = [];
+  currentBloqueKey = null;
+  currentProcesoDto = null;
+  showSupervisorView('projects');
+  loadAndRender();
+}
+
+function volverAProcesoSupervisor() {
+  if (!currentProcesoDto) {
+    showSupervisorView('proceso');
+    return;
+  }
+
+  if (bloqueStack.length > 0) {
+    currentBloqueKey = bloqueStack.pop();
+    ui.renderBloqueSupervisor(currentProcesoDto, currentBloqueKey);
+    showSupervisorView('bloque');
+    bindPanelEventsSupervisor();
+
+    const bloqueView = document.getElementById('supervisorBloqueView');
+    if (bloqueView) bloqueView.scrollTop = 0;
+    return;
+  }
+
+  currentBloqueKey = null;
+  showSupervisorView('proceso');
+}
+
+function volverABloqueSupervisor() {
+  showSupervisorView('bloque');
+}
+
+function volverAEtapaSupervisor() {
+  showSupervisorView('etapa');
+}
+
+function openBloqueSupervisor(bloque) {
+  if (!currentProcesoDto) return;
+
+  bloqueStack = [];
+  currentBloqueKey = bloque;
+  ui.renderBloqueSupervisor(currentProcesoDto, bloque);
+  showSupervisorView('bloque');
+  bindPanelEventsSupervisor();
+
+  const bloqueView = document.getElementById('supervisorBloqueView');
+  if (bloqueView) bloqueView.scrollTop = 0;
+}
+
+function openSubBloqueSupervisor(subbloque) {
+  if (!currentProcesoDto) return;
+
+  if (currentBloqueKey) {
+    bloqueStack.push(currentBloqueKey);
+  }
+
+  currentBloqueKey = subbloque;
+  ui.renderBloqueSupervisor(currentProcesoDto, subbloque);
+  showSupervisorView('bloque');
+  bindPanelEventsSupervisor();
+
+  const bloqueView = document.getElementById('supervisorBloqueView');
+  if (bloqueView) bloqueView.scrollTop = 0;
+}
+
+async function openEtapaSupervisor(etapaKey, etapaNombre) {
+  if (!currentProcesoDto) return;
+
+  try {
+    currentEtapaKey = etapaKey;
+    currentEtapaNombre = etapaNombre;
+
+    const detalleEtapa = await api.fetchDetalleEtapa(currentProcesoDto.idProyecto, etapaKey);
+
+    ui.renderEtapaSupervisor(currentProcesoDto, etapaKey, etapaNombre, detalleEtapa);
+    showSupervisorView('etapa');
+    bindPanelEventsSupervisor();
+
+    const etapaView = document.getElementById('supervisorEtapaView');
+    if (etapaView) etapaView.scrollTop = 0;
+  } catch (e) {
+    await ui.showCustomAlert('No se pudo cargar la etapa: ' + e.message, 'Error');
+  }
+}
+
+async function openHistorialSupervisor() {
+  if (!currentProcesoDto || !currentEtapaKey) return;
+
+  try {
+    const historial = await api.fetchHistorialEtapa(currentProcesoDto.idProyecto, currentEtapaKey);
+    ui.renderHistorialSupervisor(historial);
+    showSupervisorView('historial');
+    bindPanelEventsSupervisor();
+
+    const historialView = document.getElementById('supervisorHistorialView');
+    if (historialView) historialView.scrollTop = 0;
+  } catch (e) {
+    await ui.showCustomAlert('No se pudo cargar el historial: ' + e.message, 'Error');
+  }
+}
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   currentView = getParam('view') || 'proyectos';
   syncSidebarWithView(currentView);
 
   bindNavigation();
   bindTabs();
+  bindPanelEventsSupervisor();
   bindSearch();
   bindModalActions();
   bindPasswordForm();
@@ -288,3 +516,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadAndRender();
 });
+

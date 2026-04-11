@@ -114,74 +114,78 @@
 				</div>
 			</header>
 
-			<section class="panel" id="panelContent"
-				aria-label="Sección principal">
+			<section class="panel panel-scroll" id="panelContent" aria-label="Sección principal">
 
-				<div th:if="${view == 'proyectos'}">
-					<div class="panel-head">
-						<div>
-							<h2 class="panel-title">Proyectos</h2>
-							<div class="panel-sub">Aquí se mostrarán únicamente los
-								proyectos asignados al supervisor</div>
-						</div>
-						<button class="add-btn" type="button"
-							title="Sin acciones disponibles" disabled>
-							<span class="add-plus">+</span>
-						</button>
-					</div>
+				<div id="supervisorProjectsView" th:style="${view == 'password'} ? 'display:none;' : 'display:block;'">
+    <div class="panel-head">
+        <div>
+            <h2 class="panel-title">Proyectos</h2>
+            <div class="panel-sub">Aquí se mostrarán únicamente los proyectos asignados al supervisor</div>
+        </div>
+        <button class="add-btn" type="button" title="Sin acciones disponibles" disabled>
+            <span class="add-plus">+</span>
+        </button>
+    </div>
 
-					<div class="tabs" id="tabsSupervisor" role="tablist"
-						aria-label="Filtros de proyectos">
-						<button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
-						<button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
-						<button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
-					</div>
+    <div class="tabs" id="tabsSupervisor" role="tablist" aria-label="Filtros de proyectos">
+        <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+        <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+        <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+    </div>
 
-					<div class="cards" id="supervisorProjectsList">
-						<div class="empty" id="supervisorProjectsEmpty">Aún no hay
-							proyectos asignados para mostrar.</div>
-					</div>
-				</div>
+    <div class="cards" id="supervisorProjectsList">
+        <div class="empty" id="supervisorProjectsEmpty">Aún no hay proyectos asignados para mostrar.</div>
+    </div>
+</div>
 
-				<div th:if="${view == 'password'}">
-					<div class="password-card">
-						<div class="password-head">
-							<h3>Cambiar contraseña</h3>
-						</div>
-						<div class="password-body">
-							<p class="text-primary">Los campos con * son obligatorios</p>
-							<p class="text-muted">En seguida podrás cambiar tu contraseña
-								actual del sistema, recuerda que debe tener 8 caracteres como
-								mínimo, 1 número y 1 caracter especial.</p>
+<div id="supervisorPasswordView" th:style="${view == 'password'} ? 'display:block;' : 'display:none;'">
+    <div class="password-card">
+        <div class="password-head">
+            <h3>Cambiar contraseña</h3>
+        </div>
+        <div class="password-body">
+            <p class="text-primary">Los campos con * son obligatorios</p>
+            <p class="text-muted">En seguida podrás cambiar tu contraseña actual del sistema, recuerda que debe tener 8 caracteres como mínimo, 1 número y 1 caracter especial.</p>
 
-							<form id="formCambiarPassword" class="password-form">
-								<div class="form-group">
-									<label>Contraseña actual*</label> <input type="password"
-										id="passActual" name="passActual" required>
-								</div>
+            <form id="formCambiarPassword" class="password-form">
+                <div class="form-group">
+                    <label>Contraseña actual*</label>
+                    <input type="password" id="passActual" name="passActual" required>
+                </div>
 
-								<div class="form-group">
-									<label>Contraseña nueva*</label> <input type="password"
-										id="passNueva" name="passNueva" required minlength="8">
-								</div>
+                <div class="form-group">
+                    <label>Contraseña nueva*</label>
+                    <input type="password" id="passNueva" name="passNueva" required minlength="8">
+                </div>
 
-								<div class="form-group">
-									<label>Repite la contraseña nueva*</label> <input
-										type="password" id="passRepetida" name="passRepetida" required
-										minlength="8">
-								</div>
+                <div class="form-group">
+                    <label>Repite la contraseña nueva*</label>
+                    <input type="password" id="passRepetida" name="passRepetida" required minlength="8">
+                </div>
 
-								<div class="form-actions-right">
-									<button type="submit" class="btn-primary">
-										<img th:src="@{/assets/iconos/sincronizar.png}" alt=""
-											style="width: 16px; margin-right: 6px; filter: brightness(0) invert(1);"
-											onerror="this.style.display='none'"> Cambiar
-									</button>
-								</div>
-							</form>
-						</div>
-					</div>
-				</div>
+                <div class="form-actions-right">
+                    <button type="submit" class="btn-primary">Cambiar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="supervisorProcesoView" style="display:none;">
+    <div id="supervisorProcesoContent"></div>
+</div>
+
+<div id="supervisorBloqueView" style="display:none;">
+    <div id="supervisorBloqueContent"></div>
+</div>
+
+<div id="supervisorEtapaView" style="display:none;">
+    <div id="supervisorEtapaContent"></div>
+</div>
+
+<div id="supervisorHistorialView" style="display:none;">
+    <div id="supervisorHistorialContent"></div>
+</div>
 
 			</section>
 

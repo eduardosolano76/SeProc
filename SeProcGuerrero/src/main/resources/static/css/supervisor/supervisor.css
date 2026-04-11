@@ -729,3 +729,498 @@ body{
     background: rgba(0, 0, 0, .12); 
 }
 
+.panel-scroll{
+  height: calc(100vh - 110px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#supervisorProjectsView,
+#supervisorPasswordView,
+#supervisorProcesoView,
+#supervisorBloqueView,
+#supervisorEtapaView,
+#supervisorHistorialView{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:8px;
+}
+
+#supervisorProcesoView,
+#supervisorBloqueView,
+#supervisorEtapaView,
+#supervisorHistorialView{
+  display:none;
+}
+
+/* ===== Scrollbar interna ===== */
+#supervisorProjectsView::-webkit-scrollbar,
+#supervisorPasswordView::-webkit-scrollbar,
+#supervisorProcesoView::-webkit-scrollbar,
+#supervisorBloqueView::-webkit-scrollbar,
+#supervisorEtapaView::-webkit-scrollbar,
+#supervisorHistorialView::-webkit-scrollbar{
+  width:10px;
+}
+
+#supervisorProjectsView::-webkit-scrollbar-track,
+#supervisorPasswordView::-webkit-scrollbar-track,
+#supervisorProcesoView::-webkit-scrollbar-track,
+#supervisorBloqueView::-webkit-scrollbar-track,
+#supervisorEtapaView::-webkit-scrollbar-track,
+#supervisorHistorialView::-webkit-scrollbar-track{
+  background: transparent;
+  border-radius:999px;
+}
+
+#supervisorProjectsView::-webkit-scrollbar-thumb,
+#supervisorPasswordView::-webkit-scrollbar-thumb,
+#supervisorProcesoView::-webkit-scrollbar-thumb,
+#supervisorBloqueView::-webkit-scrollbar-thumb,
+#supervisorEtapaView::-webkit-scrollbar-thumb,
+#supervisorHistorialView::-webkit-scrollbar-thumb{
+  background:#c2bdb6;
+  border-radius:999px;
+}
+
+/* ===== PROCESO ===== */
+.process-mini-shell{
+  padding:8px 2px 4px;
+}
+
+.process-mini-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.process-mini-back{
+  width:32px;
+  height:32px;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+
+.process-mini-back img{
+  width:20px;
+  height:20px;
+  object-fit:contain;
+}
+
+.process-mini-chip{
+  background:#d8d4cd;
+  border-radius:999px;
+  padding:8px 18px;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+.process-mini-spacer{
+  width:32px;
+  height:32px;
+}
+
+.process-mini-summary{
+  background:#d8d4cd;
+  border-radius:24px;
+  padding:16px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.process-mini-left{
+  min-width:260px;
+}
+
+.process-mini-school{
+  font-size:22px;
+  font-weight:700;
+  line-height:1.1;
+  margin-bottom:8px;
+}
+
+.process-mini-meta{
+  font-size:13px;
+  margin-bottom:3px;
+}
+
+.process-mini-right{
+  flex:1;
+}
+
+.process-mini-progress-label{
+  text-align:center;
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:8px;
+}
+
+.process-mini-track{
+  width:100%;
+  height:14px;
+  border-radius:999px;
+  background:#efede8;
+  overflow:hidden;
+}
+
+.process-mini-fill{
+  height:100%;
+  border-radius:999px;
+  background:#3f95dd;
+}
+
+.process-mini-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.process-mini-stage{
+  width:100%;
+  min-height:76px;
+  border:none;
+  border-radius:26px;
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  cursor:pointer;
+  font:inherit;
+}
+
+.process-mini-stage-icon{
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 34px;
+}
+
+.process-mini-stage-icon img{
+  max-width:28px;
+  max-height:28px;
+  object-fit:contain;
+}
+
+.process-mini-stage-label{
+  flex:1;
+  text-align:center;
+  font-size:18px;
+  font-weight:700;
+  color:#111;
+}
+
+.process-mini-stage.status-done{
+  background:#7fd336;
+}
+
+.process-mini-stage.status-current{
+  background:#d6ba22;
+}
+
+.process-mini-stage.status-locked{
+  background:#d1ccc6;
+}
+
+.compact-stage{
+  min-height:64px;
+  padding:12px 18px;
+  border-radius:20px;
+  margin-top:10px;
+}
+
+.compact-stage .process-mini-stage-label{
+  font-size:16px;
+}
+
+/* ===== ACORDEONES ===== */
+.structure-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.structure-accordion{
+  background:#d8d4cd;
+  border-radius:22px;
+  overflow:hidden;
+}
+
+.structure-accordion.nested{
+  background:#ece8e2;
+  margin-top:10px;
+}
+
+.structure-accordion-toggle{
+  width:100%;
+  border:none;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  cursor:pointer;
+  font:inherit;
+}
+
+.structure-accordion-title{
+  font-size:16px;
+  font-weight:700;
+  color:#111;
+  text-align:left;
+}
+
+.structure-accordion-arrow{
+  width:20px;
+  height:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:rotate(-90deg);
+  transition:transform .18s ease;
+  flex:0 0 20px;
+}
+
+.structure-accordion-arrow img{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+}
+
+.structure-accordion.open > .structure-accordion-toggle .structure-accordion-arrow{
+  transform:rotate(0deg);
+}
+
+.structure-accordion-body{
+  display:none;
+  padding:0 14px 14px;
+}
+
+.structure-accordion.open > .structure-accordion-body{
+  display:block;
+}
+
+/* ===== ETAPA ===== */
+.etapa-mini-shell{
+  padding:8px 2px 4px;
+}
+
+.etapa-mini-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.etapa-mini-history{
+  width:32px;
+  height:32px;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+}
+
+.etapa-mini-history img{
+  max-width:24px;
+  max-height:24px;
+  object-fit:contain;
+}
+
+.etapa-mini-grid{
+  display:grid;
+  grid-template-columns:1.3fr 0.8fr;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+.etapa-card{
+  background:#fff;
+  border-radius:18px;
+  padding:16px 18px;
+  min-height:180px;
+  box-shadow:0 3px 12px rgba(0,0,0,.08);
+}
+
+.etapa-card-title{
+  text-align:center;
+  font-size:16px;
+  font-weight:600;
+  margin-bottom:14px;
+}
+
+.etapa-empty{
+  color:#8d8a84;
+  font-size:13px;
+  text-align:center;
+}
+
+.supervisor-observation-box{
+  margin-top:8px;
+}
+
+.supervisor-observation-textarea{
+  width:100%;
+  min-height:120px;
+  border:1px solid #d3d0ca;
+  border-radius:16px;
+  padding:14px;
+  resize:vertical;
+  font:inherit;
+  outline:none;
+}
+
+.supervisor-observation-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+
+.supervisor-send-btn{
+  width:44px;
+  height:44px;
+  border:none;
+  border-radius:50%;
+  background:#155093;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.supervisor-send-btn img{
+  width:18px;
+  height:18px;
+  object-fit:contain;
+  filter: brightness(0) invert(1);
+}
+
+.supervisor-approve-wrap{
+  display:flex;
+  justify-content:center;
+  margin-top:22px;
+}
+
+.etapa-btn-send{
+  min-width:180px;
+  height:42px;
+  border:none;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+  padding:0 18px;
+  background:#155093;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* ===== HISTORIAL ===== */
+.historial-mini-shell{
+  padding:8px 2px 4px;
+}
+
+.historial-mini-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.historial-mini-list{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.historial-pair{
+  border:1px solid #ddd7cf;
+  border-radius:20px;
+  padding:14px;
+  background:#f8f6f2;
+}
+
+.historial-row{
+  display:grid;
+  grid-template-columns:1.2fr 0.8fr;
+  gap:14px;
+}
+
+.historial-card{
+  background:#fff;
+  border-radius:18px;
+  padding:14px 16px;
+  box-shadow:0 3px 12px rgba(0,0,0,.08);
+  min-height:170px;
+}
+
+.historial-card-body{
+  font-size:13px;
+  color:#111;
+}
+
+.historial-user{
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+.historial-date{
+  color:#666;
+  margin-bottom:8px;
+}
+
+.historial-text{
+  margin-bottom:6px;
+  line-height:1.4;
+}
+
+.historial-file{
+  margin-top:10px;
+  color:#155093;
+  text-decoration:underline;
+  word-break:break-word;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:980px){
+  .etapa-mini-grid{
+    grid-template-columns:1fr;
+  }
+
+  .historial-row{
+    grid-template-columns:1fr;
+  }
+
+  .process-mini-summary{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .process-mini-right{
+    width:100%;
+  }
+
+  .process-mini-school{
+    font-size:19px;
+  }
+
+  .process-mini-stage-label{
+    font-size:16px;
+  }
+}

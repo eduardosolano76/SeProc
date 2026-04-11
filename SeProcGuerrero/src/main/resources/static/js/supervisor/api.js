@@ -95,3 +95,40 @@ export async function deleteProfilePhoto() {
 
   return data;
 }
+
+export async function fetchDetalleEtapa(idProyecto, etapa) {
+    const res = await fetch(`/api/supervisor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar el detalle de la etapa');
+    return await res.json();
+}
+
+export async function fetchHistorialEtapa(idProyecto, etapa) {
+    const res = await fetch(`/api/supervisor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar el historial de la etapa');
+    return await res.json();
+}
+
+export async function observarEtapa(idProyecto, etapa, comentario) {
+    const params = new URLSearchParams();
+    params.append('comentario', comentario);
+
+    const res = await fetch(`/api/supervisor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/observar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+    });
+
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo guardar la observación');
+    return await res.text();
+}
+
+export async function aprobarEtapa(idProyecto, etapa) {
+    const res = await fetch(`/api/supervisor/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/aprobar`, {
+        method: 'POST'
+    });
+
+    if (!res.ok) throw new Error(await res.text() || 'No se pudo aprobar la etapa');
+    return await res.text();
+}

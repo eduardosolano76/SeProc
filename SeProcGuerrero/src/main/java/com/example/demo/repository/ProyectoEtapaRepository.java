@@ -10,10 +10,17 @@ import com.example.demo.modelo.ProyectoEtapa;
 
 @Repository
 public interface ProyectoEtapaRepository extends JpaRepository<ProyectoEtapa, Long> {
-	
-	// Buscar todas las etapas de un proyecto en específico, ordenadas para mostrarlas
+
     List<ProyectoEtapa> findByProyecto_IdProyectoOrderByOrdenVisualAsc(Integer idProyecto);
 
-    Optional<ProyectoEtapa> findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInterna(Integer idProyecto, String claveInterna);
+    Optional<ProyectoEtapa> findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInternaAndNumeroNivel(Integer idProyecto,
+                                                                                                  String claveInterna,
+                                                                                                  Integer numeroNivel);
 
+    Optional<ProyectoEtapa> findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInternaAndNumeroNivelIsNull(Integer idProyecto,
+                                                                                                          String claveInterna);
+
+    Optional<ProyectoEtapa> findFirstByProyecto_IdProyectoAndOrdenVisualGreaterThanAndEstadoOrderByOrdenVisualAsc(Integer idProyecto,
+                                                                                                                   Integer ordenVisual,
+                                                                                                                   String estado);
 }

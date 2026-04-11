@@ -96,6 +96,11 @@ public class AdminProyectosApiController {
         dto.put("tipoEdificacion", s.getTipoEdificacion() != null
                 ? s.getTipoEdificacion().getNombre()
                 : "");
+        dto.put("modoVista", "ADMIN");
+        dto.put("soloLectura", true);
+        dto.put("puedeSubir", false);
+        dto.put("puedeComentar", false);
+        dto.put("puedeAprobar", false);
 
         return ResponseEntity.ok(dto);
     }

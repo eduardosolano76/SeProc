@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +24,7 @@ import com.example.demo.repository.ProyectoEtapaRepository;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
 import com.example.demo.storage.StorageService;
+import com.example.demo.service.ProyectoEtapaService;
 
 @RestController
 @RequestMapping("/api/constructor/proyectos")
@@ -35,17 +35,21 @@ public class ConstructorProyectosApiController {
     private final StorageService storageService;
     private final ProyectoEtapaRepository proyectoEtapaRepo;
     private final ProyectoEtapaEntregaRepository entregaRepo;
+    private final ProyectoEtapaService proyectoEtapaService;
+    
 
     public ConstructorProyectosApiController(ProyectoRepository proyectoRepo,
                                              UsuarioRepository usuarioRepo, 
                                              StorageService storageService,
                                              ProyectoEtapaRepository proyectoEtapaRepo,
-                                             ProyectoEtapaEntregaRepository entregaRepo) {
+                                             ProyectoEtapaEntregaRepository entregaRepo,
+                                             ProyectoEtapaService proyectoEtapaService) {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
         this.storageService = storageService;
         this.proyectoEtapaRepo = proyectoEtapaRepo;
         this.entregaRepo = entregaRepo;
+        this.proyectoEtapaService = proyectoEtapaService;
     }
 
     @GetMapping
@@ -135,6 +139,13 @@ public class ConstructorProyectosApiController {
         dto.put("tipoEdificacion", s.getTipoEdificacion() != null
                 ? s.getTipoEdificacion().getNombre()
                 : "");
+        dto.put("modoVista", "CONSTRUCTOR");
+        dto.put("soloLectura", false);
+        dto.put("puedeSubir", true);
+        dto.put("puedeComentar", false);
+        dto.put("puedeAprobar", false);
+        dto.put("estadosEtapa", proyectoEtapaService.obtenerEstadosVisuales(id));
+
 
         return ResponseEntity.ok(dto);
     }
@@ -171,23 +182,16 @@ public class ConstructorProyectosApiController {
             // 2. Buscar la etapa del proyecto (Necesitas un método en tu ProyectoEtapaRepository)
             // Ejemplo: Buscar por ID del proyecto y alguna clave interna de la etapa
          // Cambia la línea donde buscas la etapa por esta:
-            ProyectoEtapa etapaActual = proyectoEtapaRepo.findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInterna(id, etapa)
-                .orElseThrow(() -> new RuntimeException("Etapa no encontrada en la base de datos"));
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            proyectoEtapaService.validarSubidaPermitida(etapaActual);
 
-            // 3. Crear el registro de la entrega
-            ProyectoEtapaEntrega entrega = new ProyectoEtapaEntrega();
-            entrega.setProyectoEtapa(etapaActual);
-            entrega.setUsuarioConstructor(usuario);
-            entrega.setNombreArchivoOriginal(file.getOriginalFilename());
-            entrega.setExtensionArchivo("pdf");
-            entrega.setProviderArchivo("FIREBASE"); // Según tu ENUM
-            entrega.setArchivoStoragePath(key);
-            entrega.setArchivoUrl(publicUrl);
-            entrega.setEstadoEntrega("ENTREGADO"); // O "EN_REVISION" según tu ENUM
-            entrega.setFechaSubida(LocalDateTime.now());
-            
-            // 4. Guardar en MySQL
-            entregaRepo.save(entrega);
+            ProyectoEtapaEntrega entrega = proyectoEtapaService.registrarEntrega(
+                    etapaActual,
+                    usuario,
+                    file.getOriginalFilename(),
+                    key,
+                    publicUrl
+            );
 
             return ResponseEntity.ok(Map.of(
                 "mensaje", "Reporte subido y guardado correctamente",
@@ -198,5 +202,53 @@ public class ConstructorProyectosApiController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al subir el reporte.");
         }
+    }
+    
+    @GetMapping("/{id}/etapas/{etapa}")
+    public ResponseEntity<?> detalleEtapa(@PathVariable Integer id,
+                                          @PathVariable String etapa,
+                                          Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Constructor no encontrado");
+        }
+
+        Long constructorId = usuarioOpt.get().getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Proyecto p = pOpt.get();
+        if (!constructorId.equals(p.getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        return ResponseEntity.ok(proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual));
+    }
+
+    @GetMapping("/{id}/etapas/{etapa}/historial")
+    public ResponseEntity<?> historialEtapa(@PathVariable Integer id,
+                                            @PathVariable String etapa,
+                                            Authentication auth) {
+
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Constructor no encontrado");
+        }
+
+        Long constructorId = usuarioOpt.get().getIdUsuario();
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Proyecto p = pOpt.get();
+        if (!constructorId.equals(p.getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
+        }
+
+        ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+        return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
     }
 }

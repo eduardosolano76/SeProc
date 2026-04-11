@@ -211,71 +211,101 @@ export function renderDetalleProyecto(dto) {
   `;
 }
 
+function normalizarEstadoEtapa(estado) {
+    return String(estado || 'BLOQUEADA').trim().toUpperCase();
+}
+
+function resolverEstado(dto, clave) {
+    return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
+}
+
+function claseVisualDesdeEstado(estado) {
+    const e = normalizarEstadoEtapa(estado);
+
+    if (e === 'COMPLETADA') return 'done';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return 'current';
+    return 'locked';
+}
+
+function iconoVisualDesdeEstado(estado) {
+    const e = normalizarEstadoEtapa(estado);
+
+    if (e === 'COMPLETADA') return '/assets/iconos/listo.png';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return '/assets/iconos/proceso.png';
+    return '/assets/iconos/bloqueado.png';
+}
+
 export function renderProcesoProyecto(dto) {
     const container = document.getElementById('constructorProcesoContent');
     if (!container) return;
 
-    const iconDone = '/assets/iconos/listo.png';
-    const iconCurrent = '/assets/iconos/proceso.png';
-    const iconLocked = '/assets/iconos/bloqueado.png';
+    const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
+    const cimentacionEstado = resolverEstado(dto, 'excavacion');
+
+    const estructuraClaves = [
+        'estructura_n1_habilitado_castillos',
+        'estructura_n1_habilitado_columnas',
+        'estructura_n1_cimbra_verticales',
+        'estructura_n1_concreto_verticales'
+    ];
+
+    const acabadosClaves = [
+        'pisos',
+        'guarnicion'
+    ];
+
+    const resolverEstadoBloque = (claves) => {
+        const estados = claves.map(k => resolverEstado(dto, k));
+        if (estados.some(e => e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES')) return 'EN_PROCESO';
+        if (estados.some(e => e === 'COMPLETADA')) return 'COMPLETADA';
+        return 'BLOQUEADA';
+    };
+
+    const estructuraEstado = resolverEstadoBloque(estructuraClaves);
+    const acabadosEstado = resolverEstadoBloque(acabadosClaves);
+
+    const cardBtn = (label, bloque, estado) => `
+      <button class="process-mini-stage status-${claseVisualDesdeEstado(estado)}" type="button" data-bloque="${bloque}">
+        <span class="process-mini-stage-icon">
+          <img src="${iconoVisualDesdeEstado(estado)}" alt="">
+        </span>
+        <span class="process-mini-stage-label">${escapeHtml(label)}</span>
+      </button>
+    `;
 
     container.innerHTML = `
-    <div class="process-mini-shell">
-      <div class="process-mini-top">
-        <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">
-          <img src="/assets/iconos/regresar.png" alt="Volver">
-        </button>
-        <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
-        <div class="process-mini-spacer"></div>
-      </div>
-
-      <div class="process-mini-summary">
-        <div class="process-mini-left">
-          <div class="process-mini-school">${escapeHtml(dto.nombreEscuela ?? '')}</div>
-          <div class="process-mini-meta">Tipo de obra: <span>${escapeHtml(dto.tipoObra ?? '')}</span></div>
-          <div class="process-mini-meta">Tipo de edificación: <span>${escapeHtml(dto.tipoEdificacion ?? '')}</span></div>
-          <div class="process-mini-meta">Etapa actual: <span>Cimentación</span></div>
+      <div class="process-mini-shell">
+        <div class="process-mini-top">
+          <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">
+            <img src="/assets/iconos/regresar.png" alt="Volver">
+          </button>
+          <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
+          <div class="process-mini-spacer"></div>
         </div>
 
-        <div class="process-mini-right">
-          <div class="process-mini-progress-label">Avance en %</div>
-          <div class="process-mini-track">
-            <div class="process-mini-fill" style="width: 25%;"></div>
+        <div class="process-mini-summary">
+          <div class="process-mini-left">
+            <div class="process-mini-school">${escapeHtml(dto.nombreEscuela ?? '')}</div>
+            <div class="process-mini-meta">Tipo de obra: <span>${escapeHtml(dto.tipoObra ?? '')}</span></div>
+            <div class="process-mini-meta">Tipo de edificación: <span>${escapeHtml(dto.tipoEdificacion ?? '')}</span></div>
+          </div>
+
+          <div class="process-mini-right">
+            <div class="process-mini-progress-label">Avance en %</div>
+            <div class="process-mini-track">
+              <div class="process-mini-fill" style="width: 25%;"></div>
+            </div>
           </div>
         </div>
+
+        <div class="process-mini-list">
+          ${cardBtn('Trabajos preliminares', 'preliminares', preliminaresEstado)}
+          ${cardBtn('Cimentación', 'cimentacion', cimentacionEstado)}
+          ${cardBtn('Estructura', 'estructura', estructuraEstado)}
+          ${cardBtn('Albañilería y acabados', 'acabados', acabadosEstado)}
+        </div>
       </div>
-
-      <div class="process-mini-list">
-        <button class="process-mini-stage status-done" type="button" data-bloque="preliminares">
-          <span class="process-mini-stage-icon">
-            <img src="${iconDone}" alt="Completado">
-          </span>
-          <span class="process-mini-stage-label">Trabajos preliminares</span>
-        </button>
-
-        <button class="process-mini-stage status-current" type="button" data-bloque="cimentacion">
-          <span class="process-mini-stage-icon">
-            <img src="${iconCurrent}" alt="En proceso">
-          </span>
-          <span class="process-mini-stage-label">Cimentación</span>
-        </button>
-
-        <button class="process-mini-stage status-locked" type="button" data-bloque="estructura">
-          <span class="process-mini-stage-icon">
-            <img src="${iconLocked}" alt="Bloqueado">
-          </span>
-          <span class="process-mini-stage-label">Estructura</span>
-        </button>
-
-        <button class="process-mini-stage status-locked" type="button" data-bloque="acabados">
-          <span class="process-mini-stage-icon">
-            <img src="${iconLocked}" alt="Bloqueado">
-          </span>
-          <span class="process-mini-stage-label">Albañilería y acabados</span>
-        </button>
-      </div>
-    </div>
-  `;
+    `;
 }
 
 export function renderBloqueProyecto(dto, bloque) {
@@ -286,23 +316,34 @@ export function renderBloqueProyecto(dto, bloque) {
     const iconCurrent = '/assets/iconos/proceso.png';
     const iconLocked = '/assets/iconos/bloqueado.png';
 
-    const stageBtn = (nombre, etapa, estado = 'locked', icono = iconLocked) => `
-    <button class="process-mini-stage status-${estado} compact-stage" type="button" data-etapa="${etapa}" data-nombre="${nombre}">
-      <span class="process-mini-stage-icon">
-        <img src="${icono}" alt="">
-      </span>
-      <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
-    </button>
-  `;
+	const stageBtn = (nombre, etapa) => {
+	  const estadoReal = resolverEstado(dto, etapa);
+	  const estadoVisual = claseVisualDesdeEstado(estadoReal);
+	  const icono = iconoVisualDesdeEstado(estadoReal);
 
-    const subBloqueBtn = (nombre, subbloque, estado = 'locked', icono = iconLocked) => `
-    <button class="process-mini-stage status-${estado} compact-stage" type="button" data-subbloque="${subbloque}">
-      <span class="process-mini-stage-icon">
-        <img src="${icono}" alt="">
-      </span>
-      <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
-    </button>
-  `;
+	  return `
+	    <button
+	      class="process-mini-stage status-${estadoVisual} compact-stage"
+	      type="button"
+	      data-etapa="${etapa}"
+	      data-nombre="${nombre}"
+	      data-estado="${estadoVisual}">
+	      <span class="process-mini-stage-icon">
+	        <img src="${icono}" alt="">
+	      </span>
+	      <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
+	    </button>
+	  `;
+	};
+
+	const subBloqueBtn = (nombre, subbloque, estado = 'locked', icono = iconLocked) => `
+	  <button class="process-mini-stage status-${estado} compact-stage" type="button" data-subbloque="${subbloque}">
+	    <span class="process-mini-stage-icon">
+	      <img src="${icono}" alt="">
+	    </span>
+	    <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
+	  </button>
+	`;
 
     const estructuraNivel = (nivel, incluirOtros) => `
     <div class="structure-accordion">
@@ -458,55 +499,88 @@ export function renderBloqueProyecto(dto, bloque) {
   `;
 }
 
-export function renderEtapaProyecto(dto, etapaKey, etapaNombre) {
+export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEtapa) {
     const container = document.getElementById('constructorEtapaContent');
     if (!container) return;
 
     const relojIcon = '/assets/iconos/historial.png';
     const titulo = etapaNombre || 'Etapa';
 
-	container.innerHTML = `
-	    <div class="etapa-mini-shell">
-	      <div class="etapa-mini-top">
-	        <button class="process-mini-back" id="btnBackEtapa" type="button" aria-label="Volver">
-	          <img src="/assets/iconos/regresar.png" alt="Volver">
-	        </button>
-	        <div class="process-mini-chip">${escapeHtml(titulo.toUpperCase())}</div>
-	        <button class="etapa-mini-history" type="button" title="Historial">
-	          <img src="${relojIcon}" alt="Historial">
-	        </button>
-	      </div>
+    const observacion = detalleEtapa?.ultimaObservacion;
+    const entrega = detalleEtapa?.entregaActual;
 
-	      <div class="etapa-mini-grid">
-	        <div class="etapa-card etapa-card-observaciones">
-	          <div class="etapa-card-title">Observaciones del supervisor</div>
-	          <div class="etapa-empty">
-	            Aún no hay observaciones para esta etapa.
-	          </div>
-	        </div>
+    container.innerHTML = `
+        <div class="etapa-mini-shell">
+          <div class="etapa-mini-top">
+            <button class="process-mini-back" id="btnBackEtapa" type="button" aria-label="Volver">
+              <img src="/assets/iconos/regresar.png" alt="Volver">
+            </button>
+            <div class="process-mini-chip">${escapeHtml(titulo.toUpperCase())}</div>
+            <button class="etapa-mini-history" id="btnHistoryEtapa" type="button" title="Historial">
+              <img src="${relojIcon}" alt="Historial">
+            </button>
+          </div>
 
-	        <div class="etapa-card etapa-card-entrega">
-	          <div class="etapa-card-title">Tu trabajo</div>
+          <div class="etapa-mini-grid">
+            <div class="etapa-card etapa-card-observaciones">
+              <div class="etapa-card-title">Observaciones del supervisor</div>
 
-	          <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
+              ${
+                  observacion
+                  ? `
+                    <div class="historial-card-body">
+                      <div class="historial-user">${escapeHtml(observacion.usuarioNombre || '—')}</div>
+                      <div class="historial-date">${escapeHtml(observacion.fecha || '')}</div>
+                      <div class="historial-text">${escapeHtml(observacion.mensaje || '')}</div>
+                    </div>
+                  `
+                  : `
+                    <div class="etapa-empty">
+                      Aún no hay observaciones para esta etapa.
+                    </div>
+                  `
+              }
+            </div>
 
-	          <div class="etapa-upload-actions">
-	             <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
-	             <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">+ Agregar reporte</button>
-	             <button class="etapa-btn-send" type="button">Entregar</button>
-	          </div>
-	        </div>
-	      </div>
+            <div class="etapa-card etapa-card-entrega">
+              <div class="etapa-card-title">Tu trabajo</div>
 
-	      <div class="etapa-upload-panel">
-	        <div class="etapa-upload-placeholder">
-	          Aquí después irá la carga de PDF y la vista del archivo seleccionado
-	        </div>
-	      </div>
-	    </div>
-	  `;
+              ${
+                  entrega
+                  ? `
+                    <div class="historial-card-body" style="margin-bottom:14px;">
+                      <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
+                      <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
+                      <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
+                      <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
+                      ${
+                          entrega.archivoUrl
+                          ? `<div class="historial-file"><a href="${entrega.archivoUrl}" target="_blank">Ver archivo actual</a></div>`
+                          : ''
+                      }
+                    </div>
+                  `
+                  : ''
+              }
+
+              <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
+
+              <div class="etapa-upload-actions">
+                 <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
+                 <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">+ Agregar reporte</button>
+                 <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="etapa-upload-panel">
+            <div class="etapa-upload-placeholder">
+              Aquí después irá la carga de PDF y la vista del archivo seleccionado
+            </div>
+          </div>
+        </div>
+    `;
 }
-
 export function fillSelect(selectEl, items, placeholder = 'Seleccionar') {
     selectEl.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
     for (const it of items) {
@@ -548,3 +622,66 @@ document.addEventListener('click', (e) => {
         closeProfileMenu();
     }
 });
+
+export function renderHistorialProyecto(historial) {
+  const container = document.getElementById('constructorHistorialContent');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="historial-mini-shell">
+      <div class="historial-mini-top">
+        <button class="process-mini-back" id="btnBackHistorial" type="button" aria-label="Volver">
+          <img src="/assets/iconos/regresar.png" alt="Volver">
+        </button>
+        <div class="process-mini-chip">HISTORIAL</div>
+        <div class="process-mini-spacer"></div>
+      </div>
+
+      <div class="historial-mini-list">
+        ${
+            historial && historial.length
+            ? historial.map(item => `
+              <div class="historial-pair">
+                <div class="historial-row">
+                  <div class="historial-card" style="grid-column:1 / -1;">
+                    <div class="etapa-card-title">${escapeHtml(item.tipo || '')}</div>
+                    <div class="historial-card-body">
+                      <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
+                      <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
+                      ${
+                          item.mensaje
+                          ? `<div class="historial-text">${escapeHtml(item.mensaje)}</div>`
+                          : ''
+                      }
+                      ${
+                          item.version != null
+                          ? `<div class="historial-text"><strong>Versión:</strong> ${escapeHtml(item.version)}</div>`
+                          : ''
+                      }
+                      ${
+                          item.estadoEntrega
+                          ? `<div class="historial-text"><strong>Estado:</strong> ${escapeHtml(item.estadoEntrega)}</div>`
+                          : ''
+                      }
+                      ${
+                          item.archivoUrl
+                          ? `<div class="historial-file"><a href="${item.archivoUrl}" target="_blank">${escapeHtml(item.nombreArchivo || 'Ver archivo')}</a></div>`
+                          : ''
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')
+            : `
+              <div class="historial-pair">
+                <div class="historial-card" style="grid-column:1 / -1;">
+                  <div class="etapa-empty">Aún no hay historial para esta etapa.</div>
+                </div>
+              </div>
+            `
+        }
+      </div>
+    </div>
+  `;
+}
