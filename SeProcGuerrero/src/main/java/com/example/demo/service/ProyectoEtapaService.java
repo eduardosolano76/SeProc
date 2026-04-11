@@ -1,8 +1,12 @@
 package com.example.demo.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -12,18 +16,12 @@ import com.example.demo.modelo.EtapaPlantilla;
 import com.example.demo.modelo.Proyecto;
 import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.ProyectoEtapaEntrega;
+import com.example.demo.modelo.ProyectoEtapaInteraccion;
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.EtapaPlantillaRepository;
 import com.example.demo.repository.ProyectoEtapaEntregaRepository;
-import com.example.demo.repository.ProyectoEtapaRepository;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.math.BigDecimal;
-import com.example.demo.modelo.ProyectoEtapaInteraccion;
 import com.example.demo.repository.ProyectoEtapaInteraccionRepository;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import com.example.demo.repository.ProyectoEtapaRepository;
 
 @Service
 @Transactional
@@ -112,28 +110,32 @@ this.interaccionRepo = interaccionRepo;
     }
 
     public ProyectoEtapa obtenerEtapaPorClaveVisual(Integer idProyecto, String claveVisual) {
-        if (claveVisual == null || claveVisual.isBlank()) {
-            throw new IllegalArgumentException("La clave de etapa es requerida.");
-        }
+        String claveInterna = claveVisual;
+        Integer numeroNivel = null;
 
-        if (claveVisual.startsWith("estructura_n")) {
-            String sinPrefijo = claveVisual.substring("estructura_n".length());
-            int idx = sinPrefijo.indexOf('_');
-            if (idx <= 0) {
-                throw new IllegalArgumentException("La clave de etapa no tiene un formato válido.");
+        // Detectar si el frontend envió una clave con nivel (ej. "estructura_n1_habilitado_castillos")
+        if (claveVisual != null && claveVisual.startsWith("estructura_n")) {
+            try {
+                // Extraer el texto a partir del prefijo "estructura_n"
+                String resto = claveVisual.substring(12); // quita "estructura_n"
+                int primerGuionBajo = resto.indexOf('_');
+                
+                if (primerGuionBajo != -1) {
+                    // Sacar el número de nivel
+                    String nivelStr = resto.substring(0, primerGuionBajo);
+                    numeroNivel = Integer.parseInt(nivelStr);
+                    
+                    // Lo que queda es la clave real de la base de datos (ej. "habilitado_castillos")
+                    claveInterna = resto.substring(primerGuionBajo + 1);
+                }
+            } catch (NumberFormatException e) {
+                // Log de error opcional: formato incorrecto
             }
-
-            Integer nivel = Integer.valueOf(sinPrefijo.substring(0, idx));
-            String claveInterna = sinPrefijo.substring(idx + 1);
-
-            return proyectoEtapaRepo
-                    .findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInternaAndNumeroNivel(idProyecto, claveInterna, nivel)
-                    .orElseThrow(() -> new IllegalArgumentException("Etapa no encontrada para el proyecto."));
         }
 
-        return proyectoEtapaRepo
-                .findByProyecto_IdProyectoAndEtapaPlantilla_ClaveInternaAndNumeroNivelIsNull(idProyecto, claveVisual)
-                .orElseThrow(() -> new IllegalArgumentException("Etapa no encontrada para el proyecto."));
+        // Buscar en la base de datos con los datos limpios
+        return proyectoEtapaRepo.findByClaveInternaAndNivel(idProyecto, claveInterna, numeroNivel)
+                .orElseThrow(() -> new RuntimeException("No se encontró la etapa para la clave: " + claveVisual));
     }
 
     public void validarSubidaPermitida(ProyectoEtapa etapa) {
@@ -153,32 +155,81 @@ this.interaccionRepo = interaccionRepo;
         }
     }
 
-    public ProyectoEtapaEntrega registrarEntrega(ProyectoEtapa etapa,
-                                                 Usuario constructor,
-                                                 String nombreArchivoOriginal,
-                                                 String storagePath,
-                                                 String publicUrl) {
+    // 1. Método para subir el archivo sin enviarlo (Borrador)
+    public ProyectoEtapaEntrega guardarBorrador(ProyectoEtapa etapa,
+                                                Usuario constructor,
+                                                String nombreArchivoOriginal,
+                                                String storagePath,
+                                                String publicUrl) {
 
-        long versiones = entregaRepo.countByProyectoEtapa_IdProyectoEtapa(etapa.getIdProyectoEtapa());
+        // Buscamos la última entrega de esta etapa
+        var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
+        
+        ProyectoEtapaEntrega entrega;
+        
+        // Si ya hay un archivo y está en estado BORRADOR, lo ACTUALIZAMOS (Reemplazar)
+        if (ultimaEntregaOpt.isPresent() && "BORRADOR".equalsIgnoreCase(ultimaEntregaOpt.get().getEstadoEntrega())) {
+            entrega = ultimaEntregaOpt.get();
+            entrega.setNombreArchivoOriginal(nombreArchivoOriginal);
+            entrega.setArchivoStoragePath(storagePath);
+            entrega.setArchivoUrl(publicUrl);
+            entrega.setFechaSubida(LocalDateTime.now());
+        } 
+        // Si no existe, o si la anterior ya fue enviada/aprobada, CREAMOS UNA NUEVA VERSIÓN
+        else {
+            long versiones = entregaRepo.countByProyectoEtapa_IdProyectoEtapa(etapa.getIdProyectoEtapa());
+            
+            entrega = new ProyectoEtapaEntrega();
+            entrega.setProyectoEtapa(etapa);
+            entrega.setUsuarioConstructor(constructor);
+            entrega.setVersion((int) versiones + 1);
+            entrega.setNombreArchivoOriginal(nombreArchivoOriginal);
+            entrega.setExtensionArchivo("pdf");
+            entrega.setProviderArchivo("FIREBASE");
+            entrega.setArchivoStoragePath(storagePath);
+            entrega.setArchivoUrl(publicUrl);
+            entrega.setEstadoEntrega("BORRADOR"); 
+            entrega.setFechaSubida(LocalDateTime.now());
+        }
 
-        ProyectoEtapaEntrega entrega = new ProyectoEtapaEntrega();
-        entrega.setProyectoEtapa(etapa);
-        entrega.setUsuarioConstructor(constructor);
-        entrega.setVersion((int) versiones + 1);
-        entrega.setNombreArchivoOriginal(nombreArchivoOriginal);
-        entrega.setExtensionArchivo("pdf");
-        entrega.setProviderArchivo("FIREBASE");
-        entrega.setArchivoStoragePath(storagePath);
-        entrega.setArchivoUrl(publicUrl);
-        entrega.setEstadoEntrega("EN_REVISION");
-        entrega.setFechaSubida(LocalDateTime.now());
-
+        // La etapa se mantiene en proceso
         etapa.setEstado(ESTADO_EN_PROCESO);
         etapa.setFechaInicio(etapa.getFechaInicio() == null ? LocalDateTime.now() : etapa.getFechaInicio());
         etapa.setFechaActualizacion(LocalDateTime.now());
         proyectoEtapaRepo.save(etapa);
 
         return entregaRepo.save(entrega);
+    }
+
+    // 2. Método para confirmar el envío al supervisor
+    public void confirmarEntregaAlSupervisor(ProyectoEtapa etapa, Usuario constructor) {
+        
+        // Buscamos la última entrega subida para esta etapa
+        var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
+
+        if (ultimaEntregaOpt.isEmpty()) {
+            throw new IllegalArgumentException("No hay ningún archivo subido para entregar.");
+        }
+
+        ProyectoEtapaEntrega entrega = ultimaEntregaOpt.get();
+
+        // Validamos que realmente sea un borrador antes de enviarlo
+        if (!"BORRADOR".equalsIgnoreCase(entrega.getEstadoEntrega())) {
+            throw new IllegalArgumentException("El reporte actual ya fue entregado o está en un estado no válido para envío.");
+        }
+
+        // Cambiamos el estado para que el supervisor sepa que ya está listo para revisión
+        entrega.setEstadoEntrega("ENVIADA");
+        entregaRepo.save(entrega);
+
+        // Opcional pero recomendado: Registramos la interacción en el historial
+        ProyectoEtapaInteraccion interaccion = new ProyectoEtapaInteraccion();
+        interaccion.setProyectoEtapa(etapa);
+        interaccion.setUsuarioActor(constructor);
+        interaccion.setTipoInteraccion("ENTREGA");
+        interaccion.setMensaje("Reporte enviado para revisión del supervisor.");
+        interaccion.setFechaInteraccion(LocalDateTime.now());
+        interaccionRepo.save(interaccion);
     }
 
     public void marcarConObservaciones(ProyectoEtapa etapa) {

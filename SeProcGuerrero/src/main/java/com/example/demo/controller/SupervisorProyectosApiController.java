@@ -1,18 +1,26 @@
 package com.example.demo.controller;
 
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.demo.modelo.Proyecto;
 import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.SolicitudProyecto;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
 import com.example.demo.service.ProyectoEtapaService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/supervisor/proyectos")
@@ -206,9 +214,22 @@ public class SupervisorProyectosApiController {
         if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
         }
-
+        
         ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
-        return ResponseEntity.ok(proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual));
+        
+        // Obtenemos el detalle original
+        @SuppressWarnings("unchecked")
+        Map<String, Object> detalle = (Map<String, Object>) proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual);
+
+        if (detalle.get("entregaActual") != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entrega = (Map<String, Object>) detalle.get("entregaActual");
+            if ("BORRADOR".equalsIgnoreCase(String.valueOf(entrega.get("estadoEntrega")))) {
+                detalle.put("entregaActual", null); // El supervisor no ve nada
+            }
+        }
+
+        return ResponseEntity.ok(detalle);
     }
     
     @GetMapping("/{id}/etapas/{etapa}/historial")
@@ -230,8 +251,15 @@ public class SupervisorProyectosApiController {
         if (!supervisorId.equals(p.getIdUsuarioSupervisor())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto");
         }
-
+        
         ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
-        return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
+        
+        // Obtenemos el historial completo
+        List<Map<String, Object>> historial = proyectoEtapaService.obtenerHistorialEtapa(etapaActual);
+        
+        // NUEVO: Filtramos (eliminamos) cualquier registro del historial que sea un BORRADOR
+        historial.removeIf(item -> "BORRADOR".equalsIgnoreCase(String.valueOf(item.get("estadoEntrega"))));
+
+        return ResponseEntity.ok(historial);
     }
 }

@@ -554,9 +554,13 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
                       <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
                       <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
                       ${
-                          entrega.archivoUrl
-                          ? `<div class="historial-file"><a href="${entrega.archivoUrl}" target="_blank">Ver archivo actual</a></div>`
-                          : ''
+						entrega.archivoUrl
+						    ? `<div class="historial-file">
+						         <a href="${entrega.archivoUrl}" target="_blank">
+						            ${escapeHtml(entrega.nombreArchivo || 'Ver archivo actual')}
+						         </a>
+						       </div>`
+						    : ''
                       }
                     </div>
                   `
@@ -565,13 +569,32 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
 
               <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
 
-              <div class="etapa-upload-actions">
-                 <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
-                 <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">+ Agregar reporte</button>
-                 <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
-              </div>
-            </div>
-          </div>
+			  ${(entrega?.estadoEntrega === 'ENVIADA' || entrega?.estadoEntrega === 'APROBADA') ? `
+			                    <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem;">
+			                        <strong style="display: block; margin-bottom: 5px;">
+			                            ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa Aprobada'}
+			                        </strong>
+			                        ${entrega?.estadoEntrega === 'ENVIADA' 
+			                            ? 'Has enviado el reporte. Espera la evaluación de tu supervisor.' 
+			                            : 'Este reporte ya fue evaluado y aprobado. No se requieren más acciones.'}
+			                    </div>
+			                ` : `
+			                    <div class="etapa-upload-actions">
+			                       <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
+			                       
+			                       <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
+			                          ${entrega?.estadoEntrega === 'BORRADOR' 
+			                              ? 'Reemplazar borrador' 
+			                              : (entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar reporte')}
+			                       </button>
+			                       
+			                       ${entrega?.estadoEntrega === 'BORRADOR' ? `
+			                          <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
+			                       ` : ''}
+			                    </div>
+			                `}
+			              </div>
+			            </div>
 
           <div class="etapa-upload-panel">
             <div class="etapa-upload-placeholder">

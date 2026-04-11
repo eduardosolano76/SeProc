@@ -141,3 +141,20 @@ export async function fetchHistorialEtapa(idProyecto, etapa) {
     if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar el historial de la etapa');
     return await res.json();
 }
+
+export async function entregarReportePdf(idProyecto, etapa) {
+  const { token, header } = getCsrf();
+  const headers = token && header ? { [header]: token } : {};
+
+  const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${etapa}/entregar`, {
+    method: "POST",
+    headers: headers
+  });
+
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (e) { data = {}; }
+
+  if (!res.ok) throw new Error(data.message || text || "No se pudo entregar el reporte.");
+  return data;
+}

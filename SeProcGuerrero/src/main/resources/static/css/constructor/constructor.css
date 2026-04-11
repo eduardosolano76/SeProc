@@ -981,3 +981,53 @@ body{
   box-shadow: 0 3px 12px rgba(0,0,0,.08);
   min-height:170px;
 }
+
+/* 1. Transición suave para el estado base de ambos botones */
+.etapa-btn-upload,
+.etapa-btn-send {
+  transition: all 0.2s ease-in-out; /* Hace que el cambio de color y movimiento sea fluido */
+  cursor: pointer; /* Cambia el cursor a la manita */
+}
+
+/* =========================================
+   EFECTOS PARA "AGREGAR REPORTE"
+   ========================================= */
+
+/* Efecto al pasar el mouse (Hover) */
+.etapa-btn-upload:hover {
+  /* Ajusta estos colores según la paleta de tu proyecto */
+  background-color: #f3f4f6; 
+  transform: translateY(-2px); /* Eleva el botón ligeramente */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Agrega una sombra suave */
+}
+
+/* Efecto al hacer clic (Active) */
+.etapa-btn-upload:active {
+  transform: translateY(0); /* Regresa el botón a su posición original */
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1); /* Reduce la sombra simulando presión */
+}
+
+/* =========================================
+   EFECTOS PARA "ENTREGAR"
+   ========================================= */
+
+/* Efecto al pasar el mouse (Hover) */
+.etapa-btn-send:hover {
+  /* Si tu botón es azul, usa un azul más oscuro aquí */
+  background-color: #0056b3; 
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Efecto al hacer clic (Active) */
+.etapa-btn-send:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* (Opcional) Efecto de foco para accesibilidad cuando se navega con teclado */
+.etapa-btn-upload:focus,
+.etapa-btn-send:focus {
+  outline: 2px solid #80bdff;
+  outline-offset: 2px;
+}

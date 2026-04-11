@@ -23,8 +23,8 @@ import com.example.demo.repository.ProyectoEtapaEntregaRepository;
 import com.example.demo.repository.ProyectoEtapaRepository;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
-import com.example.demo.storage.StorageService;
 import com.example.demo.service.ProyectoEtapaService;
+import com.example.demo.storage.StorageService;
 
 @RestController
 @RequestMapping("/api/constructor/proyectos")
@@ -173,19 +173,14 @@ public class ConstructorProyectosApiController {
         }
 
         try {
-            // 1. Subimos a Firebase (Lo que ya tienes)
+
             String key = storageService.saveReportePdf(usuario.getIdUsuario(), usuario.getUsername(), id, etapa, file);
             String publicUrl = storageService.publicUrl(key);
             
-            // --- NUEVO: GUARDAR EN BASE DE DATOS ---
-            
-            // 2. Buscar la etapa del proyecto (Necesitas un método en tu ProyectoEtapaRepository)
-            // Ejemplo: Buscar por ID del proyecto y alguna clave interna de la etapa
-         // Cambia la línea donde buscas la etapa por esta:
             ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
             proyectoEtapaService.validarSubidaPermitida(etapaActual);
 
-            ProyectoEtapaEntrega entrega = proyectoEtapaService.registrarEntrega(
+            ProyectoEtapaEntrega borrador = proyectoEtapaService.guardarBorrador(
                     etapaActual,
                     usuario,
                     file.getOriginalFilename(),
@@ -194,13 +189,51 @@ public class ConstructorProyectosApiController {
             );
 
             return ResponseEntity.ok(Map.of(
-                "mensaje", "Reporte subido y guardado correctamente",
-                "url", publicUrl
-            ));
+                    "mensaje", "Archivo subido como borrador correctamente. Recuerda presionar 'Entregar' para enviarlo al supervisor.",
+                    "url", publicUrl
+                ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al subir el reporte.");
+        }
+    }
+    
+    @PostMapping("/{id}/etapas/{etapa}/entregar")
+    public ResponseEntity<?> entregarReporteEtapa(@PathVariable Integer id,
+                                                  @PathVariable String etapa,
+                                                  Authentication auth) {
+        
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        var usuario = usuarioOpt.get();
+
+        // Validar accesos
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+        
+        Proyecto p = pOpt.get();
+        if (!usuario.getIdUsuario().equals(p.getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto.");
+        }
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            
+            // IMPORTANTE: Este método buscará el borrador actual y le cambiará el estado a "EN_REVISION"
+            // para que ahora sí, el supervisor lo pueda ver y evaluar.
+            proyectoEtapaService.confirmarEntregaAlSupervisor(etapaActual, usuario);
+
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "El reporte ha sido enviado al supervisor exitosamente."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al enviar el reporte.");
         }
     }
     

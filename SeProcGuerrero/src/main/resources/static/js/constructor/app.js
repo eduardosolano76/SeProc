@@ -280,46 +280,73 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
         const fileInput = document.getElementById(`reporteFile_${etapaKey}`);
         const btnSend = document.getElementById(`btnSendReporte_${etapaKey}`);
 
-        if (!btnUpload || !fileInput) {
-            return;
+        // LÓGICA DE SUBIDA (BORRADOR)
+        if (btnUpload && fileInput) {
+            btnUpload.onclick = () => {
+                fileInput.click();
+            };
+
+            fileInput.onchange = async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                if (file.type !== 'application/pdf') {
+                    return ui.showCustomAlert('Por favor selecciona un archivo PDF válido.', 'Error de formato');
+                }
+
+                try {
+                    const textoOriginal = btnUpload.textContent;
+                    btnUpload.textContent = 'Subiendo...';
+                    btnUpload.disabled = true;
+                    if (btnSend) btnSend.disabled = true;
+
+                    await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
+                    await ui.showCustomAlert('Borrador guardado correctamente. Recuerda presionar "Entregar" para enviarlo al supervisor.', 'Éxito');
+
+                    await openEtapaConstructor(etapaKey, etapaNombre);
+
+                } catch (err) {
+                    await ui.showCustomAlert(err.message, 'Error al subir');
+                    btnUpload.textContent = btnUpload.textContent.replace('Subiendo...', '+ Agregar reporte');
+                    btnUpload.disabled = false;
+                    if (btnSend) btnSend.disabled = false;
+                } finally {
+                    fileInput.value = '';
+                }
+            };
         }
 
-        btnUpload.onclick = () => {
-            fileInput.click();
-        };
+        // LÓGICA DE ENVÍO AL SUPERVISOR (ENTREGAR)
+        if (btnSend) {
+            btnSend.onclick = async () => {
+                const confirmado = await ui.showCustomConfirm(
+                    "¿Estás seguro de entregar este reporte? Una vez enviado, el supervisor podrá evaluarlo.", 
+                    "Confirmar Entrega"
+                );
 
-        fileInput.onchange = async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
+                if (!confirmado) return;
 
-            if (file.type !== 'application/pdf') {
-                return ui.showCustomAlert('Por favor selecciona un archivo PDF válido.', 'Error de formato');
-            }
+                try {
+                    btnSend.textContent = 'Entregando...';
+                    btnSend.disabled = true;
+                    if (btnUpload) btnUpload.disabled = true;
 
-            try {
-                const textoOriginal = btnUpload.textContent;
-                btnUpload.textContent = 'Subiendo...';
-                btnUpload.disabled = true;
-                if (btnSend) btnSend.disabled = true;
+                    await api.entregarReportePdf(currentProcesoDto.idProyecto, etapaKey);
+                    await ui.showCustomAlert('El reporte ha sido enviado al supervisor exitosamente.', '¡Entregado!');
 
-                await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
-                await ui.showCustomAlert('Reporte subido correctamente.', 'Éxito');
+                    // Recargar la vista de la etapa
+                    await openEtapaConstructor(etapaKey, etapaNombre);
+                } catch (err) {
+                    await ui.showCustomAlert(err.message, 'Error al entregar');
+                    btnSend.textContent = 'Entregar';
+                    btnSend.disabled = false;
+                    if (btnUpload) btnUpload.disabled = false;
+                }
+            };
+        }
 
-                await openEtapaConstructor(etapaKey, etapaNombre);
-
-                btnUpload.textContent = textoOriginal;
-                btnUpload.disabled = false;
-                if (btnSend) btnSend.disabled = false;
-            } catch (err) {
-                await ui.showCustomAlert(err.message, 'Error al subir');
-                btnUpload.textContent = '+ Agregar reporte';
-                btnUpload.disabled = false;
-                if (btnSend) btnSend.disabled = false;
-            } finally {
-                fileInput.value = '';
-            }
-        };
     } catch (e) {
+        // Cierre correcto del bloque try principal
         await ui.showCustomAlert('No se pudo cargar la etapa: ' + e.message, 'Error');
     }
 }
