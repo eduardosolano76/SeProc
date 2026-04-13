@@ -30,7 +30,7 @@ public class ProyectoEtapaService {
     public static final String ESTADO_BLOQUEADA = "BLOQUEADA";
     public static final String ESTADO_EN_PROCESO = "EN_PROCESO";
     public static final String ESTADO_CON_OBSERVACIONES = "CON_OBSERVACIONES";
-    public static final String ESTADO_COMPLETADA = "COMPLETADA";
+    public static final String ESTADO_APROBADA = "APROBADA";
 
     private final ProyectoEtapaRepository proyectoEtapaRepo;
     private final ProyectoEtapaEntregaRepository entregaRepo;
@@ -41,11 +41,11 @@ public class ProyectoEtapaService {
             ProyectoEtapaEntregaRepository entregaRepo,
             EtapaPlantillaRepository etapaPlantillaRepo,
             ProyectoEtapaInteraccionRepository interaccionRepo) {
-this.proyectoEtapaRepo = proyectoEtapaRepo;
-this.entregaRepo = entregaRepo;
-this.etapaPlantillaRepo = etapaPlantillaRepo;
-this.interaccionRepo = interaccionRepo;
-}
+        this.proyectoEtapaRepo = proyectoEtapaRepo;
+        this.entregaRepo = entregaRepo;
+        this.etapaPlantillaRepo = etapaPlantillaRepo;
+        this.interaccionRepo = interaccionRepo;
+    }
 
     public void inicializarEtapasProyecto(Proyecto proyecto) {
         List<ProyectoEtapa> existentes = proyectoEtapaRepo.findByProyecto_IdProyectoOrderByOrdenVisualAsc(proyecto.getIdProyecto());
@@ -64,48 +64,25 @@ this.interaccionRepo = interaccionRepo;
                 ? proyecto.getSolicitud().getTipoObra()
                 : "Edificación";
 
-        List<EtapaPlantilla> plantillas = etapaPlantillaRepo
-                .findByTipoObraAndActivoTrueAndEsTerminalTrueOrderByOrdenVisualAsc(tipoObra);
+        List<EtapaPlantilla> plantillas = obtenerTerminalesEnSecuencia(tipoObra, nivelesProyecto);
+        List<EtapaProgramada> secuencia = construirSecuenciaProgramada(plantillas, nivelesProyecto);
 
         int orden = 1;
         boolean primeraActiva = false;
 
-        for (EtapaPlantilla plantilla : plantillas) {
-            if (!aplicaANiveles(plantilla, nivelesProyecto)) {
-                continue;
-            }
+        for (EtapaProgramada programada : secuencia) {
+            ProyectoEtapa etapa = crearEtapaBase(proyecto, programada.plantilla(), orden++);
+            etapa.setNumeroNivel(programada.numeroNivel());
+            etapa.setNombreMostrado(programada.plantilla().getNombre());
 
-            if (Boolean.TRUE.equals(plantilla.getEsRepetiblePorNivel())) {
-                int inicio = plantilla.getNivelInicioRepeticion() != null ? plantilla.getNivelInicioRepeticion() : 1;
-                int fin = plantilla.getNivelFinRepeticion() != null ? plantilla.getNivelFinRepeticion() : nivelesProyecto;
-
-                inicio = Math.max(1, inicio);
-                fin = Math.min(nivelesProyecto, fin);
-
-                for (int nivel = inicio; nivel <= fin; nivel++) {
-                    ProyectoEtapa etapa = crearEtapaBase(proyecto, plantilla, orden++);
-                    etapa.setNumeroNivel(nivel);
-                    etapa.setNombreMostrado(plantilla.getNombre());
-                    if (!primeraActiva) {
-                        activarPrimeraEtapa(etapa);
-                        primeraActiva = true;
-                    } else {
-                        bloquearEtapa(etapa);
-                    }
-                    proyectoEtapaRepo.save(etapa);
-                }
+            if (!primeraActiva) {
+                activarPrimeraEtapa(etapa);
+                primeraActiva = true;
             } else {
-                ProyectoEtapa etapa = crearEtapaBase(proyecto, plantilla, orden++);
-                etapa.setNumeroNivel(null);
-                etapa.setNombreMostrado(plantilla.getNombre());
-                if (!primeraActiva) {
-                    activarPrimeraEtapa(etapa);
-                    primeraActiva = true;
-                } else {
-                    bloquearEtapa(etapa);
-                }
-                proyectoEtapaRepo.save(etapa);
+                bloquearEtapa(etapa);
             }
+
+            proyectoEtapaRepo.save(etapa);
         }
     }
 
@@ -113,39 +90,37 @@ this.interaccionRepo = interaccionRepo;
         String claveInterna = claveVisual;
         Integer numeroNivel = null;
 
-        // Detectar si el frontend envió una clave con nivel (ej. "estructura_n1_habilitado_castillos")
+        if ("habilitado_cadenas".equals(claveInterna)) {
+            claveInterna = "habilitado_cadenas_cimentacion";
+        }
+
         if (claveVisual != null && claveVisual.startsWith("estructura_n")) {
             try {
-                // Extraer el texto a partir del prefijo "estructura_n"
-                String resto = claveVisual.substring(12); // quita "estructura_n"
+                String resto = claveVisual.substring(12);
                 int primerGuionBajo = resto.indexOf('_');
-                
+
                 if (primerGuionBajo != -1) {
-                    // Sacar el número de nivel
                     String nivelStr = resto.substring(0, primerGuionBajo);
                     numeroNivel = Integer.parseInt(nivelStr);
-                    
-                    // Lo que queda es la clave real de la base de datos (ej. "habilitado_castillos")
                     claveInterna = resto.substring(primerGuionBajo + 1);
                 }
             } catch (NumberFormatException e) {
-                // Log de error opcional: formato incorrecto
+                // Sin accion
             }
         }
 
-        // Buscar en la base de datos con los datos limpios
         return proyectoEtapaRepo.findByClaveInternaAndNivel(idProyecto, claveInterna, numeroNivel)
-                .orElseThrow(() -> new RuntimeException("No se encontró la etapa para la clave: " + claveVisual));
+                .orElseThrow(() -> new RuntimeException("No se encontro la etapa para la clave: " + claveVisual));
     }
 
     public void validarSubidaPermitida(ProyectoEtapa etapa) {
         String estado = etapa.getEstado();
 
         if (ESTADO_BLOQUEADA.equalsIgnoreCase(estado)) {
-            throw new IllegalArgumentException("La etapa está bloqueada y aún no permite subir evidencias.");
+            throw new IllegalArgumentException("La etapa esta bloqueada y aun no permite subir evidencias.");
         }
 
-        if (ESTADO_COMPLETADA.equalsIgnoreCase(estado)) {
+        if (ESTADO_APROBADA.equalsIgnoreCase(estado)) {
             throw new IllegalArgumentException("La etapa ya fue completada y no acepta nuevas evidencias.");
         }
 
@@ -155,30 +130,25 @@ this.interaccionRepo = interaccionRepo;
         }
     }
 
-    // 1. Método para subir el archivo sin enviarlo (Borrador)
     public ProyectoEtapaEntrega guardarBorrador(ProyectoEtapa etapa,
                                                 Usuario constructor,
                                                 String nombreArchivoOriginal,
                                                 String storagePath,
                                                 String publicUrl) {
 
-        // Buscamos la última entrega de esta etapa
         var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
-        
+
         ProyectoEtapaEntrega entrega;
-        
-        // Si ya hay un archivo y está en estado BORRADOR, lo ACTUALIZAMOS (Reemplazar)
+
         if (ultimaEntregaOpt.isPresent() && "BORRADOR".equalsIgnoreCase(ultimaEntregaOpt.get().getEstadoEntrega())) {
             entrega = ultimaEntregaOpt.get();
             entrega.setNombreArchivoOriginal(nombreArchivoOriginal);
             entrega.setArchivoStoragePath(storagePath);
             entrega.setArchivoUrl(publicUrl);
             entrega.setFechaSubida(LocalDateTime.now());
-        } 
-        // Si no existe, o si la anterior ya fue enviada/aprobada, CREAMOS UNA NUEVA VERSIÓN
-        else {
+        } else {
             long versiones = entregaRepo.countByProyectoEtapa_IdProyectoEtapa(etapa.getIdProyectoEtapa());
-            
+
             entrega = new ProyectoEtapaEntrega();
             entrega.setProyectoEtapa(etapa);
             entrega.setUsuarioConstructor(constructor);
@@ -188,11 +158,10 @@ this.interaccionRepo = interaccionRepo;
             entrega.setProviderArchivo("FIREBASE");
             entrega.setArchivoStoragePath(storagePath);
             entrega.setArchivoUrl(publicUrl);
-            entrega.setEstadoEntrega("BORRADOR"); 
+            entrega.setEstadoEntrega("BORRADOR");
             entrega.setFechaSubida(LocalDateTime.now());
         }
 
-        // La etapa se mantiene en proceso
         etapa.setEstado(ESTADO_EN_PROCESO);
         etapa.setFechaInicio(etapa.getFechaInicio() == null ? LocalDateTime.now() : etapa.getFechaInicio());
         etapa.setFechaActualizacion(LocalDateTime.now());
@@ -201,33 +170,27 @@ this.interaccionRepo = interaccionRepo;
         return entregaRepo.save(entrega);
     }
 
-    // 2. Método para confirmar el envío al supervisor
     public void confirmarEntregaAlSupervisor(ProyectoEtapa etapa, Usuario constructor) {
-        
-        // Buscamos la última entrega subida para esta etapa
         var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
 
         if (ultimaEntregaOpt.isEmpty()) {
-            throw new IllegalArgumentException("No hay ningún archivo subido para entregar.");
+            throw new IllegalArgumentException("No hay ningun archivo subido para entregar.");
         }
 
         ProyectoEtapaEntrega entrega = ultimaEntregaOpt.get();
 
-        // Validamos que realmente sea un borrador antes de enviarlo
         if (!"BORRADOR".equalsIgnoreCase(entrega.getEstadoEntrega())) {
-            throw new IllegalArgumentException("El reporte actual ya fue entregado o está en un estado no válido para envío.");
+            throw new IllegalArgumentException("El reporte actual ya fue entregado o esta en un estado no valido para envio.");
         }
 
-        // Cambiamos el estado para que el supervisor sepa que ya está listo para revisión
         entrega.setEstadoEntrega("ENVIADA");
         entregaRepo.save(entrega);
 
-        // Opcional pero recomendado: Registramos la interacción en el historial
         ProyectoEtapaInteraccion interaccion = new ProyectoEtapaInteraccion();
         interaccion.setProyectoEtapa(etapa);
         interaccion.setUsuarioActor(constructor);
         interaccion.setTipoInteraccion("ENTREGA");
-        interaccion.setMensaje("Reporte enviado para revisión del supervisor.");
+        interaccion.setMensaje("Reporte enviado para revision del supervisor.");
         interaccion.setFechaInteraccion(LocalDateTime.now());
         interaccionRepo.save(interaccion);
     }
@@ -239,10 +202,27 @@ this.interaccionRepo = interaccionRepo;
     }
 
     public void aprobarEtapaYHabilitarSiguiente(ProyectoEtapa etapa, Usuario supervisor) {
-        etapa.setEstado(ESTADO_COMPLETADA);
+        if (ESTADO_APROBADA.equalsIgnoreCase(etapa.getEstado())) {
+            throw new IllegalStateException("Esta etapa ya fue aprobada.");
+        }
+
+        var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
+        if (ultimaEntregaOpt.isEmpty()) {
+            throw new IllegalStateException("No existe un reporte enviado para aprobar.");
+        }
+
+        ProyectoEtapaEntrega entregaActual = ultimaEntregaOpt.get();
+        if (!"ENVIADA".equalsIgnoreCase(entregaActual.getEstadoEntrega())) {
+            throw new IllegalStateException("Solo se puede aprobar una entrega en estado ENVIADA.");
+        }
+
+        etapa.setEstado(ESTADO_APROBADA);
         etapa.setFechaCierre(LocalDateTime.now());
         etapa.setFechaActualizacion(LocalDateTime.now());
         proyectoEtapaRepo.save(etapa);
+
+        entregaActual.setEstadoEntrega(ESTADO_APROBADA);
+        entregaRepo.save(entregaActual);
 
         registrarAprobacion(etapa, supervisor);
 
@@ -261,10 +241,10 @@ this.interaccionRepo = interaccionRepo;
             proyectoEtapaRepo.save(siguiente);
         }
     }
-    
+
     public void registrarObservacion(ProyectoEtapa etapa, Usuario supervisor, String comentario) {
         if (comentario == null || comentario.trim().isEmpty()) {
-            throw new IllegalArgumentException("La observación es obligatoria.");
+            throw new IllegalArgumentException("La observacion es obligatoria.");
         }
 
         ProyectoEtapaInteraccion interaccion = new ProyectoEtapaInteraccion();
@@ -276,11 +256,18 @@ this.interaccionRepo = interaccionRepo;
 
         interaccionRepo.save(interaccion);
 
+        var ultimaEntregaOpt = entregaRepo.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
+        if (ultimaEntregaOpt.isPresent()) {
+            ProyectoEtapaEntrega entregaActual = ultimaEntregaOpt.get();
+            entregaActual.setEstadoEntrega(ESTADO_CON_OBSERVACIONES);
+            entregaRepo.save(entregaActual);
+        }
+
         etapa.setEstado(ESTADO_CON_OBSERVACIONES);
         etapa.setFechaActualizacion(LocalDateTime.now());
         proyectoEtapaRepo.save(etapa);
     }
-    
+
     public void registrarAprobacion(ProyectoEtapa etapa, Usuario supervisor) {
         ProyectoEtapaInteraccion interaccion = new ProyectoEtapaInteraccion();
         interaccion.setProyectoEtapa(etapa);
@@ -291,7 +278,7 @@ this.interaccionRepo = interaccionRepo;
 
         interaccionRepo.save(interaccion);
     }
-    
+
     public Map<String, String> obtenerEstadosVisuales(Integer idProyecto) {
         List<ProyectoEtapa> etapas = proyectoEtapaRepo.findByProyecto_IdProyectoOrderByOrdenVisualAsc(idProyecto);
 
@@ -302,15 +289,19 @@ this.interaccionRepo = interaccionRepo;
                 continue;
             }
 
-            String clave = pe.getEtapaPlantilla().getClaveInterna();
+            String claveBase = pe.getEtapaPlantilla().getClaveInterna();
             String estado = pe.getEstado() != null ? pe.getEstado() : "BLOQUEADA";
 
-            mapa.put(clave, estado.toUpperCase());
+            if (pe.getNumeroNivel() != null && pe.getNumeroNivel() > 0) {
+                mapa.put("estructura_n" + pe.getNumeroNivel() + "_" + claveBase, estado.toUpperCase());
+            } else {
+                mapa.put(claveBase, estado.toUpperCase());
+            }
         }
 
         return mapa;
     }
-    
+
     public Map<String, Object> obtenerDetalleActualEtapa(ProyectoEtapa etapa) {
         Map<String, Object> dto = new LinkedHashMap<>();
 
@@ -365,7 +356,7 @@ this.interaccionRepo = interaccionRepo;
         dto.put("ultimaObservacion", ultimaObservacion);
         return dto;
     }
-    
+
     public List<Map<String, Object>> obtenerHistorialEtapa(ProyectoEtapa etapa) {
         List<Map<String, Object>> historial = new ArrayList<>();
 
@@ -456,4 +447,103 @@ this.interaccionRepo = interaccionRepo;
 
         return true;
     }
+
+    private List<EtapaPlantilla> obtenerTerminalesEnSecuencia(String tipoObra, int nivelesProyecto) {
+        List<EtapaPlantilla> roots =
+                etapaPlantillaRepo.findByEtapaPadreIsNullAndTipoObraAndActivoTrueOrderByOrdenVisualAsc(tipoObra);
+
+        List<EtapaPlantilla> terminales = new ArrayList<>();
+        for (EtapaPlantilla root : roots) {
+            appendTerminales(root, nivelesProyecto, terminales);
+        }
+        return terminales;
+    }
+
+    private void appendTerminales(EtapaPlantilla plantilla, int nivelesProyecto, List<EtapaPlantilla> destino) {
+        if (!aplicaANiveles(plantilla, nivelesProyecto)) {
+            return;
+        }
+
+        List<EtapaPlantilla> hijos =
+                etapaPlantillaRepo.findByEtapaPadre_IdEtapaPlantillaOrderByOrdenVisualAsc(
+                        plantilla.getIdEtapaPlantilla()
+                );
+
+        if (hijos == null || hijos.isEmpty()) {
+            if (Boolean.TRUE.equals(plantilla.getEsTerminal())) {
+                destino.add(plantilla);
+            }
+            return;
+        }
+
+        for (EtapaPlantilla hijo : hijos) {
+            appendTerminales(hijo, nivelesProyecto, destino);
+        }
+    }
+    
+    private record EtapaProgramada(EtapaPlantilla plantilla, Integer numeroNivel) {}
+
+    private List<EtapaProgramada> construirSecuenciaProgramada(List<EtapaPlantilla> plantillas, int nivelesProyecto) {
+        List<EtapaProgramada> resultado = new ArrayList<>();
+        List<EtapaPlantilla> bloqueRepetible = new ArrayList<>();
+
+        for (EtapaPlantilla plantilla : plantillas) {
+            if (!aplicaANiveles(plantilla, nivelesProyecto)) {
+                continue;
+            }
+
+            if (Boolean.TRUE.equals(plantilla.getEsRepetiblePorNivel())) {
+                bloqueRepetible.add(plantilla);
+                continue;
+            }
+
+            flushBloqueRepetible(bloqueRepetible, nivelesProyecto, resultado);
+            resultado.add(new EtapaProgramada(plantilla, null));
+        }
+
+        flushBloqueRepetible(bloqueRepetible, nivelesProyecto, resultado);
+        return resultado;
+    }
+
+    private void flushBloqueRepetible(List<EtapaPlantilla> bloqueRepetible,
+                                      int nivelesProyecto,
+                                      List<EtapaProgramada> resultado) {
+        if (bloqueRepetible == null || bloqueRepetible.isEmpty()) {
+            return;
+        }
+
+        for (int nivel = 1; nivel <= nivelesProyecto; nivel++) {
+            for (EtapaPlantilla plantilla : bloqueRepetible) {
+                if (aplicaEnNivelRepetible(plantilla, nivel, nivelesProyecto)) {
+                    resultado.add(new EtapaProgramada(plantilla, nivel));
+                }
+            }
+        }
+
+        bloqueRepetible.clear();
+    }
+
+    private boolean aplicaEnNivelRepetible(EtapaPlantilla plantilla, int nivel, int nivelesProyecto) {
+        if (!aplicaANiveles(plantilla, nivelesProyecto)) {
+            return false;
+        }
+
+        if (!Boolean.TRUE.equals(plantilla.getEsRepetiblePorNivel())) {
+            return false;
+        }
+
+        int inicio = plantilla.getNivelInicioRepeticion() != null
+                ? plantilla.getNivelInicioRepeticion()
+                : 1;
+
+        int fin = plantilla.getNivelFinRepeticion() != null
+                ? plantilla.getNivelFinRepeticion()
+                : nivelesProyecto;
+
+        inicio = Math.max(1, inicio);
+        fin = Math.min(nivelesProyecto, fin);
+
+        return nivel >= inicio && nivel <= fin;
+    }
+
 }

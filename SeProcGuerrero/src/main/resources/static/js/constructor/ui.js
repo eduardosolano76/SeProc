@@ -219,284 +219,413 @@ function resolverEstado(dto, clave) {
     return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
 }
 
-function claseVisualDesdeEstado(estado) {
-    const e = normalizarEstadoEtapa(estado);
+function claveExiste(dto, clave) {
+    return Object.prototype.hasOwnProperty.call(dto?.estadosEtapa || {}, clave);
+}
 
-    if (e === 'COMPLETADA') return 'done';
-    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return 'current';
-    return 'locked';
+function filtrarClavesExistentes(dto, claves = []) {
+    const existentes = (claves || []).filter(clave => claveExiste(dto, clave));
+    return existentes.length ? existentes : (claves || []);
+}
+
+function resolverEstadoGrupo(dto, claves = []) {
+  const clavesFinales = filtrarClavesExistentes(dto, claves);
+  const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
+
+  if (!estados.length) return 'BLOQUEADA';
+
+  if (estados.every(estado => estado === 'APROBADA')) {
+    return 'APROBADA';
+  }
+
+  if (
+    estados.some(estado =>
+      estado === 'EN_PROCESO' ||
+      estado === 'CON_OBSERVACIONES' ||
+      estado === 'DISPONIBLE' ||
+      estado === 'APROBADA'
+    )
+  ) {
+    return 'EN_PROCESO';
+  }
+
+  return 'BLOQUEADA';
+}
+
+function obtenerNumeroNiveles(tipoEdificacion) {
+  const tipo = String(tipoEdificacion || '').toUpperCase();
+  if (tipo === 'U3C') return 3;
+  if (tipo === 'U2C') return 2;
+  return 1;
+}
+
+function buildEstructuraClaves(dto) {
+  const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
+  const claves = [];
+
+  for (let nivel = 1; nivel <= niveles; nivel++) {
+    claves.push(
+      `estructura_n${nivel}_habilitado_castillos`,
+      `estructura_n${nivel}_habilitado_columnas`,
+      `estructura_n${nivel}_habilitado_muros_concreto`,
+      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+      `estructura_n${nivel}_cimbra_verticales`,
+      `estructura_n${nivel}_concreto_verticales`,
+      `estructura_n${nivel}_habilitado_dalas`,
+      `estructura_n${nivel}_habilitado_vigas_trabes`,
+      `estructura_n${nivel}_cimbra_horizontales`,
+      `estructura_n${nivel}_concreto_horizontales`,
+      `estructura_n${nivel}_cimbra_losa`,
+      `estructura_n${nivel}_habilitado_losa`,
+      `estructura_n${nivel}_concreto_losa`,
+      `estructura_n${nivel}_habilitado_barandal_concreto`,
+      `estructura_n${nivel}_cimbra_otros_concreto`,
+      `estructura_n${nivel}_concreto_otros_concreto`
+    );
+  }
+
+  return filtrarClavesExistentes(dto, claves);
+}
+
+function claseVisualDesdeEstado(estado) {
+  const e = normalizarEstadoEtapa(estado);
+
+  if (e === 'APROBADA') return 'done';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
+  return 'locked';
+}
+
+function claseAcordeonDesdeClaves(dto, claves = []) {
+  return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
 }
 
 function iconoVisualDesdeEstado(estado) {
-    const e = normalizarEstadoEtapa(estado);
+  const e = normalizarEstadoEtapa(estado);
 
-    if (e === 'COMPLETADA') return '/assets/iconos/listo.png';
-    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return '/assets/iconos/proceso.png';
-    return '/assets/iconos/bloqueado.png';
+  if (e === 'APROBADA') return '/assets/iconos/listo.png';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
+  return '/assets/iconos/bloqueado.png';
 }
 
 export function renderProcesoProyecto(dto) {
-    const container = document.getElementById('constructorProcesoContent');
-    if (!container) return;
+  const container = document.getElementById('constructorProcesoContent');
+  if (!container) return;
 
-    const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
-    const cimentacionEstado = resolverEstado(dto, 'excavacion');
+  const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
 
-    const estructuraClaves = [
-        'estructura_n1_habilitado_castillos',
-        'estructura_n1_habilitado_columnas',
-        'estructura_n1_cimbra_verticales',
-        'estructura_n1_concreto_verticales'
-    ];
+  const cimentacionClaves = [
+    'excavacion',
+    'plantilla_concreto',
+    'zapata',
+    'contratrabe',
+    'columnas_castillos_cimentacion',
+    'cimbra_murete_enrase',
+    'concreto_cimentacion',
+    'habilitado_cadenas_cimentacion',
+    'relleno'
+  ];
 
-    const acabadosClaves = [
-        'pisos',
-        'guarnicion'
-    ];
+  const estructuraClaves = buildEstructuraClaves(dto);
 
-    const resolverEstadoBloque = (claves) => {
-        const estados = claves.map(k => resolverEstado(dto, k));
-        if (estados.some(e => e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES')) return 'EN_PROCESO';
-        if (estados.some(e => e === 'COMPLETADA')) return 'COMPLETADA';
-        return 'BLOQUEADA';
-    };
+  const acabadosClaves = [
+    'pisos',
+    'guarnicion'
+  ];
 
-    const estructuraEstado = resolverEstadoBloque(estructuraClaves);
-    const acabadosEstado = resolverEstadoBloque(acabadosClaves);
+  const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
+  const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
+  const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
 
-    const cardBtn = (label, bloque, estado) => `
-      <button class="process-mini-stage status-${claseVisualDesdeEstado(estado)}" type="button" data-bloque="${bloque}">
-        <span class="process-mini-stage-icon">
-          <img src="${iconoVisualDesdeEstado(estado)}" alt="">
-        </span>
-        <span class="process-mini-stage-label">${escapeHtml(label)}</span>
-      </button>
-    `;
+  const cardBtn = (label, bloque, estado) => `
+    <button
+      class="process-mini-stage status-${claseVisualDesdeEstado(estado)}"
+      type="button"
+      data-bloque="${bloque}"
+      data-estado="${claseVisualDesdeEstado(estado)}">
+      <span class="process-mini-stage-icon">
+        <img src="${iconoVisualDesdeEstado(estado)}" alt="">
+      </span>
+      <span class="process-mini-stage-label">${escapeHtml(label)}</span>
+    </button>
+  `;
 
-    container.innerHTML = `
-      <div class="process-mini-shell">
-        <div class="process-mini-top">
-          <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">
-            <img src="/assets/iconos/regresar.png" alt="Volver">
-          </button>
-          <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
-          <div class="process-mini-spacer"></div>
+  container.innerHTML = `
+    <div class="process-mini-shell">
+      <div class="process-mini-top">
+        <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">
+          <img src="/assets/iconos/regresar.png" alt="Volver">
+        </button>
+        <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
+        <div class="process-mini-spacer"></div>
+      </div>
+
+      <div class="process-mini-summary">
+        <div class="process-mini-left">
+          <div class="process-mini-school">${escapeHtml(dto.nombreEscuela ?? '')}</div>
+          <div class="process-mini-meta">Tipo de obra: <span>${escapeHtml(dto.tipoObra ?? '')}</span></div>
+          <div class="process-mini-meta">Tipo de edificación: <span>${escapeHtml(dto.tipoEdificacion ?? '')}</span></div>
         </div>
 
-        <div class="process-mini-summary">
-          <div class="process-mini-left">
-            <div class="process-mini-school">${escapeHtml(dto.nombreEscuela ?? '')}</div>
-            <div class="process-mini-meta">Tipo de obra: <span>${escapeHtml(dto.tipoObra ?? '')}</span></div>
-            <div class="process-mini-meta">Tipo de edificación: <span>${escapeHtml(dto.tipoEdificacion ?? '')}</span></div>
+        <div class="process-mini-right">
+          <div class="process-mini-progress-label">Avance en %</div>
+          <div class="process-mini-track">
+            <div class="process-mini-fill" style="width: 25%;"></div>
           </div>
-
-          <div class="process-mini-right">
-            <div class="process-mini-progress-label">Avance en %</div>
-            <div class="process-mini-track">
-              <div class="process-mini-fill" style="width: 25%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="process-mini-list">
-          ${cardBtn('Trabajos preliminares', 'preliminares', preliminaresEstado)}
-          ${cardBtn('Cimentación', 'cimentacion', cimentacionEstado)}
-          ${cardBtn('Estructura', 'estructura', estructuraEstado)}
-          ${cardBtn('Albañilería y acabados', 'acabados', acabadosEstado)}
         </div>
       </div>
-    `;
+
+      <div class="process-mini-list">
+        ${cardBtn('Trabajos preliminares', 'preliminares', preliminaresEstado)}
+        ${cardBtn('Cimentación', 'cimentacion', cimentacionEstado)}
+        ${cardBtn('Estructura', 'estructura', estructuraEstado)}
+        ${cardBtn('Albañilería y acabados', 'acabados', acabadosEstado)}
+      </div>
+    </div>
+  `;
 }
 
 export function renderBloqueProyecto(dto, bloque) {
     const container = document.getElementById('constructorBloqueContent');
     if (!container) return;
 
-    const iconDone = '/assets/iconos/listo.png';
-    const iconCurrent = '/assets/iconos/proceso.png';
-    const iconLocked = '/assets/iconos/bloqueado.png';
+    const stageBtn = (nombre, etapa) => {
+      const estadoReal = resolverEstado(dto, etapa);
+      const estadoVisual = claseVisualDesdeEstado(estadoReal);
+      const icono = iconoVisualDesdeEstado(estadoReal);
 
-	const stageBtn = (nombre, etapa) => {
-	  const estadoReal = resolverEstado(dto, etapa);
-	  const estadoVisual = claseVisualDesdeEstado(estadoReal);
-	  const icono = iconoVisualDesdeEstado(estadoReal);
+      return `
+        <button
+          class="process-mini-stage status-${estadoVisual} compact-stage"
+          type="button"
+          data-etapa="${etapa}"
+          data-nombre="${nombre}"
+          data-estado="${estadoVisual}">
+          <span class="process-mini-stage-icon">
+            <img src="${icono}" alt="">
+          </span>
+          <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
+        </button>
+      `;
+    };
+
+    const subBloqueBtn = (nombre, subbloque, clavesHijas = []) => {
+      const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
+      const estadoVisual = claseVisualDesdeEstado(estadoReal);
+      const icono = iconoVisualDesdeEstado(estadoReal);
+
+      return `
+        <button
+          class="process-mini-stage status-${estadoVisual} compact-stage"
+          type="button"
+          data-subbloque="${subbloque}"
+          data-estado="${estadoVisual}">
+          <span class="process-mini-stage-icon">
+            <img src="${icono}" alt="">
+          </span>
+          <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
+        </button>
+      `;
+    };
+
+	const estructuraNivel = (nivel) => {
+	  const clavesVerticales = [
+	    `estructura_n${nivel}_habilitado_castillos`,
+	    `estructura_n${nivel}_habilitado_columnas`,
+	    `estructura_n${nivel}_habilitado_muros_concreto`,
+	    `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+	    `estructura_n${nivel}_cimbra_verticales`,
+	    `estructura_n${nivel}_concreto_verticales`
+	  ];
+
+	  const clavesHorizontales = [
+	    `estructura_n${nivel}_habilitado_dalas`,
+	    `estructura_n${nivel}_habilitado_vigas_trabes`,
+	    `estructura_n${nivel}_cimbra_horizontales`,
+	    `estructura_n${nivel}_concreto_horizontales`,
+	    `estructura_n${nivel}_cimbra_losa`,
+	    `estructura_n${nivel}_habilitado_losa`,
+	    `estructura_n${nivel}_concreto_losa`
+	  ];
+
+	  const clavesOtros = [
+	    `estructura_n${nivel}_habilitado_barandal_concreto`,
+	    `estructura_n${nivel}_cimbra_otros_concreto`,
+	    `estructura_n${nivel}_concreto_otros_concreto`
+	  ];
+
+	  const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
+
+	  const claseNivel = claseAcordeonDesdeClaves(dto, [
+	    ...clavesVerticales,
+	    ...clavesHorizontales,
+	    ...(incluirOtros ? clavesOtros : [])
+	  ]);
+
+	  const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
+	  const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
+	  const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
 
 	  return `
-	    <button
-	      class="process-mini-stage status-${estadoVisual} compact-stage"
-	      type="button"
-	      data-etapa="${etapa}"
-	      data-nombre="${nombre}"
-	      data-estado="${estadoVisual}">
-	      <span class="process-mini-stage-icon">
-	        <img src="${icono}" alt="">
-	      </span>
-	      <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
-	    </button>
+	    <div class="structure-accordion ${claseNivel}">
+	      <button class="structure-accordion-toggle ${claseNivel}" type="button">
+	        <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
+	        <span class="structure-accordion-arrow">
+	          <img src="/assets/iconos/abajo.png" alt="">
+	        </span>
+	      </button>
+
+	      <div class="structure-accordion-body">
+	        <div class="structure-accordion nested ${claseVerticales}">
+	          <button class="structure-accordion-toggle ${claseVerticales}" type="button">
+	            <span class="structure-accordion-title">Elementos verticales</span>
+	            <span class="structure-accordion-arrow">
+	              <img src="/assets/iconos/abajo.png" alt="">
+	            </span>
+	          </button>
+
+	          <div class="structure-accordion-body">
+	            ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
+	            ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
+	            ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`, [
+	              `estructura_n${nivel}_habilitado_muros_concreto`,
+	              `estructura_n${nivel}_habilitado_cadenas_intermedias`
+	            ])}
+	            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
+	            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
+	          </div>
+	        </div>
+
+	        <div class="structure-accordion nested ${claseHorizontales}">
+	          <button class="structure-accordion-toggle ${claseHorizontales}" type="button">
+	            <span class="structure-accordion-title">Elementos horizontales</span>
+	            <span class="structure-accordion-arrow">
+	              <img src="/assets/iconos/abajo.png" alt="">
+	            </span>
+	          </button>
+
+	          <div class="structure-accordion-body">
+	            ${stageBtn('Habilitado de dalas', `estructura_n${nivel}_habilitado_dalas`)}
+	            ${stageBtn('Habilitado de vigas / trabes', `estructura_n${nivel}_habilitado_vigas_trabes`)}
+	            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_horizontales`)}
+	            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_horizontales`)}
+	            ${stageBtn('Cimbra para losa', `estructura_n${nivel}_cimbra_losa`)}
+	            ${stageBtn('Habilitado para losa', `estructura_n${nivel}_habilitado_losa`)}
+	            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_losa`)}
+	          </div>
+	        </div>
+
+	        ${incluirOtros ? `
+	          <div class="structure-accordion nested ${claseOtros}">
+	            <button class="structure-accordion-toggle ${claseOtros}" type="button">
+	              <span class="structure-accordion-title">Otros elementos de concreto</span>
+	              <span class="structure-accordion-arrow">
+	                <img src="/assets/iconos/abajo.png" alt="">
+	              </span>
+	            </button>
+
+	            <div class="structure-accordion-body">
+	              ${stageBtn('Habilitado de acero para barandal de concreto', `estructura_n${nivel}_habilitado_barandal_concreto`)}
+	              ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_otros_concreto`)}
+	              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_otros_concreto`)}
+	            </div>
+	          </div>
+	        ` : ''}
+	      </div>
+	    </div>
 	  `;
 	};
-
-	const subBloqueBtn = (nombre, subbloque, estado = 'locked', icono = iconLocked) => `
-	  <button class="process-mini-stage status-${estado} compact-stage" type="button" data-subbloque="${subbloque}">
-	    <span class="process-mini-stage-icon">
-	      <img src="${icono}" alt="">
-	    </span>
-	    <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
-	  </button>
-	`;
-
-    const estructuraNivel = (nivel, incluirOtros) => `
-    <div class="structure-accordion">
-      <button class="structure-accordion-toggle" type="button">
-        <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
-        <span class="structure-accordion-arrow">
-          <img src="/assets/iconos/abajo.png" alt="">
-        </span>
-      </button>
-
-      <div class="structure-accordion-body">
-        <div class="structure-accordion nested">
-          <button class="structure-accordion-toggle" type="button">
-            <span class="structure-accordion-title">Elementos verticales</span>
-            <span class="structure-accordion-arrow">
-              <img src="/assets/iconos/abajo.png" alt="">
-            </span>
-          </button>
-
-          <div class="structure-accordion-body">
-            ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
-            ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
-            ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`)}
-            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
-          </div>
-        </div>
-
-        <div class="structure-accordion nested">
-          <button class="structure-accordion-toggle" type="button">
-            <span class="structure-accordion-title">Elementos horizontales</span>
-            <span class="structure-accordion-arrow">
-              <img src="/assets/iconos/abajo.png" alt="">
-            </span>
-          </button>
-
-          <div class="structure-accordion-body">
-            ${stageBtn('Habilitado de dalas', `estructura_n${nivel}_habilitado_dalas`)}
-            ${stageBtn('Habilitado de vigas / trabes', `estructura_n${nivel}_habilitado_vigas_trabes`)}
-            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_horizontales`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_horizontales`)}
-            ${stageBtn('Cimbra para losa', `estructura_n${nivel}_cimbra_losa`)}
-            ${stageBtn('Habilitado para losa', `estructura_n${nivel}_habilitado_losa`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_losa`)}
-          </div>
-        </div> 
-
-        ${incluirOtros ? `
-          <div class="structure-accordion nested">
-            <button class="structure-accordion-toggle" type="button">
-              <span class="structure-accordion-title">Otros elementos de concreto</span>
-              <span class="structure-accordion-arrow">
-                <img src="/assets/iconos/abajo.png" alt="">
-              </span>
-            </button>
-
-            <div class="structure-accordion-body">
-              ${stageBtn('Habilitado de acero para barandal de concreto', `estructura_n${nivel}_habilitado_barandal_concreto`)}
-              ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_otros_concreto`)}
-              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_otros_concreto`)}
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    </div>
-  `;
 
     let titulo = 'Bloque';
     let html = '';
 
     if (bloque === 'cimentacion') {
-        titulo = 'Cimentación';
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Excavación', 'excavacion', 'done', iconDone)}
-        ${stageBtn('Plantilla de concreto', 'plantilla_concreto', 'current', iconCurrent)}
-        ${subBloqueBtn('Habilitado del acero de refuerzo', 'cimentacion_acero_refuerzo')}
-        ${stageBtn('Cimbra y murete de enrase', 'cimbra_murete_enrase')}
-        ${stageBtn('Concreto', 'concreto_cimentacion')}
-        ${stageBtn('Habilitado de cadenas', 'habilitado_cadenas')}
-        ${stageBtn('Relleno', 'relleno')}
-      </div>
-    `;
+      titulo = 'Cimentación';
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Excavación', 'excavacion')}
+          ${stageBtn('Plantilla de concreto', 'plantilla_concreto')}
+          ${subBloqueBtn('Habilitado del acero de refuerzo', 'cimentacion_acero_refuerzo', [
+            'zapata',
+            'contratrabe',
+            'columnas_castillos_cimentacion'
+          ])}
+          ${stageBtn('Cimbra y murete de enrase', 'cimbra_murete_enrase')}
+          ${stageBtn('Concreto', 'concreto_cimentacion')}
+          ${stageBtn('Habilitado de cadenas', 'habilitado_cadenas_cimentacion')}
+          ${stageBtn('Relleno', 'relleno')}
+        </div>
+      `;
     } else if (bloque === 'cimentacion_acero_refuerzo') {
-        titulo = 'Habilitado del acero de refuerzo';
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Zapata', 'zapata')}
-        ${stageBtn('Contratrabe', 'contratrabe')}
-        ${stageBtn('Columnas o castillos', 'columnas_castillos_cimentacion')}
-      </div>
-    `;
+      titulo = 'Habilitado del acero de refuerzo';
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Zapata', 'zapata')}
+          ${stageBtn('Contratrabe', 'contratrabe')}
+          ${stageBtn('Columnas o castillos', 'columnas_castillos_cimentacion')}
+        </div>
+      `;
     } else if (bloque === 'estructura') {
-        titulo = 'Estructura';
+      titulo = 'Estructura';
 
-        const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
-        const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
-        const incluirOtros = niveles >= 2;
+      const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
+      const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
 
-        html = `
-      <div class="structure-list">
-        ${estructuraNivel(1, incluirOtros)}
-        ${niveles >= 2 ? estructuraNivel(2, true) : ''}
-        ${niveles >= 3 ? estructuraNivel(3, true) : ''}
-      </div>
-    `;
+      html = `
+        <div class="structure-list">
+          ${estructuraNivel(1)}
+          ${niveles >= 2 ? estructuraNivel(2) : ''}
+          ${niveles >= 3 ? estructuraNivel(3) : ''}
+        </div>
+      `;
     } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_muros')) {
-        const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
-        titulo = `Muros - nivel ${nivel}`;
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Habilitado de muros de concreto', `estructura_n${nivel}_habilitado_muros_concreto`)}
-        ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`)}
-      </div>
-    `;
+      const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
+      titulo = `Muros - nivel ${nivel}`;
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Habilitado de muros de concreto', `estructura_n${nivel}_habilitado_muros_concreto`)}
+          ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`, [
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`
+          ])}
+        </div>
+      `;
     } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_mamposteria')) {
-        const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
-        titulo = `Mampostería - nivel ${nivel}`;
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Habilitado de cadenas intermedias', `estructura_n${nivel}_habilitado_cadenas_intermedias`)}
-      </div>
-    `;
+      const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
+      titulo = `Mampostería - nivel ${nivel}`;
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Habilitado de cadenas intermedias', `estructura_n${nivel}_habilitado_cadenas_intermedias`)}
+        </div>
+      `;
     } else if (bloque === 'preliminares') {
-        titulo = 'Trabajos preliminares';
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Limpieza, trazo y nivelación', 'limpieza_trazo_nivelacion', 'done', iconDone)}
-      </div>
-    `;
+      titulo = 'Trabajos preliminares';
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Limpieza, trazo y nivelación', 'limpieza_trazo_nivelacion')}
+        </div>
+      `;
     } else if (bloque === 'acabados') {
-        titulo = 'Albañilería y acabados';
-        html = `
-      <div class="process-mini-list">
-        ${stageBtn('Pisos', 'pisos')}
-        ${stageBtn('Guarnición', 'guarnicion')}
-      </div>
-    `;
+      titulo = 'Albañilería y acabados';
+      html = `
+        <div class="process-mini-list">
+          ${stageBtn('Pisos', 'pisos')}
+          ${stageBtn('Guarnición', 'guarnicion')}
+        </div>
+      `;
     }
 
     container.innerHTML = `
-    <div class="process-mini-shell">
-      <div class="process-mini-top">
-        <button class="process-mini-back" id="btnBackBloque" type="button" aria-label="Volver">
-          <img src="/assets/iconos/regresar.png" alt="Volver">
-        </button>
-        <div class="process-mini-chip">${escapeHtml(titulo)}</div>
-        <div class="process-mini-spacer"></div>
-      </div>
+      <div class="process-mini-shell">
+        <div class="process-mini-top">
+          <button class="process-mini-back" id="btnBackBloque" type="button" aria-label="Volver">
+            <img src="/assets/iconos/regresar.png" alt="Volver">
+          </button>
+          <div class="process-mini-chip">${escapeHtml(titulo)}</div>
+          <div class="process-mini-spacer"></div>
+        </div>
 
-      ${html}
-    </div>
-  `;
+        ${html}
+      </div>
+    `;
 }
 
 export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEtapa) {
@@ -554,13 +683,13 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
                       <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
                       <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
                       ${
-						entrega.archivoUrl
-						    ? `<div class="historial-file">
-						         <a href="${entrega.archivoUrl}" target="_blank">
-						            ${escapeHtml(entrega.nombreArchivo || 'Ver archivo actual')}
-						         </a>
-						       </div>`
-						    : ''
+                        entrega.archivoUrl
+                            ? `<div class="historial-file">
+                                 <a href="${entrega.archivoUrl}" target="_blank">
+                                    ${escapeHtml(entrega.nombreArchivo || 'Ver archivo actual')}
+                                 </a>
+                               </div>`
+                            : ''
                       }
                     </div>
                   `
@@ -569,32 +698,32 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
 
               <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
 
-			  ${(entrega?.estadoEntrega === 'ENVIADA' || entrega?.estadoEntrega === 'APROBADA') ? `
-			                    <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem;">
-			                        <strong style="display: block; margin-bottom: 5px;">
-			                            ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa Aprobada'}
-			                        </strong>
-			                        ${entrega?.estadoEntrega === 'ENVIADA' 
-			                            ? 'Has enviado el reporte. Espera la evaluación de tu supervisor.' 
-			                            : 'Este reporte ya fue evaluado y aprobado. No se requieren más acciones.'}
-			                    </div>
-			                ` : `
-			                    <div class="etapa-upload-actions">
-			                       <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
-			                       
-			                       <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
-			                          ${entrega?.estadoEntrega === 'BORRADOR' 
-			                              ? 'Reemplazar borrador' 
-			                              : (entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar reporte')}
-			                       </button>
-			                       
-			                       ${entrega?.estadoEntrega === 'BORRADOR' ? `
-			                          <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
-			                       ` : ''}
-			                    </div>
-			                `}
-			              </div>
-			            </div>
+              ${(entrega?.estadoEntrega === 'ENVIADA' || entrega?.estadoEntrega === 'APROBADA') ? `
+                <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem;">
+                    <strong style="display: block; margin-bottom: 5px;">
+                        ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa aprobada'}
+                    </strong>
+                    ${entrega?.estadoEntrega === 'ENVIADA'
+                        ? 'Has enviado el reporte. Espera la evaluación de tu supervisor.'
+                        : 'Este reporte ya fue evaluado y aprobado. No se requieren más acciones.'}
+                </div>
+              ` : `
+                <div class="etapa-upload-actions">
+                   <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
+
+                   <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
+                      ${entrega?.estadoEntrega === 'BORRADOR'
+                          ? 'Reemplazar borrador'
+                          : (entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar reporte')}
+                   </button>
+
+                   ${entrega?.estadoEntrega === 'BORRADOR' ? `
+                      <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
+                   ` : ''}
+                </div>
+              `}
+            </div>
+          </div>
 
           <div class="etapa-upload-panel">
             <div class="etapa-upload-placeholder">
@@ -604,107 +733,77 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
         </div>
     `;
 }
+
 export function fillSelect(selectEl, items, placeholder = 'Seleccionar') {
-    selectEl.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
-    for (const it of items) {
-        const opt = document.createElement('option');
-        opt.value = it.id;
-        opt.textContent = it.nombre;
-        selectEl.appendChild(opt);
+    if (!selectEl) return;
+    selectEl.innerHTML = `<option value="" disabled selected>${escapeHtml(placeholder)}</option>`;
+
+    for (const item of items || []) {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.nombre;
+        selectEl.appendChild(option);
     }
 }
 
 export function setActiveNav(navId) {
-    document.querySelectorAll('.sidebar a.nav-item').forEach(el => el.classList.remove('active'));
-    const item = document.getElementById(navId);
-    if (item) item.classList.add('active');
+    document.querySelectorAll('.sidebar .nav-link').forEach(x => x.classList.remove('active'));
+    if (navId) {
+        document.getElementById(navId)?.classList.add('active');
+    }
 }
 
 export function syncSidebarWithUrl(view) {
     if (view === 'password') {
         setActiveNav('navPassword');
-    } else {
-        setActiveNav('navProyectos');
+        return;
     }
+    setActiveNav('navProyectos');
 }
 
-// Menú desplegable de la foto de perfil
-const profileMenuDropdown = document.getElementById('profileMenuDropdown');
-
 export function closeProfileMenu() {
-    profileMenuDropdown?.classList.remove('open');
+    document.getElementById('profileMenuDropdown')?.classList.remove('open');
 }
 
 export function toggleProfileMenu() {
-    profileMenuDropdown?.classList.toggle('open');
+    document.getElementById('profileMenuDropdown')?.classList.toggle('open');
 }
 
-// Escuchar clics en todo el documento para cerrar el menú
-document.addEventListener('click', (e) => {
-    if (profileMenuDropdown?.classList.contains('open') && !e.target.closest('.userbox')) {
-        closeProfileMenu();
-    }
-});
-
 export function renderHistorialProyecto(historial) {
-  const container = document.getElementById('constructorHistorialContent');
-  if (!container) return;
+    const container = document.getElementById('constructorHistorialContent');
+    if (!container) return;
 
-  container.innerHTML = `
-    <div class="historial-mini-shell">
-      <div class="historial-mini-top">
-        <button class="process-mini-back" id="btnBackHistorial" type="button" aria-label="Volver">
-          <img src="/assets/iconos/regresar.png" alt="Volver">
-        </button>
-        <div class="process-mini-chip">HISTORIAL</div>
-        <div class="process-mini-spacer"></div>
-      </div>
+    const items = Array.isArray(historial) ? historial : [];
 
-      <div class="historial-mini-list">
-        ${
-            historial && historial.length
-            ? historial.map(item => `
-              <div class="historial-pair">
-                <div class="historial-row">
-                  <div class="historial-card" style="grid-column:1 / -1;">
-                    <div class="etapa-card-title">${escapeHtml(item.tipo || '')}</div>
-                    <div class="historial-card-body">
-                      <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
-                      <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
-                      ${
-                          item.mensaje
-                          ? `<div class="historial-text">${escapeHtml(item.mensaje)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.version != null
-                          ? `<div class="historial-text"><strong>Versión:</strong> ${escapeHtml(item.version)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.estadoEntrega
-                          ? `<div class="historial-text"><strong>Estado:</strong> ${escapeHtml(item.estadoEntrega)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.archivoUrl
-                          ? `<div class="historial-file"><a href="${item.archivoUrl}" target="_blank">${escapeHtml(item.nombreArchivo || 'Ver archivo')}</a></div>`
-                          : ''
-                      }
-                    </div>
-                  </div>
-                </div>
+    container.innerHTML = `
+      <div class="historial-shell">
+        <div class="historial-top">
+          <button class="process-mini-back" id="btnBackHistorial" type="button" aria-label="Volver">
+            <img src="/assets/iconos/regresar.png" alt="Volver">
+          </button>
+          <div class="process-mini-chip">HISTORIAL</div>
+          <div class="process-mini-spacer"></div>
+        </div>
+
+        <div class="historial-list">
+          ${items.length ? items.map(item => `
+            <div class="historial-card">
+              <div class="historial-card-header">
+                <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
+                <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
               </div>
-            `).join('')
-            : `
-              <div class="historial-pair">
-                <div class="historial-card" style="grid-column:1 / -1;">
-                  <div class="etapa-empty">Aún no hay historial para esta etapa.</div>
-                </div>
+              <div class="historial-card-body">
+                <div class="historial-type">${escapeHtml(item.tipo || '')}</div>
+                <div class="historial-text">${escapeHtml(item.mensaje || item.descripcion || '')}</div>
+                ${item.urlArchivo ? `
+                  <a class="constructor-file-link" href="${item.urlArchivo}" target="_blank" rel="noopener noreferrer">Ver PDF</a>
+                ` : ''}
               </div>
-            `
-        }
+            </div>
+          `).join('') : `
+            <div class="constructor-empty-box">No hay historial registrado todavía.</div>
+          `}
+        </div>
       </div>
-    </div>
-  `;
+    `;
 }

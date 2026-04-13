@@ -164,13 +164,6 @@ body{
   white-space: nowrap;
 }
 
-.userbox {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  white-space: nowrap;
-}
-
 .userbox .hello {
   display: flex;
   flex-direction: column;
@@ -820,7 +813,7 @@ body{
   background:#d8d4cd;
   border-radius:999px;
   padding:8px 18px;
-  font-size:13px;
+  font-size:20px; /* Aquí se cambia tamaño */
   font-weight:700;
   letter-spacing:.2px;
 }
@@ -846,7 +839,7 @@ body{
 }
 
 .process-mini-school{
-  font-size:22px;
+  font-size:16px; /* Título de la escuela */
   font-weight:700;
   line-height:1.1;
   margin-bottom:8px;
@@ -919,7 +912,7 @@ body{
 .process-mini-stage-label{
   flex:1;
   text-align:center;
-  font-size:18px;
+  font-size:15px; /* Tamaño de las barras */
   font-weight:700;
   color:#111;
 }
@@ -958,6 +951,7 @@ body{
   background:#d8d4cd;
   border-radius:22px;
   overflow:hidden;
+  border:1px solid transparent;
 }
 
 .structure-accordion.nested{
@@ -976,6 +970,8 @@ body{
   padding:16px 18px;
   cursor:pointer;
   font:inherit;
+  border-radius:18px;
+  transition:background .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 .structure-accordion-title{
@@ -1009,10 +1005,80 @@ body{
 .structure-accordion-body{
   display:none;
   padding:0 14px 14px;
+  background:transparent;
 }
 
 .structure-accordion.open > .structure-accordion-body{
   display:block;
+}
+
+/* ESTADOS: solo cabecera */
+.structure-accordion.status-current{
+  background:#d8d4cd;
+}
+
+.structure-accordion.status-current > .structure-accordion-toggle{
+  background:#d6ba22;
+  border:2px solid #b89b16;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+
+.structure-accordion.status-done{
+  background:#d8d4cd;
+}
+
+.structure-accordion.status-done > .structure-accordion-toggle{
+  background:#7fd336;
+  border:2px solid #63a928;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+
+.structure-accordion.status-locked{
+  background:#d8d4cd;
+}
+
+.structure-accordion.status-locked > .structure-accordion-toggle{
+  background:#d8d4cd;
+  border:1px solid transparent;
+}
+
+/* nested */
+.structure-accordion.nested.status-current{
+  background:#ece8e2;
+}
+
+.structure-accordion.nested.status-current > .structure-accordion-toggle{
+  background:#d6ba22;
+  border:2px solid #b89b16;
+}
+
+.structure-accordion.nested.status-done{
+  background:#ece8e2;
+}
+
+.structure-accordion.nested.status-done > .structure-accordion-toggle{
+  background:#7fd336;
+  border:2px solid #63a928;
+}
+
+.structure-accordion.nested.status-locked{
+  background:#ece8e2;
+}
+
+.structure-accordion.nested.status-locked > .structure-accordion-toggle{
+  background:#ece8e2;
+  border:1px solid transparent;
+}
+
+.compact-stage{
+  min-height:64px;
+  padding:12px 18px;
+  border-radius:20px;
+  margin-top:10px;
+}
+
+.compact-stage .process-mini-stage-label{
+  font-size:16px;
 }
 
 /* ===== ETAPA ===== */

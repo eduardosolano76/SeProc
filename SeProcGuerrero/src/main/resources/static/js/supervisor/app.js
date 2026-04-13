@@ -306,7 +306,13 @@ function bindPanelEventsSupervisor() {
   if (processContent) {
     const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
     bloques.forEach(btn => {
-      btn.onclick = () => openBloqueSupervisor(btn.dataset.bloque);
+      btn.onclick = () => {
+        const estado = (btn.dataset.estado || '').toLowerCase();
+
+        if (estado === 'locked') return;
+
+        openBloqueSupervisor(btn.dataset.bloque);
+      };
     });
   }
 
@@ -322,7 +328,13 @@ function bindPanelEventsSupervisor() {
 
 	const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
 	subBloques.forEach(btn => {
-	  btn.onclick = () => openSubBloqueSupervisor(btn.dataset.subbloque);
+	  btn.onclick = () => {
+	    const estado = (btn.dataset.estado || '').toLowerCase();
+
+	    if (estado === 'locked') return;
+
+	    openSubBloqueSupervisor(btn.dataset.subbloque);
+	  };
 	});
 
 	const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');

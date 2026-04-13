@@ -92,6 +92,10 @@ function bindPanelEvents() {
 	    const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
 	    bloques.forEach(btn => {
 	        btn.onclick = () => {
+	            const estado = (btn.dataset.estado || '').toLowerCase();
+
+	            if (estado === 'locked') return;
+
 	            openBloqueConstructor(btn.dataset.bloque);
 	        };
 	    });
@@ -110,6 +114,10 @@ function bindPanelEvents() {
 		const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
 		subBloques.forEach(btn => {
 		    btn.onclick = () => {
+		        const estado = (btn.dataset.estado || '').toLowerCase();
+
+		        if (estado === 'locked') return;
+
 		        openSubBloqueConstructor(btn.dataset.subbloque);
 		    };
 		});
@@ -346,7 +354,6 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
         }
 
     } catch (e) {
-        // Cierre correcto del bloque try principal
         await ui.showCustomAlert('No se pudo cargar la etapa: ' + e.message, 'Error');
     }
 }

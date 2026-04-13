@@ -252,26 +252,98 @@ export function toggleProfileMenu() {
 }
 
 function normalizarEstadoEtapa(estado) {
-  return String(estado || 'BLOQUEADA').trim().toUpperCase();
+    return String(estado || 'BLOQUEADA').trim().toUpperCase();
 }
 
 function resolverEstado(dto, clave) {
-  return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
+    return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
+}
+
+function claveExiste(dto, clave) {
+    return Object.prototype.hasOwnProperty.call(dto?.estadosEtapa || {}, clave);
+}
+
+function filtrarClavesExistentes(dto, claves = []) {
+    const existentes = (claves || []).filter(clave => claveExiste(dto, clave));
+    return existentes.length ? existentes : (claves || []);
+}
+
+function resolverEstadoGrupo(dto, claves = []) {
+  const clavesFinales = filtrarClavesExistentes(dto, claves);
+  const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
+
+  if (!estados.length) return 'BLOQUEADA';
+
+  if (estados.every(estado => estado === 'APROBADA')) {
+    return 'APROBADA';
+  }
+
+  if (
+    estados.some(estado =>
+      estado === 'EN_PROCESO' ||
+      estado === 'CON_OBSERVACIONES' ||
+      estado === 'DISPONIBLE' ||
+      estado === 'APROBADA'
+    )
+  ) {
+    return 'EN_PROCESO';
+  }
+
+  return 'BLOQUEADA';
+}
+
+function obtenerNumeroNiveles(tipoEdificacion) {
+  const tipo = String(tipoEdificacion || '').toUpperCase();
+  if (tipo === 'U3C') return 3;
+  if (tipo === 'U2C') return 2;
+  return 1;
+}
+
+function buildEstructuraClaves(dto) {
+  const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
+  const claves = [];
+
+  for (let nivel = 1; nivel <= niveles; nivel++) {
+    claves.push(
+      `estructura_n${nivel}_habilitado_castillos`,
+      `estructura_n${nivel}_habilitado_columnas`,
+      `estructura_n${nivel}_habilitado_muros_concreto`,
+      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+      `estructura_n${nivel}_cimbra_verticales`,
+      `estructura_n${nivel}_concreto_verticales`,
+      `estructura_n${nivel}_habilitado_dalas`,
+      `estructura_n${nivel}_habilitado_vigas_trabes`,
+      `estructura_n${nivel}_cimbra_horizontales`,
+      `estructura_n${nivel}_concreto_horizontales`,
+      `estructura_n${nivel}_cimbra_losa`,
+      `estructura_n${nivel}_habilitado_losa`,
+      `estructura_n${nivel}_concreto_losa`,
+      `estructura_n${nivel}_habilitado_barandal_concreto`,
+      `estructura_n${nivel}_cimbra_otros_concreto`,
+      `estructura_n${nivel}_concreto_otros_concreto`
+    );
+  }
+
+  return filtrarClavesExistentes(dto, claves);
 }
 
 function claseVisualDesdeEstado(estado) {
   const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'COMPLETADA') return 'done';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return 'current';
+  if (e === 'APROBADA') return 'done';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
   return 'locked';
+}
+
+function claseAcordeonDesdeClaves(dto, claves = []) {
+  return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
 }
 
 function iconoVisualDesdeEstado(estado) {
   const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'COMPLETADA') return '/assets/iconos/listo.png';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES') return '/assets/iconos/proceso.png';
+  if (e === 'APROBADA') return '/assets/iconos/listo.png';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
   return '/assets/iconos/bloqueado.png';
 }
 
@@ -280,32 +352,32 @@ export function renderProcesoSupervisor(dto) {
   if (!container) return;
 
   const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
-  const cimentacionEstado = resolverEstado(dto, 'excavacion');
 
-  const estructuraClaves = [
-    'estructura_n1_habilitado_castillos',
-    'estructura_n1_habilitado_columnas',
-    'estructura_n1_cimbra_verticales',
-    'estructura_n1_concreto_verticales'
+  const cimentacionClaves = [
+    'excavacion',
+    'plantilla_concreto',
+    'zapata',
+    'contratrabe',
+    'columnas_castillos_cimentacion',
+    'cimbra_murete_enrase',
+    'concreto_cimentacion',
+    'habilitado_cadenas_cimentacion',
+    'relleno'
   ];
+
+  const estructuraClaves = buildEstructuraClaves(dto);
 
   const acabadosClaves = [
     'pisos',
     'guarnicion'
   ];
 
-  const resolverEstadoBloque = (claves) => {
-    const estados = claves.map(k => resolverEstado(dto, k));
-    if (estados.some(e => e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES')) return 'EN_PROCESO';
-    if (estados.some(e => e === 'COMPLETADA')) return 'COMPLETADA';
-    return 'BLOQUEADA';
-  };
-
-  const estructuraEstado = resolverEstadoBloque(estructuraClaves);
-  const acabadosEstado = resolverEstadoBloque(acabadosClaves);
+  const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
+  const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
+  const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
 
   const cardBtn = (label, bloque, estado) => `
-    <button class="process-mini-stage status-${claseVisualDesdeEstado(estado)}" type="button" data-bloque="${bloque}">
+    <button class="process-mini-stage status-${claseVisualDesdeEstado(estado)}" type="button" data-bloque="${bloque}" data-estado="${claseVisualDesdeEstado(estado)}">
       <span class="process-mini-stage-icon">
         <img src="${iconoVisualDesdeEstado(estado)}" alt="">
       </span>
@@ -352,8 +424,6 @@ export function renderBloqueSupervisor(dto, bloque) {
   const container = document.getElementById('supervisorBloqueContent');
   if (!container) return;
 
-  const iconLocked = '/assets/iconos/bloqueado.png';
-
   const stageBtn = (nombre, etapa) => {
     const estadoReal = resolverEstado(dto, etapa);
     const estadoVisual = claseVisualDesdeEstado(estadoReal);
@@ -374,81 +444,132 @@ export function renderBloqueSupervisor(dto, bloque) {
     `;
   };
 
-  const subBloqueBtn = (nombre, subbloque, estado = 'locked', icono = iconLocked) => `
-    <button class="process-mini-stage status-${estado} compact-stage" type="button" data-subbloque="${subbloque}">
-      <span class="process-mini-stage-icon">
-        <img src="${icono}" alt="">
-      </span>
-      <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
-    </button>
-  `;
+  const subBloqueBtn = (nombre, subbloque, clavesHijas = []) => {
+    const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
+    const estadoVisual = claseVisualDesdeEstado(estadoReal);
+    const icono = iconoVisualDesdeEstado(estadoReal);
 
-  const estructuraNivel = (nivel, incluirOtros) => `
-    <div class="structure-accordion">
-      <button class="structure-accordion-toggle" type="button">
-        <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
-        <span class="structure-accordion-arrow">
-          <img src="/assets/iconos/abajo.png" alt="">
+    return `
+      <button
+        class="process-mini-stage status-${estadoVisual} compact-stage"
+        type="button"
+        data-subbloque="${subbloque}"
+        data-estado="${estadoVisual}">
+        <span class="process-mini-stage-icon">
+          <img src="${icono}" alt="">
         </span>
+        <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
       </button>
+    `;
+  };
 
-      <div class="structure-accordion-body">
+  const estructuraNivel = (nivel) => {
+    const clavesVerticales = [
+      `estructura_n${nivel}_habilitado_castillos`,
+      `estructura_n${nivel}_habilitado_columnas`,
+      `estructura_n${nivel}_habilitado_muros_concreto`,
+      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+      `estructura_n${nivel}_cimbra_verticales`,
+      `estructura_n${nivel}_concreto_verticales`
+    ];
 
-        <div class="structure-accordion nested">
-          <button class="structure-accordion-toggle" type="button">
-            <span class="structure-accordion-title">Elementos verticales</span>
-            <span class="structure-accordion-arrow">
-              <img src="/assets/iconos/abajo.png" alt="">
-            </span>
-          </button>
+    const clavesHorizontales = [
+      `estructura_n${nivel}_habilitado_dalas`,
+      `estructura_n${nivel}_habilitado_vigas_trabes`,
+      `estructura_n${nivel}_cimbra_horizontales`,
+      `estructura_n${nivel}_concreto_horizontales`,
+      `estructura_n${nivel}_cimbra_losa`,
+      `estructura_n${nivel}_habilitado_losa`,
+      `estructura_n${nivel}_concreto_losa`
+    ];
 
-          <div class="structure-accordion-body">
-            ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
-            ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
-            ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`)}
-            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
-          </div>
-        </div>
+    const clavesOtros = [
+      `estructura_n${nivel}_habilitado_barandal_concreto`,
+      `estructura_n${nivel}_cimbra_otros_concreto`,
+      `estructura_n${nivel}_concreto_otros_concreto`
+    ];
 
-        <div class="structure-accordion nested">
-          <button class="structure-accordion-toggle" type="button">
-            <span class="structure-accordion-title">Elementos horizontales</span>
-            <span class="structure-accordion-arrow">
-              <img src="/assets/iconos/abajo.png" alt="">
-            </span>
-          </button>
+    const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
 
-          <div class="structure-accordion-body">
-            ${stageBtn('Habilitado de dalas', `estructura_n${nivel}_habilitado_dalas`)}
-            ${stageBtn('Habilitado de vigas / trabes', `estructura_n${nivel}_habilitado_vigas_trabes`)}
-            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_horizontales`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_horizontales`)}
-            ${stageBtn('Cimbra para losa', `estructura_n${nivel}_cimbra_losa`)}
-            ${stageBtn('Habilitado para losa', `estructura_n${nivel}_habilitado_losa`)}
-            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_losa`)}
-          </div>
-        </div>
+    const claseNivel = claseAcordeonDesdeClaves(dto, [
+      ...clavesVerticales,
+      ...clavesHorizontales,
+      ...(incluirOtros ? clavesOtros : [])
+    ]);
 
-        ${incluirOtros ? `
-          <div class="structure-accordion nested">
-            <button class="structure-accordion-toggle" type="button">
-              <span class="structure-accordion-title">Otros elementos de concreto</span>
+    const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
+    const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
+    const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
+
+    return `
+      <div class="structure-accordion ${claseNivel}">
+        <button class="structure-accordion-toggle ${claseNivel}" type="button">
+          <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
+          <span class="structure-accordion-arrow">
+            <img src="/assets/iconos/abajo.png" alt="">
+          </span>
+        </button>
+
+        <div class="structure-accordion-body">
+          <div class="structure-accordion nested ${claseVerticales}">
+            <button class="structure-accordion-toggle ${claseVerticales}" type="button">
+              <span class="structure-accordion-title">Elementos verticales</span>
               <span class="structure-accordion-arrow">
                 <img src="/assets/iconos/abajo.png" alt="">
               </span>
             </button>
 
             <div class="structure-accordion-body">
-              ${stageBtn('Habilitado de acero para barandal de concreto', `estructura_n${nivel}_habilitado_barandal_concreto`)}
-              ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_otros_concreto`)}
-              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_otros_concreto`)}
+              ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
+              ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
+              ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`, [
+                `estructura_n${nivel}_habilitado_muros_concreto`,
+                `estructura_n${nivel}_habilitado_cadenas_intermedias`
+              ])}
+              ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
+              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
             </div>
           </div>
-        ` : ''}
+
+          <div class="structure-accordion nested ${claseHorizontales}">
+            <button class="structure-accordion-toggle ${claseHorizontales}" type="button">
+              <span class="structure-accordion-title">Elementos horizontales</span>
+              <span class="structure-accordion-arrow">
+                <img src="/assets/iconos/abajo.png" alt="">
+              </span>
+            </button>
+
+            <div class="structure-accordion-body">
+              ${stageBtn('Habilitado de dalas', `estructura_n${nivel}_habilitado_dalas`)}
+              ${stageBtn('Habilitado de vigas / trabes', `estructura_n${nivel}_habilitado_vigas_trabes`)}
+              ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_horizontales`)}
+              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_horizontales`)}
+              ${stageBtn('Cimbra para losa', `estructura_n${nivel}_cimbra_losa`)}
+              ${stageBtn('Habilitado para losa', `estructura_n${nivel}_habilitado_losa`)}
+              ${stageBtn('Concreto', `estructura_n${nivel}_concreto_losa`)}
+            </div>
+          </div>
+
+          ${incluirOtros ? `
+            <div class="structure-accordion nested ${claseOtros}">
+              <button class="structure-accordion-toggle ${claseOtros}" type="button">
+                <span class="structure-accordion-title">Otros elementos de concreto</span>
+                <span class="structure-accordion-arrow">
+                  <img src="/assets/iconos/abajo.png" alt="">
+                </span>
+              </button>
+
+              <div class="structure-accordion-body">
+                ${stageBtn('Habilitado de acero para barandal de concreto', `estructura_n${nivel}_habilitado_barandal_concreto`)}
+                ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_otros_concreto`)}
+                ${stageBtn('Concreto', `estructura_n${nivel}_concreto_otros_concreto`)}
+              </div>
+            </div>
+          ` : ''}
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  };
 
   let titulo = 'Bloque';
   let html = '';
@@ -459,10 +580,10 @@ export function renderBloqueSupervisor(dto, bloque) {
       <div class="process-mini-list">
         ${stageBtn('Excavación', 'excavacion')}
         ${stageBtn('Plantilla de concreto', 'plantilla_concreto')}
-        ${subBloqueBtn('Habilitado del acero de refuerzo', 'cimentacion_acero_refuerzo')}
+        ${subBloqueBtn('Habilitado del acero de refuerzo', 'cimentacion_acero_refuerzo', ['zapata', 'contratrabe', 'columnas_castillos_cimentacion'])}
         ${stageBtn('Cimbra y murete de enrase', 'cimbra_murete_enrase')}
         ${stageBtn('Concreto', 'concreto_cimentacion')}
-        ${stageBtn('Habilitado de cadenas', 'habilitado_cadenas')}
+        ${stageBtn('Habilitado de cadenas', 'habilitado_cadenas_cimentacion')}
         ${stageBtn('Relleno', 'relleno')}
       </div>
     `;
@@ -480,13 +601,12 @@ export function renderBloqueSupervisor(dto, bloque) {
 
     const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
     const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
-    const incluirOtros = niveles >= 2;
 
     html = `
       <div class="structure-list">
-        ${estructuraNivel(1, incluirOtros)}
-        ${niveles >= 2 ? estructuraNivel(2, true) : ''}
-        ${niveles >= 3 ? estructuraNivel(3, true) : ''}
+        ${estructuraNivel(1)}
+        ${niveles >= 2 ? estructuraNivel(2) : ''}
+        ${niveles >= 3 ? estructuraNivel(3) : ''}
       </div>
     `;
   } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_muros')) {
@@ -495,7 +615,7 @@ export function renderBloqueSupervisor(dto, bloque) {
     html = `
       <div class="process-mini-list">
         ${stageBtn('Habilitado de muros de concreto', `estructura_n${nivel}_habilitado_muros_concreto`)}
-        ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`)}
+        ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`, [`estructura_n${nivel}_habilitado_cadenas_intermedias`])}
       </div>
     `;
   } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_mamposteria')) {
@@ -537,7 +657,6 @@ export function renderBloqueSupervisor(dto, bloque) {
     </div>
   `;
 }
-
 
 export function renderEtapaSupervisor(dto, etapaKey, etapaNombre, detalleEtapa) {
   const container = document.getElementById('supervisorEtapaContent');
@@ -610,24 +729,30 @@ export function renderEtapaSupervisor(dto, etapaKey, etapaNombre, detalleEtapa) 
               `
           }
 
-          <div class="supervisor-approve-wrap">
-            <button id="btnApproveReportSupervisor" class="etapa-btn-send" type="button">Reporte aprobado</button>
-          </div>
+          ${
+              entrega && entrega.estadoEntrega === 'ENVIADA' && detalleEtapa?.estadoEtapa !== 'APROBADA'
+              ? `
+                <div class="supervisor-approve-wrap">
+                  <button id="btnApproveReportSupervisor" class="etapa-btn-send" type="button">Reporte aprobado</button>
+                </div>
+              `
+              : ''
+          }
         </div>
       </div>
     </div>
   `;
 }
 
-
-
 export function renderHistorialSupervisor(historial) {
   const container = document.getElementById('supervisorHistorialContent');
   if (!container) return;
 
+  const items = Array.isArray(historial) ? historial : [];
+
   container.innerHTML = `
-    <div class="historial-mini-shell">
-      <div class="historial-mini-top">
+    <div class="historial-shell">
+      <div class="historial-top">
         <button class="process-mini-back" id="btnBackHistorialSupervisor" type="button" aria-label="Volver">
           <img src="/assets/iconos/regresar.png" alt="Volver">
         </button>
@@ -635,60 +760,25 @@ export function renderHistorialSupervisor(historial) {
         <div class="process-mini-spacer"></div>
       </div>
 
-      <div class="historial-mini-list">
-        ${
-            historial && historial.length
-            ? historial.map(item => `
-              <div class="historial-pair">
-                <div class="historial-row">
-                  <div class="historial-card" style="grid-column:1 / -1;">
-                    <div class="etapa-card-title">${escapeHtml(item.tipo || '')}</div>
-                    <div class="historial-card-body">
-                      <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
-                      <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
-                      ${
-                          item.mensaje
-                          ? `<div class="historial-text">${escapeHtml(item.mensaje)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.version != null
-                          ? `<div class="historial-text"><strong>Versión:</strong> ${escapeHtml(item.version)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.estadoEntrega
-                          ? `<div class="historial-text"><strong>Estado:</strong> ${escapeHtml(item.estadoEntrega)}</div>`
-                          : ''
-                      }
-                      ${
-                          item.archivoUrl
-                          ? `<div class="historial-file"><a href="${item.archivoUrl}" target="_blank">${escapeHtml(item.nombreArchivo || 'Ver archivo')}</a></div>`
-                          : ''
-                      }
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `).join('')
-            : `
-              <div class="historial-pair">
-                <div class="historial-card" style="grid-column:1 / -1;">
-                  <div class="etapa-empty">Aún no hay historial para esta etapa.</div>
-                </div>
-              </div>
-            `
-        }
+      <div class="historial-list">
+        ${items.length ? items.map(item => `
+          <div class="historial-card">
+            <div class="historial-card-header">
+              <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
+              <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
+            </div>
+            <div class="historial-card-body">
+              <div class="historial-type">${escapeHtml(item.tipo || '')}</div>
+              <div class="historial-text">${escapeHtml(item.mensaje || item.descripcion || '')}</div>
+              ${item.urlArchivo ? `
+                <a class="constructor-file-link" href="${item.urlArchivo}" target="_blank" rel="noopener noreferrer">Ver PDF</a>
+              ` : ''}
+            </div>
+          </div>
+        `).join('') : `
+          <div class="constructor-empty-box">No hay historial registrado todavía.</div>
+        `}
       </div>
     </div>
   `;
 }
-
-// Cerrar al hacer clic afuera
-document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('profileMenuDropdown');
-    if (dropdown?.classList.contains('open') && !e.target.closest('.userbox')) {
-        closeProfileMenu();
-    }
-});
-

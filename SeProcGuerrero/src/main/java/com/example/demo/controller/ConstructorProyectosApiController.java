@@ -223,8 +223,6 @@ public class ConstructorProyectosApiController {
         try {
             ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
             
-            // IMPORTANTE: Este método buscará el borrador actual y le cambiará el estado a "EN_REVISION"
-            // para que ahora sí, el supervisor lo pueda ver y evaluar.
             proyectoEtapaService.confirmarEntregaAlSupervisor(etapaActual, usuario);
 
             return ResponseEntity.ok(Map.of(
