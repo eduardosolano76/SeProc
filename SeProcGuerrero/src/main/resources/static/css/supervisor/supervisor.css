@@ -1398,3 +1398,29 @@ body{
   filter: none;
   cursor: default;
 }
+
+/* =========================================
+   EFECTOS PARA BOTONES DE ACCIÓN (Aprobar / Enviar Observación)
+   ========================================= */
+
+/* 1. Agregamos la transición suave base */
+.supervisor-send-btn,
+.etapa-btn-send {
+  transition: all 0.2s ease-in-out;
+}
+
+/* 2. Efecto al pasar el mouse (Hover): Se eleva, cambia de color y proyecta sombra */
+.supervisor-send-btn:hover,
+.etapa-btn-send:hover {
+  background: var(--orange-2); /* Se oscurece un poco usando tu variable */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 3. Efecto al hacer clic (Active): Baja, se oscurece más y reduce la sombra */
+.supervisor-send-btn:active,
+.etapa-btn-send:active {
+  background: var(--active); /* Color más oscuro al presionar */
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
