@@ -258,7 +258,7 @@ public class SupervisorProyectosApiController {
         List<Map<String, Object>> historial = proyectoEtapaService.obtenerHistorialEtapa(etapaActual);
         
         // NUEVO: Filtramos (eliminamos) cualquier registro del historial que sea un BORRADOR
-        historial.removeIf(item -> "BORRADOR".equalsIgnoreCase(String.valueOf(item.get("estadoEntrega"))));
+        historial.removeIf(item -> "BORRADOR".equalsIgnoreCase(String.valueOf(item.get("tipo"))));
 
         return ResponseEntity.ok(historial);
     }

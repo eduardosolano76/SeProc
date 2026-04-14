@@ -360,50 +360,85 @@ public class ProyectoEtapaService {
     public List<Map<String, Object>> obtenerHistorialEtapa(ProyectoEtapa etapa) {
         List<Map<String, Object>> historial = new ArrayList<>();
 
+        // 1. Obtenemos las entregas (documentos)
         List<ProyectoEtapaEntrega> entregas = entregaRepo.findByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
         for (ProyectoEtapaEntrega entrega : entregas) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("tipo", "ENTREGA");
-            item.put("version", entrega.getVersion());
-            item.put("estadoEntrega", entrega.getEstadoEntrega());
-            item.put("nombreArchivo", entrega.getNombreArchivoOriginal());
-            item.put("archivoUrl", entrega.getArchivoUrl());
-            item.put("fecha", entrega.getFechaSubida() != null
-                    ? entrega.getFechaSubida().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                    : null);
+            
+            String fechaStr = entrega.getFechaSubida() != null
+                    ? entrega.getFechaSubida().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : null;
+            String fechaOrden = entrega.getFechaSubida() != null ? entrega.getFechaSubida().toString() : "";
+            
+            String nombreConstructor = entrega.getUsuarioConstructor() != null 
+                    ? entrega.getUsuarioConstructor().getNombre() + " " + entrega.getUsuarioConstructor().getApellido() : "—";
 
-            if (entrega.getUsuarioConstructor() != null) {
-                item.put("usuarioNombre",
-                        entrega.getUsuarioConstructor().getNombre() + " " + entrega.getUsuarioConstructor().getApellido());
-            } else {
-                item.put("usuarioNombre", "—");
-            }
-
-            historial.add(item);
+            Map<String, Object> eventoBorrador = new LinkedHashMap<>();
+            eventoBorrador.put("tipo", "BORRADOR");
+            
+            eventoBorrador.put("mensaje", "Se subió un archivo temporalmente. (Versión " + entrega.getVersion() + ").");
+            
+            eventoBorrador.put("fecha", fechaStr);
+            eventoBorrador.put("fechaOrden", fechaOrden);
+            eventoBorrador.put("usuarioNombre", nombreConstructor);
+            eventoBorrador.put("usuarioRol", "Constructor");
+            eventoBorrador.put("urlArchivo", entrega.getArchivoUrl());
+            eventoBorrador.put("nombreArchivo", entrega.getNombreArchivoOriginal());
+            
+            historial.add(eventoBorrador);
         }
 
+        // 2. Obtenemos las interacciones (eventos como ENTREGA, OBSERVACION, etc.)
         List<ProyectoEtapaInteraccion> interacciones =
                 interaccionRepo.findByProyectoEtapa_IdProyectoEtapaOrderByFechaInteraccionDesc(etapa.getIdProyectoEtapa());
 
         for (ProyectoEtapaInteraccion it : interacciones) {
+            
+            String fechaStr = it.getFechaInteraccion() != null
+                    ? it.getFechaInteraccion().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : null;
+            String fechaOrden = it.getFechaInteraccion() != null ? it.getFechaInteraccion().toString() : "";
+
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("tipo", it.getTipoInteraccion());
-            item.put("mensaje", it.getMensaje());
-            item.put("fecha", it.getFechaInteraccion() != null
-                    ? it.getFechaInteraccion().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                    : null);
+            
+            String mensajeModificado = it.getMensaje() != null ? it.getMensaje() : "";
+            
+            if ("ENTREGA".equalsIgnoreCase(it.getTipoInteraccion())) {
+                for (ProyectoEtapaEntrega e : entregas) {
+                    // Si el documento se subió ANTES o al mismo tiempo que la entrega, es el correcto
+                    if (e.getFechaSubida() != null && it.getFechaInteraccion() != null && 
+                        !e.getFechaSubida().isAfter(it.getFechaInteraccion())) {
+                        
+                        if (!mensajeModificado.contains("Versión")) {
+                            mensajeModificado += " (Versión " + e.getVersion() + ").";
+                        }
+                        break; // Ya encontramos la versión, salimos del ciclo
+                    }
+                }
+            }
+            
+            item.put("mensaje", mensajeModificado);
+            item.put("fecha", fechaStr);
+            item.put("fechaOrden", fechaOrden);
 
             if (it.getUsuarioActor() != null) {
-                item.put("usuarioNombre",
-                        it.getUsuarioActor().getNombre() + " " + it.getUsuarioActor().getApellido());
+                item.put("usuarioNombre", it.getUsuarioActor().getNombre() + " " + it.getUsuarioActor().getApellido());
             } else {
                 item.put("usuarioNombre", "—");
+            }
+            
+            String tipoAccion = it.getTipoInteraccion() != null ? it.getTipoInteraccion().toUpperCase() : "";
+            if (tipoAccion.equals("ENTREGA")) {
+                item.put("usuarioRol", "Constructor");
+            } else if (tipoAccion.equals("OBSERVACION") || tipoAccion.equals("APROBACION")) {
+                item.put("usuarioRol", "Supervisor");
+            } else {
+                item.put("usuarioRol", "Usuario");
             }
 
             historial.add(item);
         }
 
-        historial.sort((a, b) -> String.valueOf(b.get("fecha")).compareTo(String.valueOf(a.get("fecha"))));
+        historial.sort((a, b) -> String.valueOf(b.get("fechaOrden")).compareTo(String.valueOf(a.get("fechaOrden"))));
+        
         return historial;
     }
 

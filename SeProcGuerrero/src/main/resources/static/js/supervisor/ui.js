@@ -750,9 +750,18 @@ export function renderHistorialSupervisor(historial) {
 
   const items = Array.isArray(historial) ? historial : [];
 
+  // Función auxiliar para asignar color al badge (igual que en constructor)
+  const getBadgeClass = (tipoStr) => {
+      const s = (tipoStr || '').toLowerCase();
+      if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
+      if (s.includes('observacion')) return 'badge-observacion';
+      if (s.includes('borrador')) return 'badge-borrador';
+      return 'badge-entrega';
+  };
+
   container.innerHTML = `
-    <div class="historial-shell">
-      <div class="historial-top">
+    <div class="process-mini-shell">
+      <div class="process-mini-top">
         <button class="process-mini-back" id="btnBackHistorialSupervisor" type="button" aria-label="Volver">
           <img src="/assets/iconos/regresar.png" alt="Volver">
         </button>
@@ -762,21 +771,24 @@ export function renderHistorialSupervisor(historial) {
 
       <div class="historial-list">
         ${items.length ? items.map(item => `
-          <div class="historial-card">
+          <div class="historial-card ${getBadgeClass(item.tipo)}">
             <div class="historial-card-header">
-              <div class="historial-user">${escapeHtml(item.usuarioNombre || '—')}</div>
+              <div class="historial-user">
+                ${escapeHtml(item.usuarioNombre || '—')}
+                ${item.usuarioRol ? `<span class="historial-role role-${item.usuarioRol.toLowerCase()}">${escapeHtml(item.usuarioRol)}</span>` : ''}
+              </div>
               <div class="historial-date">${escapeHtml(item.fecha || '')}</div>
             </div>
             <div class="historial-card-body">
-              <div class="historial-type">${escapeHtml(item.tipo || '')}</div>
+              <div class="historial-type ${getBadgeClass(item.tipo)}">${escapeHtml((item.tipo || '').toLowerCase())}</div>
               <div class="historial-text">${escapeHtml(item.mensaje || item.descripcion || '')}</div>
               ${item.urlArchivo ? `
-                <a class="constructor-file-link" href="${item.urlArchivo}" target="_blank" rel="noopener noreferrer">Ver PDF</a>
+                <a class="historial-file" href="${item.urlArchivo}" target="_blank" rel="noopener noreferrer">📄 ${escapeHtml(item.nombreArchivo || 'Ver archivo adjunto')}</a>
               ` : ''}
             </div>
           </div>
         `).join('') : `
-          <div class="constructor-empty-box">No hay historial registrado todavía.</div>
+          <div class="empty" style="margin-top: 20px;">No hay historial registrado todavía.</div>
         `}
       </div>
     </div>
