@@ -87,19 +87,19 @@ function bindPanelEvents() {
     const btnBackEtapa = document.getElementById('btnBackEtapa');
     if (btnBackEtapa) btnBackEtapa.onclick = volverABloqueConstructor;
 
-	const processContent = document.getElementById('constructorProcesoContent');
-	if (processContent) {
-	    const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
-	    bloques.forEach(btn => {
-	        btn.onclick = () => {
-	            const estado = (btn.dataset.estado || '').toLowerCase();
+    const processContent = document.getElementById('constructorProcesoContent');
+    if (processContent) {
+        const bloques = processContent.querySelectorAll('.process-mini-stage[data-bloque]');
+        bloques.forEach(btn => {
+            btn.onclick = () => {
+                const estado = (btn.dataset.estado || '').toLowerCase();
 
-	            if (estado === 'locked') return;
+                if (estado === 'locked') return;
 
-	            openBloqueConstructor(btn.dataset.bloque);
-	        };
-	    });
-	}
+                openBloqueConstructor(btn.dataset.bloque);
+            };
+        });
+    }
 
     const bloqueContent = document.getElementById('constructorBloqueContent');
     if (bloqueContent) {
@@ -111,44 +111,44 @@ function bindPanelEvents() {
             };
         });
 
-		const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
-		subBloques.forEach(btn => {
-		    btn.onclick = () => {
-		        const estado = (btn.dataset.estado || '').toLowerCase();
+        const subBloques = bloqueContent.querySelectorAll('.process-mini-stage[data-subbloque]');
+        subBloques.forEach(btn => {
+            btn.onclick = () => {
+                const estado = (btn.dataset.estado || '').toLowerCase();
 
-		        if (estado === 'locked') return;
+                if (estado === 'locked') return;
 
-		        openSubBloqueConstructor(btn.dataset.subbloque);
-		    };
-		});
+                openSubBloqueConstructor(btn.dataset.subbloque);
+            };
+        });
 
-		const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');
-		etapas.forEach(btn => {
-		    btn.onclick = () => {
-		        const estado = (btn.dataset.estado || '').toLowerCase();
+        const etapas = bloqueContent.querySelectorAll('.process-mini-stage[data-etapa]');
+        etapas.forEach(btn => {
+            btn.onclick = () => {
+                const estado = (btn.dataset.estado || '').toLowerCase();
 
-		        // solo las etapas finales bloqueadas no abren la pestaña de evidencias
-		        if (estado === 'locked') return;
+                // solo las etapas finales bloqueadas no abren la pestaña de evidencias
+                if (estado === 'locked') return;
 
-		        openEtapaConstructor(
-		            btn.dataset.etapa,
-		            btn.dataset.nombre || btn.textContent.trim()
-		        );
-		    };
-		});
+                openEtapaConstructor(
+                    btn.dataset.etapa,
+                    btn.dataset.nombre || btn.textContent.trim()
+                );
+            };
+        });
     }
-	
-	const btnHistoryEtapa = document.getElementById('btnHistoryEtapa');
-	if (btnHistoryEtapa) {
-	    btnHistoryEtapa.onclick = openHistorialConstructor;
-	}
 
-	const btnBackHistorial = document.getElementById('btnBackHistorial');
-	if (btnBackHistorial) {
-	    btnBackHistorial.onclick = volverAEtapaConstructor;
-	}
-	
-	
+    const btnHistoryEtapa = document.getElementById('btnHistoryEtapa');
+    if (btnHistoryEtapa) {
+        btnHistoryEtapa.onclick = openHistorialConstructor;
+    }
+
+    const btnBackHistorial = document.getElementById('btnBackHistorial');
+    if (btnBackHistorial) {
+        btnBackHistorial.onclick = volverAEtapaConstructor;
+    }
+
+
 }
 
 function registerGlobalEvents() {
@@ -289,72 +289,81 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
         const btnSend = document.getElementById(`btnSendReporte_${etapaKey}`);
 
         // LÓGICA DE SUBIDA (BORRADOR)
-		if (btnUpload && fileInput) {
-		            btnUpload.onclick = () => fileInput.click();
+        if (btnUpload && fileInput) {
+            btnUpload.onclick = () => fileInput.click();
 
-		            fileInput.onchange = async (e) => {
-		                const file = e.target.files?.[0];
-		                if (!file) return;
+            fileInput.onchange = async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
 
-		                if (!file.type.startsWith('image/')) {
-		                    return ui.showCustomAlert('Por favor selecciona una imagen (JPG, PNG, WEBP).', 'Error de formato');
-		                }
+                if (!file.type.startsWith('image/')) {
+                    return ui.showCustomAlert('Por favor selecciona una imagen (JPG, PNG, WEBP).', 'Error de formato');
+                }
 
-		                try {
-		                    btnUpload.innerHTML = 'Subiendo...';
-		                    btnUpload.disabled = true;
+                try {
+                    btnUpload.innerHTML = 'Subiendo...';
+                    btnUpload.disabled = true;
 
-		                    await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file); // Usa la misma función de api
-		                    await openEtapaConstructor(etapaKey, etapaNombre); // Recarga para ver la lista actualizada
+                    await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file); // Usa la misma función de api
+                    await openEtapaConstructor(etapaKey, etapaNombre); // Recarga para ver la lista actualizada
 
-		                } catch (err) {
-		                    await ui.showCustomAlert(err.message, 'Error al subir');
-		                } finally {
-		                    btnUpload.disabled = false;
-		                    fileInput.value = '';
-		                }
-		            };
-		        }
-				
-				        // LÓGICA DE ELIMINAR IMAGEN
-				        const btnsQuitar = document.querySelectorAll('.btn-quitar-imagen');
-				        btnsQuitar.forEach(btn => {
-				            btn.onclick = async (e) => {
-				                e.stopPropagation(); // Evita que se cierre el dropdown antes del click
-				                const path = btn.dataset.path;
-				                const confirmado = await ui.showCustomConfirm("¿Estás seguro de quitar esta imagen?");
-				                if (!confirmado) return;
+                } catch (err) {
+                    await ui.showCustomAlert(err.message, 'Error al subir');
+                } finally {
+                    btnUpload.disabled = false;
+                    fileInput.value = '';
+                }
+            };
+        }
 
-				                try {
-				                    await api.deleteReportImage(currentProcesoDto.idProyecto, etapaKey, path);
-				                    await openEtapaConstructor(etapaKey, etapaNombre); // Recargar la vista
-				                } catch (err) {
-				                    ui.showCustomAlert(err.message, 'Error al eliminar');
-				                }
-				            };
-				        });
+        // LÓGICA DE ELIMINAR IMAGEN
+        const btnsQuitar = document.querySelectorAll('.btn-quitar-imagen');
+        btnsQuitar.forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation(); // Evita que se cierre el dropdown antes del click
+                const path = btn.dataset.path;
+                const confirmado = await ui.showCustomConfirm("¿Estás seguro de quitar esta imagen?");
+                if (!confirmado) return;
 
-				        // LÓGICA DEL MENÚ DE 3 PUNTOS
-				        const btnDots = document.querySelectorAll('.t-btn-dots');
-				        btnDots.forEach(btn => {
-				            btn.onclick = (e) => {
-				                e.stopPropagation();
-				                // Cerrar todos los demás menús primero
-				                document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
-				                btn.nextElementSibling.classList.toggle('show');
-				            };
-				        });
+                try {
+                    await api.deleteReportImage(currentProcesoDto.idProyecto, etapaKey, path);
+                    await openEtapaConstructor(etapaKey, etapaNombre); // Recargar la vista
+                } catch (err) {
+                    ui.showCustomAlert(err.message, 'Error al eliminar');
+                }
+            };
+        });
 
-				        // Cerrar menús al hacer click en cualquier otra parte
-				        document.addEventListener('click', () => {
-				            document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
-				        });
+        // LÓGICA DEL MENÚ DE 3 PUNTOS
+        const btnDots = document.querySelectorAll('.t-btn-dots');
+        btnDots.forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+
+                const miMenu = btn.nextElementSibling;
+                const estabaAbierto = miMenu.classList.contains('show');
+
+                // Cerrar todos los demás menús primero
+                document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
+
+                // Si mi menú NO estaba abierto, lo abro. Si estaba abierto, ya se cerró arriba.
+                if (!estabaAbierto) {
+                    miMenu.classList.add('show');
+                }
+
+            };
+        });
+
+        // Cerrar menús al hacer click en cualquier otra parte
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
+        });
 
         // LÓGICA DE ENVÍO AL SUPERVISOR (ENTREGAR)
         if (btnSend) {
             btnSend.onclick = async () => {
                 const confirmado = await ui.showCustomConfirm(
-                    "¿Estás seguro de entregar este reporte? Una vez enviado, el supervisor podrá evaluarlo.", 
+                    "¿Estás seguro de entregar este reporte? Una vez enviado, el supervisor podrá evaluarlo.",
                     "Confirmar Entrega"
                 );
 
@@ -375,6 +384,25 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
                     btnSend.textContent = 'Entregar';
                     btnSend.disabled = false;
                     if (btnUpload) btnUpload.disabled = false;
+                }
+            };
+        }
+
+        // --- DESCARGAR PDF (Solo aparece si está APROBADA) ---
+        const btnDescargarPdf = document.getElementById(`btnDescargarPdf_${etapaKey}`);
+        if (btnDescargarPdf) {
+            btnDescargarPdf.onclick = async () => {
+                try {
+                    btnDescargarPdf.innerHTML = 'Generando...';
+                    btnDescargarPdf.disabled = true;
+
+                    await api.downloadReportPdf(currentProcesoDto.idProyecto, etapaKey);
+
+                } catch (err) {
+                    ui.showCustomAlert('Error al generar PDF: ' + err.message, 'Error');
+                } finally {
+                    btnDescargarPdf.innerHTML = 'Descargar en PDF';
+                    btnDescargarPdf.disabled = false;
                 }
             };
         }

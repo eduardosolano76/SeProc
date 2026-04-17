@@ -229,114 +229,114 @@ function filtrarClavesExistentes(dto, claves = []) {
 }
 
 function resolverEstadoGrupo(dto, claves = []) {
-  const clavesFinales = filtrarClavesExistentes(dto, claves);
-  const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
+    const clavesFinales = filtrarClavesExistentes(dto, claves);
+    const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
 
-  if (!estados.length) return 'BLOQUEADA';
+    if (!estados.length) return 'BLOQUEADA';
 
-  if (estados.every(estado => estado === 'APROBADA')) {
-    return 'APROBADA';
-  }
+    if (estados.every(estado => estado === 'APROBADA')) {
+        return 'APROBADA';
+    }
 
-  if (
-    estados.some(estado =>
-      estado === 'EN_PROCESO' ||
-      estado === 'CON_OBSERVACIONES' ||
-      estado === 'DISPONIBLE' ||
-      estado === 'APROBADA'
-    )
-  ) {
-    return 'EN_PROCESO';
-  }
+    if (
+        estados.some(estado =>
+            estado === 'EN_PROCESO' ||
+            estado === 'CON_OBSERVACIONES' ||
+            estado === 'DISPONIBLE' ||
+            estado === 'APROBADA'
+        )
+    ) {
+        return 'EN_PROCESO';
+    }
 
-  return 'BLOQUEADA';
+    return 'BLOQUEADA';
 }
 
 function obtenerNumeroNiveles(tipoEdificacion) {
-  const tipo = String(tipoEdificacion || '').toUpperCase();
-  if (tipo === 'U3C') return 3;
-  if (tipo === 'U2C') return 2;
-  return 1;
+    const tipo = String(tipoEdificacion || '').toUpperCase();
+    if (tipo === 'U3C') return 3;
+    if (tipo === 'U2C') return 2;
+    return 1;
 }
 
 function buildEstructuraClaves(dto) {
-  const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
-  const claves = [];
+    const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
+    const claves = [];
 
-  for (let nivel = 1; nivel <= niveles; nivel++) {
-    claves.push(
-      `estructura_n${nivel}_habilitado_castillos`,
-      `estructura_n${nivel}_habilitado_columnas`,
-      `estructura_n${nivel}_habilitado_muros_concreto`,
-      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
-      `estructura_n${nivel}_cimbra_verticales`,
-      `estructura_n${nivel}_concreto_verticales`,
-      `estructura_n${nivel}_habilitado_dalas`,
-      `estructura_n${nivel}_habilitado_vigas_trabes`,
-      `estructura_n${nivel}_cimbra_horizontales`,
-      `estructura_n${nivel}_concreto_horizontales`,
-      `estructura_n${nivel}_cimbra_losa`,
-      `estructura_n${nivel}_habilitado_losa`,
-      `estructura_n${nivel}_concreto_losa`,
-      `estructura_n${nivel}_habilitado_barandal_concreto`,
-      `estructura_n${nivel}_cimbra_otros_concreto`,
-      `estructura_n${nivel}_concreto_otros_concreto`
-    );
-  }
+    for (let nivel = 1;nivel <= niveles;nivel++) {
+        claves.push(
+            `estructura_n${nivel}_habilitado_castillos`,
+            `estructura_n${nivel}_habilitado_columnas`,
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+            `estructura_n${nivel}_cimbra_verticales`,
+            `estructura_n${nivel}_concreto_verticales`,
+            `estructura_n${nivel}_habilitado_dalas`,
+            `estructura_n${nivel}_habilitado_vigas_trabes`,
+            `estructura_n${nivel}_cimbra_horizontales`,
+            `estructura_n${nivel}_concreto_horizontales`,
+            `estructura_n${nivel}_cimbra_losa`,
+            `estructura_n${nivel}_habilitado_losa`,
+            `estructura_n${nivel}_concreto_losa`,
+            `estructura_n${nivel}_habilitado_barandal_concreto`,
+            `estructura_n${nivel}_cimbra_otros_concreto`,
+            `estructura_n${nivel}_concreto_otros_concreto`
+        );
+    }
 
-  return filtrarClavesExistentes(dto, claves);
+    return filtrarClavesExistentes(dto, claves);
 }
 
 function claseVisualDesdeEstado(estado) {
-  const e = normalizarEstadoEtapa(estado);
+    const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'APROBADA') return 'done';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
-  return 'locked';
+    if (e === 'APROBADA') return 'done';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
+    return 'locked';
 }
 
 function claseAcordeonDesdeClaves(dto, claves = []) {
-  return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
+    return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
 }
 
 function iconoVisualDesdeEstado(estado) {
-  const e = normalizarEstadoEtapa(estado);
+    const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'APROBADA') return '/assets/iconos/listo.png';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
-  return '/assets/iconos/bloqueado.png';
+    if (e === 'APROBADA') return '/assets/iconos/listo.png';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
+    return '/assets/iconos/bloqueado.png';
 }
 
 export function renderProcesoProyecto(dto) {
-  const container = document.getElementById('constructorProcesoContent');
-  if (!container) return;
+    const container = document.getElementById('constructorProcesoContent');
+    if (!container) return;
 
-  const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
+    const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
 
-  const cimentacionClaves = [
-    'excavacion',
-    'plantilla_concreto',
-    'zapata',
-    'contratrabe',
-    'columnas_castillos_cimentacion',
-    'cimbra_murete_enrase',
-    'concreto_cimentacion',
-    'habilitado_cadenas_cimentacion',
-    'relleno'
-  ];
+    const cimentacionClaves = [
+        'excavacion',
+        'plantilla_concreto',
+        'zapata',
+        'contratrabe',
+        'columnas_castillos_cimentacion',
+        'cimbra_murete_enrase',
+        'concreto_cimentacion',
+        'habilitado_cadenas_cimentacion',
+        'relleno'
+    ];
 
-  const estructuraClaves = buildEstructuraClaves(dto);
+    const estructuraClaves = buildEstructuraClaves(dto);
 
-  const acabadosClaves = [
-    'pisos',
-    'guarnicion'
-  ];
+    const acabadosClaves = [
+        'pisos',
+        'guarnicion'
+    ];
 
-  const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
-  const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
-  const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
+    const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
+    const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
+    const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
 
-  const cardBtn = (label, bloque, estado) => `
+    const cardBtn = (label, bloque, estado) => `
     <button
       class="process-mini-stage status-${claseVisualDesdeEstado(estado)}"
       type="button"
@@ -349,7 +349,7 @@ export function renderProcesoProyecto(dto) {
     </button>
   `;
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div class="process-mini-shell">
       <div class="process-mini-top">
         <button class="process-mini-back" id="btnBackProceso" type="button" aria-label="Volver">
@@ -389,11 +389,11 @@ export function renderBloqueProyecto(dto, bloque) {
     if (!container) return;
 
     const stageBtn = (nombre, etapa) => {
-      const estadoReal = resolverEstado(dto, etapa);
-      const estadoVisual = claseVisualDesdeEstado(estadoReal);
-      const icono = iconoVisualDesdeEstado(estadoReal);
+        const estadoReal = resolverEstado(dto, etapa);
+        const estadoVisual = claseVisualDesdeEstado(estadoReal);
+        const icono = iconoVisualDesdeEstado(estadoReal);
 
-      return `
+        return `
         <button
           class="process-mini-stage status-${estadoVisual} compact-stage"
           type="button"
@@ -409,11 +409,11 @@ export function renderBloqueProyecto(dto, bloque) {
     };
 
     const subBloqueBtn = (nombre, subbloque, clavesHijas = []) => {
-      const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
-      const estadoVisual = claseVisualDesdeEstado(estadoReal);
-      const icono = iconoVisualDesdeEstado(estadoReal);
+        const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
+        const estadoVisual = claseVisualDesdeEstado(estadoReal);
+        const icono = iconoVisualDesdeEstado(estadoReal);
 
-      return `
+        return `
         <button
           class="process-mini-stage status-${estadoVisual} compact-stage"
           type="button"
@@ -427,45 +427,45 @@ export function renderBloqueProyecto(dto, bloque) {
       `;
     };
 
-	const estructuraNivel = (nivel) => {
-	  const clavesVerticales = [
-	    `estructura_n${nivel}_habilitado_castillos`,
-	    `estructura_n${nivel}_habilitado_columnas`,
-	    `estructura_n${nivel}_habilitado_muros_concreto`,
-	    `estructura_n${nivel}_habilitado_cadenas_intermedias`,
-	    `estructura_n${nivel}_cimbra_verticales`,
-	    `estructura_n${nivel}_concreto_verticales`
-	  ];
+    const estructuraNivel = (nivel) => {
+        const clavesVerticales = [
+            `estructura_n${nivel}_habilitado_castillos`,
+            `estructura_n${nivel}_habilitado_columnas`,
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+            `estructura_n${nivel}_cimbra_verticales`,
+            `estructura_n${nivel}_concreto_verticales`
+        ];
 
-	  const clavesHorizontales = [
-	    `estructura_n${nivel}_habilitado_dalas`,
-	    `estructura_n${nivel}_habilitado_vigas_trabes`,
-	    `estructura_n${nivel}_cimbra_horizontales`,
-	    `estructura_n${nivel}_concreto_horizontales`,
-	    `estructura_n${nivel}_cimbra_losa`,
-	    `estructura_n${nivel}_habilitado_losa`,
-	    `estructura_n${nivel}_concreto_losa`
-	  ];
+        const clavesHorizontales = [
+            `estructura_n${nivel}_habilitado_dalas`,
+            `estructura_n${nivel}_habilitado_vigas_trabes`,
+            `estructura_n${nivel}_cimbra_horizontales`,
+            `estructura_n${nivel}_concreto_horizontales`,
+            `estructura_n${nivel}_cimbra_losa`,
+            `estructura_n${nivel}_habilitado_losa`,
+            `estructura_n${nivel}_concreto_losa`
+        ];
 
-	  const clavesOtros = [
-	    `estructura_n${nivel}_habilitado_barandal_concreto`,
-	    `estructura_n${nivel}_cimbra_otros_concreto`,
-	    `estructura_n${nivel}_concreto_otros_concreto`
-	  ];
+        const clavesOtros = [
+            `estructura_n${nivel}_habilitado_barandal_concreto`,
+            `estructura_n${nivel}_cimbra_otros_concreto`,
+            `estructura_n${nivel}_concreto_otros_concreto`
+        ];
 
-	  const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
+        const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
 
-	  const claseNivel = claseAcordeonDesdeClaves(dto, [
-	    ...clavesVerticales,
-	    ...clavesHorizontales,
-	    ...(incluirOtros ? clavesOtros : [])
-	  ]);
+        const claseNivel = claseAcordeonDesdeClaves(dto, [
+            ...clavesVerticales,
+            ...clavesHorizontales,
+            ...(incluirOtros ? clavesOtros : [])
+        ]);
 
-	  const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
-	  const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
-	  const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
+        const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
+        const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
+        const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
 
-	  return `
+        return `
 	    <div class="structure-accordion ${claseNivel}">
 	      <button class="structure-accordion-toggle ${claseNivel}" type="button">
 	        <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
@@ -487,9 +487,9 @@ export function renderBloqueProyecto(dto, bloque) {
 	            ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
 	            ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
 	            ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`, [
-	              `estructura_n${nivel}_habilitado_muros_concreto`,
-	              `estructura_n${nivel}_habilitado_cadenas_intermedias`
-	            ])}
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`
+        ])}
 	            ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
 	            ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
 	          </div>
@@ -533,14 +533,14 @@ export function renderBloqueProyecto(dto, bloque) {
 	      </div>
 	    </div>
 	  `;
-	};
+    };
 
     let titulo = 'Bloque';
     let html = '';
 
     if (bloque === 'cimentacion') {
-      titulo = 'Cimentación';
-      html = `
+        titulo = 'Cimentación';
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Excavación', 'excavacion')}
           ${stageBtn('Plantilla de concreto', 'plantilla_concreto')}
@@ -548,7 +548,7 @@ export function renderBloqueProyecto(dto, bloque) {
             'zapata',
             'contratrabe',
             'columnas_castillos_cimentacion'
-          ])}
+        ])}
           ${stageBtn('Cimbra y murete de enrase', 'cimbra_murete_enrase')}
           ${stageBtn('Concreto', 'concreto_cimentacion')}
           ${stageBtn('Habilitado de cadenas', 'habilitado_cadenas_cimentacion')}
@@ -556,8 +556,8 @@ export function renderBloqueProyecto(dto, bloque) {
         </div>
       `;
     } else if (bloque === 'cimentacion_acero_refuerzo') {
-      titulo = 'Habilitado del acero de refuerzo';
-      html = `
+        titulo = 'Habilitado del acero de refuerzo';
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Zapata', 'zapata')}
           ${stageBtn('Contratrabe', 'contratrabe')}
@@ -565,12 +565,12 @@ export function renderBloqueProyecto(dto, bloque) {
         </div>
       `;
     } else if (bloque === 'estructura') {
-      titulo = 'Estructura';
+        titulo = 'Estructura';
 
-      const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
-      const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
+        const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
+        const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
 
-      html = `
+        html = `
         <div class="structure-list">
           ${estructuraNivel(1)}
           ${niveles >= 2 ? estructuraNivel(2) : ''}
@@ -578,34 +578,34 @@ export function renderBloqueProyecto(dto, bloque) {
         </div>
       `;
     } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_muros')) {
-      const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
-      titulo = `Muros - nivel ${nivel}`;
-      html = `
+        const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
+        titulo = `Muros - nivel ${nivel}`;
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Habilitado de muros de concreto', `estructura_n${nivel}_habilitado_muros_concreto`)}
           ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`, [
             `estructura_n${nivel}_habilitado_cadenas_intermedias`
-          ])}
+        ])}
         </div>
       `;
     } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_mamposteria')) {
-      const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
-      titulo = `Mampostería - nivel ${nivel}`;
-      html = `
+        const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
+        titulo = `Mampostería - nivel ${nivel}`;
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Habilitado de cadenas intermedias', `estructura_n${nivel}_habilitado_cadenas_intermedias`)}
         </div>
       `;
     } else if (bloque === 'preliminares') {
-      titulo = 'Trabajos preliminares';
-      html = `
+        titulo = 'Trabajos preliminares';
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Limpieza, trazo y nivelación', 'limpieza_trazo_nivelacion')}
         </div>
       `;
     } else if (bloque === 'acabados') {
-      titulo = 'Albañilería y acabados';
-      html = `
+        titulo = 'Albañilería y acabados';
+        html = `
         <div class="process-mini-list">
           ${stageBtn('Pisos', 'pisos')}
           ${stageBtn('Guarnición', 'guarnicion')}
@@ -658,7 +658,7 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
                             <a href="${arch.url}" target="_blank" class="t-drop-item">
                                 <img src="/assets/iconos/verFoto.png" alt="Ver" class="t-drop-icon"> Abrir en línea
                             </a>
-                            ${entrega?.estadoEntrega === 'BORRADOR' || entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? `
+                            ${entrega?.estadoEntrega === 'BORRADOR' ? `
                                 <div class="t-drop-divider"></div>
                                 <button class="t-drop-item btn-quitar-imagen" data-path="${escapeHtml(arch.path)}">
                                     <img src="/assets/iconos/eliminar.png" alt="Quitar" class="t-drop-icon"> Quitar
@@ -676,14 +676,14 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
         <div class="etapa-card etapa-card-entrega">
           <div class="etapa-card-title">Tu trabajo</div>
 
-          ${ entrega ? `
+          ${entrega ? `
                 <div class="historial-card-body" style="margin-bottom:14px;">
                   <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
                   <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
                   <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
                   <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
                 </div>
-              ` : '' }
+              ` : ''}
 
           <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
 
@@ -694,8 +694,16 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
                     ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa aprobada'}
                 </strong>
                 ${entrega?.estadoEntrega === 'ENVIADA'
-                    ? 'Has enviado tu trabajo. Espera la evaluación de tu supervisor.'
-                    : 'Este reporte ya fue evaluado y aprobado.'}
+                ? 'Has enviado tu trabajo. Espera la evaluación de tu supervisor.'
+                : 'Este reporte ya fue evaluado y aprobado.'}
+					
+					${entrega?.estadoEntrega === 'APROBADA' ? `
+					                    <div style="margin-top: 14px;">
+					                        <button id="btnDescargarPdf_${etapaKey}" class="btn-descargar-pdf" type="button">
+					                            Descargar en PDF
+					                        </button>
+					                    </div>
+					                ` : ''}
             </div>
           ` : `
             ${listaArchivosHtml} 
@@ -792,17 +800,17 @@ export function renderHistorialProyecto(historial) {
         const s = (tipoStr || '').toLowerCase();
         if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
         if (s.includes('observacion')) return 'badge-observacion';
-		if (s.includes('borrador')) return 'badge-borrador';
+        if (s.includes('borrador')) return 'badge-borrador';
         return 'badge-entrega';
     };
-	
-		// Función auxiliar para renderizar la lista de archivos
-	    const renderArchivosHtml = (archivos) => {
-	        if (!archivos || archivos.length === 0) return '';
-	        
-	        let html = '<div class="teams-file-list" style="margin-top: 15px;">';
-	        archivos.forEach(arch => {
-	            html += `
+
+    // Función auxiliar para renderizar la lista de archivos
+    const renderArchivosHtml = (archivos) => {
+        if (!archivos || archivos.length === 0) return '';
+
+        let html = '<div class="teams-file-list" style="margin-top: 15px;">';
+        archivos.forEach(arch => {
+            html += `
 	                <div class="teams-file-item" style="padding: 6px 12px; margin-bottom: 6px;">
 	                    <div class="t-file-left">
 	                        <span class="t-file-icon">🖼️</span>
@@ -813,10 +821,10 @@ export function renderHistorialProyecto(historial) {
 	                    </div>
 	                </div>
 	            `;
-	        });
-	        html += '</div>';
-	        return html;
-	    };
+        });
+        html += '</div>';
+        return html;
+    };
 
     container.innerHTML = `
       <div class="process-mini-shell">

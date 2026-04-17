@@ -4,7 +4,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -309,6 +311,29 @@ public class ConstructorProyectosApiController {
             return ResponseEntity.ok(Map.of("mensaje", "Imagen eliminada correctamente."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @GetMapping("/{id}/etapas/{etapa}/pdf")
+    public ResponseEntity<byte[]> descargarPdfAprobado(@PathVariable Integer id, 
+                                                       @PathVariable String etapa, 
+                                                       Authentication auth) {
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            byte[] pdfBytes = proyectoEtapaService.generarPdfDeImagenesAprobadas(id, etapa);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            
+            headers.setContentDispositionFormData("attachment", "Reporte_Aprobado_" + etapa + ".pdf");
+            
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 }

@@ -175,3 +175,19 @@ export async function deleteReportImage(idProyecto, etapa, storagePath) {
     if (!res.ok) throw new Error(data.message || text || "No se pudo eliminar la imagen.");
     return data;
 }
+
+export async function downloadReportPdf(idProyecto, etapa) {
+    const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${etapa}/pdf`);
+    
+    if (!res.ok) throw new Error("No se pudo generar el PDF");
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `Reporte_${etapa}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+}

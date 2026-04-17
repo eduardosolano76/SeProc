@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,6 +25,10 @@ import com.example.demo.repository.EtapaPlantillaRepository;
 import com.example.demo.repository.ProyectoEtapaEntregaRepository;
 import com.example.demo.repository.ProyectoEtapaInteraccionRepository;
 import com.example.demo.repository.ProyectoEtapaRepository;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.pdf.PdfWriter;
 
 @Service
 @Transactional
@@ -660,5 +666,40 @@ public class ProyectoEtapaService {
 
 		return nivel >= inicio && nivel <= fin;
 	}
+	
+	public byte[] generarPdfDeImagenesAprobadas(Integer idProyecto, String claveVisual) throws Exception {
+        ProyectoEtapa etapa = obtenerEtapaPorClaveVisual(idProyecto, claveVisual);
+        ProyectoEtapaEntrega entrega = entregaRepo
+                .findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa())
+                .orElseThrow(() -> new IllegalArgumentException("No hay entregas para esta etapa."));
+
+        if (!"APROBADA".equalsIgnoreCase(entrega.getEstadoEntrega())) {
+            throw new IllegalArgumentException("Solo se pueden descargar reportes de etapas APROBADAS.");
+        }
+
+        String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
+
+        Document document = new Document(PageSize.LETTER);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, out);
+        document.open();
+
+        for (String urlStr : urls) {
+            if (urlStr == null || urlStr.trim().isEmpty()) continue;
+            try {
+                Image img = Image.getInstance(new URL(urlStr));
+                // Escalar imagen para que quepa en el ancho de la página respetando los márgenes
+                float scaler = ((document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin()) / img.getWidth()) * 100;
+                img.scalePercent(scaler);
+                img.setAlignment(Image.ALIGN_CENTER);
+                document.add(img);
+            } catch (Exception e) {
+                System.err.println("Error al cargar la imagen para el PDF: " + urlStr);
+            }
+        }
+        
+        document.close();
+        return out.toByteArray();
+    }
 
 }
