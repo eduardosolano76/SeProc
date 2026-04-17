@@ -637,99 +637,111 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
 
     const observacion = detalleEtapa?.ultimaObservacion;
     const entrega = detalleEtapa?.entregaActual;
+    const archivos = entrega?.archivos || [];
+
+    const mostrarObservacion = observacion && entrega?.estadoEntrega === 'CON_OBSERVACIONES';
+
+    // Generar la lista visual de archivos
+    let listaArchivosHtml = '';
+    if (archivos.length > 0) {
+        listaArchivosHtml = '<div class="teams-file-list" style="margin-top: 15px; margin-bottom: 20px;">';
+        archivos.forEach(arch => {
+            listaArchivosHtml += `
+                <div class="teams-file-item">
+                    <div class="t-file-left">
+                        <span class="t-file-icon">🖼️</span>
+                        <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
+                    </div>
+                    <div class="t-file-right">
+                        <button class="t-btn-dots" type="button">•••</button>
+                        <div class="t-dropdown-menu">
+                            <a href="${arch.url}" target="_blank" class="t-drop-item">
+                                <img src="/assets/iconos/verFoto.png" alt="Ver" class="t-drop-icon"> Abrir en línea
+                            </a>
+                            ${entrega?.estadoEntrega === 'BORRADOR' || entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? `
+                                <div class="t-drop-divider"></div>
+                                <button class="t-drop-item btn-quitar-imagen" data-path="${escapeHtml(arch.path)}">
+                                    <img src="/assets/iconos/eliminar.png" alt="Quitar" class="t-drop-icon"> Quitar
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        listaArchivosHtml += '</div>';
+    }
+
+    const tuTrabajoCardHtml = `
+        <div class="etapa-card etapa-card-entrega">
+          <div class="etapa-card-title">Tu trabajo</div>
+
+          ${ entrega ? `
+                <div class="historial-card-body" style="margin-bottom:14px;">
+                  <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
+                  <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
+                  <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
+                  <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
+                </div>
+              ` : '' }
+
+          <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
+
+          ${(entrega?.estadoEntrega === 'ENVIADA' || entrega?.estadoEntrega === 'APROBADA') ? `
+            ${listaArchivosHtml}
+            <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem; margin-top: 16px;">
+                <strong style="display: block; margin-bottom: 5px;">
+                    ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa aprobada'}
+                </strong>
+                ${entrega?.estadoEntrega === 'ENVIADA'
+                    ? 'Has enviado tu trabajo. Espera la evaluación de tu supervisor.'
+                    : 'Este reporte ya fue evaluado y aprobado.'}
+            </div>
+          ` : `
+            ${listaArchivosHtml} 
+			<div class="etapa-upload-actions">
+			               <input type="file" id="reporteFile_${etapaKey}" accept="image/png, image/jpeg, image/webp" hidden>
+
+			               <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
+			                  ${entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar imagen'}
+			               </button>
+
+			               ${entrega?.estadoEntrega === 'BORRADOR' && archivos.length > 0 ? `
+			                  <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
+			               ` : ''}
+			            </div>
+          `}
+        </div>
+    `;
+
+    const contenidoPrincipalHtml = mostrarObservacion
+        ? `
+          <div class="etapa-mini-grid">
+            <div class="etapa-card etapa-card-observaciones">
+              <div class="etapa-card-title">Observaciones del supervisor</div>
+              <div class="historial-card-body">
+                <div class="historial-user">${escapeHtml(observacion.usuarioNombre || '—')}</div>
+                <div class="historial-date">${escapeHtml(observacion.fecha || '')}</div>
+                <div class="historial-text">${escapeHtml(observacion.mensaje || '')}</div>
+              </div>
+            </div>
+            ${tuTrabajoCardHtml}
+          </div>
+        `
+        : `
+          <div style="margin-bottom: 14px;">
+            ${tuTrabajoCardHtml}
+          </div>
+        `;
 
     container.innerHTML = `
         <div class="etapa-mini-shell">
           <div class="etapa-mini-top">
-            <button class="process-mini-back" id="btnBackEtapa" type="button" aria-label="Volver">
-              <img src="/assets/iconos/regresar.png" alt="Volver">
-            </button>
+            <button class="process-mini-back" id="btnBackEtapa" type="button"><img src="/assets/iconos/regresar.png"></button>
             <div class="process-mini-chip">${escapeHtml(titulo.toUpperCase())}</div>
-            <button class="etapa-mini-history" id="btnHistoryEtapa" type="button" title="Historial">
-              <img src="${relojIcon}" alt="Historial">
-            </button>
+            <button class="etapa-mini-history" id="btnHistoryEtapa" type="button"><img src="${relojIcon}"></button>
           </div>
-
-          <div class="etapa-mini-grid">
-            <div class="etapa-card etapa-card-observaciones">
-              <div class="etapa-card-title">Observaciones del supervisor</div>
-
-              ${
-                  observacion
-                  ? `
-                    <div class="historial-card-body">
-                      <div class="historial-user">${escapeHtml(observacion.usuarioNombre || '—')}</div>
-                      <div class="historial-date">${escapeHtml(observacion.fecha || '')}</div>
-                      <div class="historial-text">${escapeHtml(observacion.mensaje || '')}</div>
-                    </div>
-                  `
-                  : `
-                    <div class="etapa-empty">
-                      Aún no hay observaciones para esta etapa.
-                    </div>
-                  `
-              }
-            </div>
-
-            <div class="etapa-card etapa-card-entrega">
-              <div class="etapa-card-title">Tu trabajo</div>
-
-              ${
-                  entrega
-                  ? `
-                    <div class="historial-card-body" style="margin-bottom:14px;">
-                      <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
-                      <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
-                      <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
-                      <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
-                      ${
-                        entrega.archivoUrl
-                            ? `<div class="historial-file">
-                                 <a href="${entrega.archivoUrl}" target="_blank">
-                                    ${escapeHtml(entrega.nombreArchivo || 'Ver archivo actual')}
-                                 </a>
-                               </div>`
-                            : ''
-                      }
-                    </div>
-                  `
-                  : ''
-              }
-
-              <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
-
-              ${(entrega?.estadoEntrega === 'ENVIADA' || entrega?.estadoEntrega === 'APROBADA') ? `
-                <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem;">
-                    <strong style="display: block; margin-bottom: 5px;">
-                        ${entrega?.estadoEntrega === 'ENVIADA' ? 'En revisión' : 'Etapa aprobada'}
-                    </strong>
-                    ${entrega?.estadoEntrega === 'ENVIADA'
-                        ? 'Has enviado el reporte. Espera la evaluación de tu supervisor.'
-                        : 'Este reporte ya fue evaluado y aprobado. No se requieren más acciones.'}
-                </div>
-              ` : `
-                <div class="etapa-upload-actions">
-                   <input type="file" id="reporteFile_${etapaKey}" accept="application/pdf" hidden>
-
-                   <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
-                      ${entrega?.estadoEntrega === 'BORRADOR'
-                          ? 'Reemplazar borrador'
-                          : (entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar reporte')}
-                   </button>
-
-                   ${entrega?.estadoEntrega === 'BORRADOR' ? `
-                      <button class="etapa-btn-send" id="btnSendReporte_${etapaKey}" type="button">Entregar</button>
-                   ` : ''}
-                </div>
-              `}
-            </div>
-          </div>
-
-          <div class="etapa-upload-panel">
-            <div class="etapa-upload-placeholder">
-              Aquí después irá la carga de PDF y la vista del archivo seleccionado
-            </div>
-          </div>
+          ${contenidoPrincipalHtml}
         </div>
     `;
 }
@@ -783,6 +795,28 @@ export function renderHistorialProyecto(historial) {
 		if (s.includes('borrador')) return 'badge-borrador';
         return 'badge-entrega';
     };
+	
+		// Función auxiliar para renderizar la lista de archivos
+	    const renderArchivosHtml = (archivos) => {
+	        if (!archivos || archivos.length === 0) return '';
+	        
+	        let html = '<div class="teams-file-list" style="margin-top: 15px;">';
+	        archivos.forEach(arch => {
+	            html += `
+	                <div class="teams-file-item" style="padding: 6px 12px; margin-bottom: 6px;">
+	                    <div class="t-file-left">
+	                        <span class="t-file-icon">🖼️</span>
+	                        <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
+	                    </div>
+	                    <div class="t-file-right">
+	                        <a href="${escapeHtml(arch.url)}" target="_blank" class="historial-file" style="margin-top: 0; padding: 4px 8px;">Ver imagen</a>
+	                    </div>
+	                </div>
+	            `;
+	        });
+	        html += '</div>';
+	        return html;
+	    };
 
     container.innerHTML = `
       <div class="process-mini-shell">
@@ -807,9 +841,9 @@ export function renderHistorialProyecto(historial) {
 				              <div class="historial-card-body">
 				                <div class="historial-type ${getBadgeClass(item.tipo)}">${escapeHtml((item.tipo || '').toLowerCase())}</div>
 				                <div class="historial-text">${escapeHtml(item.mensaje || item.descripcion || '')}</div>
-				                ${item.urlArchivo ? `
-				                  <a class="historial-file" href="${item.urlArchivo}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.nombreArchivo || 'Ver archivo adjunto')}</a>
-				                ` : ''}
+								
+								${renderArchivosHtml(item.archivos)}
+								
 				              </div>
 				            </div>
 				          `).join('') : `

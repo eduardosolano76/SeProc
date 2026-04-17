@@ -289,40 +289,66 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
         const btnSend = document.getElementById(`btnSendReporte_${etapaKey}`);
 
         // LÓGICA DE SUBIDA (BORRADOR)
-        if (btnUpload && fileInput) {
-            btnUpload.onclick = () => {
-                fileInput.click();
-            };
+		if (btnUpload && fileInput) {
+		            btnUpload.onclick = () => fileInput.click();
 
-            fileInput.onchange = async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
+		            fileInput.onchange = async (e) => {
+		                const file = e.target.files?.[0];
+		                if (!file) return;
 
-                if (file.type !== 'application/pdf') {
-                    return ui.showCustomAlert('Por favor selecciona un archivo PDF válido.', 'Error de formato');
-                }
+		                if (!file.type.startsWith('image/')) {
+		                    return ui.showCustomAlert('Por favor selecciona una imagen (JPG, PNG, WEBP).', 'Error de formato');
+		                }
 
-                try {
-                    const textoOriginal = btnUpload.textContent;
-                    btnUpload.textContent = 'Subiendo...';
-                    btnUpload.disabled = true;
-                    if (btnSend) btnSend.disabled = true;
+		                try {
+		                    btnUpload.innerHTML = 'Subiendo...';
+		                    btnUpload.disabled = true;
 
-                    await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file);
-                    await ui.showCustomAlert('Borrador guardado correctamente. Recuerda presionar "Entregar" para enviarlo al supervisor.', 'Éxito');
+		                    await api.uploadReportPdf(currentProcesoDto.idProyecto, etapaKey, file); // Usa la misma función de api
+		                    await openEtapaConstructor(etapaKey, etapaNombre); // Recarga para ver la lista actualizada
 
-                    await openEtapaConstructor(etapaKey, etapaNombre);
+		                } catch (err) {
+		                    await ui.showCustomAlert(err.message, 'Error al subir');
+		                } finally {
+		                    btnUpload.disabled = false;
+		                    fileInput.value = '';
+		                }
+		            };
+		        }
+				
+				        // LÓGICA DE ELIMINAR IMAGEN
+				        const btnsQuitar = document.querySelectorAll('.btn-quitar-imagen');
+				        btnsQuitar.forEach(btn => {
+				            btn.onclick = async (e) => {
+				                e.stopPropagation(); // Evita que se cierre el dropdown antes del click
+				                const path = btn.dataset.path;
+				                const confirmado = await ui.showCustomConfirm("¿Estás seguro de quitar esta imagen?");
+				                if (!confirmado) return;
 
-                } catch (err) {
-                    await ui.showCustomAlert(err.message, 'Error al subir');
-                    btnUpload.textContent = btnUpload.textContent.replace('Subiendo...', '+ Agregar reporte');
-                    btnUpload.disabled = false;
-                    if (btnSend) btnSend.disabled = false;
-                } finally {
-                    fileInput.value = '';
-                }
-            };
-        }
+				                try {
+				                    await api.deleteReportImage(currentProcesoDto.idProyecto, etapaKey, path);
+				                    await openEtapaConstructor(etapaKey, etapaNombre); // Recargar la vista
+				                } catch (err) {
+				                    ui.showCustomAlert(err.message, 'Error al eliminar');
+				                }
+				            };
+				        });
+
+				        // LÓGICA DEL MENÚ DE 3 PUNTOS
+				        const btnDots = document.querySelectorAll('.t-btn-dots');
+				        btnDots.forEach(btn => {
+				            btn.onclick = (e) => {
+				                e.stopPropagation();
+				                // Cerrar todos los demás menús primero
+				                document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
+				                btn.nextElementSibling.classList.toggle('show');
+				            };
+				        });
+
+				        // Cerrar menús al hacer click en cualquier otra parte
+				        document.addEventListener('click', () => {
+				            document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
+				        });
 
         // LÓGICA DE ENVÍO AL SUPERVISOR (ENTREGAR)
         if (btnSend) {

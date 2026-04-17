@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,8 +34,8 @@ public class ConstructorProyectosApiController {
     private final ProyectoRepository proyectoRepo;
     private final UsuarioRepository usuarioRepo;
     private final StorageService storageService;
-    private final ProyectoEtapaRepository proyectoEtapaRepo;
-    private final ProyectoEtapaEntregaRepository entregaRepo;
+    //private final ProyectoEtapaRepository proyectoEtapaRepo;
+    //private final ProyectoEtapaEntregaRepository entregaRepo;
     private final ProyectoEtapaService proyectoEtapaService;
     
 
@@ -47,8 +48,8 @@ public class ConstructorProyectosApiController {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
         this.storageService = storageService;
-        this.proyectoEtapaRepo = proyectoEtapaRepo;
-        this.entregaRepo = entregaRepo;
+        //this.proyectoEtapaRepo = proyectoEtapaRepo;
+        //this.entregaRepo = entregaRepo;
         this.proyectoEtapaService = proyectoEtapaService;
     }
 
@@ -174,7 +175,7 @@ public class ConstructorProyectosApiController {
 
         try {
 
-            String key = storageService.saveReportePdf(usuario.getIdUsuario(), usuario.getUsername(), id, etapa, file);
+            String key = storageService.saveReporteImagen(usuario.getIdUsuario(), usuario.getUsername(), id, etapa, file);
             String publicUrl = storageService.publicUrl(key);
             
             ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
@@ -281,5 +282,33 @@ public class ConstructorProyectosApiController {
 
         ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
         return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
+    }
+    
+    @DeleteMapping("/{id}/etapas/{etapa}/archivo")
+    public ResponseEntity<?> eliminarArchivoEtapa(@PathVariable Integer id,
+                                                  @PathVariable String etapa,
+                                                  @RequestParam("storagePath") String storagePath,
+                                                  Authentication auth) {
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        if (!usuarioOpt.get().getIdUsuario().equals(pOpt.get().getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto.");
+        }
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            proyectoEtapaService.eliminarArchivoDeBorrador(etapaActual, storagePath);
+            storageService.deleteIfExists(storagePath);
+            
+            return ResponseEntity.ok(Map.of("mensaje", "Imagen eliminada correctamente."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

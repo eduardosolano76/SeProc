@@ -19,10 +19,7 @@ import com.google.firebase.cloud.StorageClient;
 public class FirebaseStorageService implements StorageService {
 
     private static final Set<String> ALLOWED = Set.of("image/png", "image/jpeg", "image/webp");
-    
-    // Añade esta constante al inicio de tu clase
-    private static final Set<String> ALLOWED_PDF = Set.of("application/pdf");
-
+   
     @Override
     public String saveProfilePhoto(Long userId, String username, MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -95,22 +92,26 @@ public class FirebaseStorageService implements StorageService {
     }
     
     @Override
-    public String saveReportePdf(Long userId, String username, Integer idProyecto, String etapa, MultipartFile file) {
+    public String saveReporteImagen(Long userId, String username, Integer idProyecto, String etapa, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Archivo vacío.");
         }
-        if (!ALLOWED_PDF.contains(file.getContentType())) {
-            throw new IllegalArgumentException("Formato no permitido. Solo se aceptan archivos PDF.");
+        
+        if (!ALLOWED.contains(file.getContentType())) {
+            throw new IllegalArgumentException("Formato no permitido. Solo se aceptan imágenes (PNG, JPG, WEBP).");
         }
-        if (file.getSize() > 5 * 1024 * 1024) { // Límite de 5MB para PDFs
-            throw new IllegalArgumentException("El PDF no debe superar los 5MB.");
+        
+        if (file.getSize() > 5 * 1024 * 1024) { 
+            throw new IllegalArgumentException("La imagen no debe superar los 5MB.");
         }
-
+        
         String safeUsername = sanitize(username);
-        // Estructura: usuarios/1_juan/proyectos/15/cimentacion/reporte_abc123.pdf
+        
+        String ext = extension(file.getOriginalFilename());
+        	
         String folder = "usuarios/" + userId + "_" + safeUsername + "/proyectos/" + idProyecto + "/" + etapa;
-        String filename = folder + "/reporte_" + UUID.randomUUID() + ".pdf";
-
+        String filename = folder + "/reporte_" + UUID.randomUUID() + (ext.isBlank() ? "" : "." + ext);
+        
         try {
             Bucket bucket = StorageClient.getInstance().bucket();
             bucket.create(filename, file.getInputStream(), file.getContentType());

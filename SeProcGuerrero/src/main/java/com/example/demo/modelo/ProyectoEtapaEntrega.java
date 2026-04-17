@@ -36,7 +36,7 @@ public class ProyectoEtapaEntrega {
     @Column(name = "version")
     private Integer version;
 
-    @Column(name = "nombre_archivo_original", length = 255)
+    @Column(name = "nombre_archivo_original", columnDefinition = "TEXT")
     private String nombreArchivoOriginal;
 
     @Column(name = "extension_archivo", length = 10)
@@ -45,10 +45,10 @@ public class ProyectoEtapaEntrega {
     @Column(name = "provider_archivo")
     private String providerArchivo; // Se mapea al ENUM de BD (ej. "FIREBASE")
 
-    @Column(name = "archivo_storage_path", length = 1000)
+    @Column(name = "archivo_storage_path", columnDefinition = "TEXT")
     private String archivoStoragePath;
 
-    @Column(name = "archivo_url", length = 1000)
+    @Column(name = "archivo_url", columnDefinition = "TEXT")
     private String archivoUrl;
 
     @Column(name = "estado_entrega")
