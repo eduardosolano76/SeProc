@@ -1,216 +1,217 @@
+//ui.js
 function addCacheBuster(url) {
-  if (!url) return url;
-  return url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    if (!url) return url;
+    return url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
 }
 
 export function openModal(modalEl, backdropEl) {
-  modalEl?.classList.add('open');
-  backdropEl?.classList.add('open');
-  document.body.style.overflow = 'hidden';
+    modalEl?.classList.add('open');
+    backdropEl?.classList.add('open');
+    document.body.style.overflow = 'hidden';
 }
 
 export function closeModal(modalEl, backdropEl) {
-  modalEl?.classList.remove('open');
-  backdropEl?.classList.remove('open');
-  document.body.style.overflow = '';
+    modalEl?.classList.remove('open');
+    backdropEl?.classList.remove('open');
+    document.body.style.overflow = '';
 }
 
 export function escapeHtml(str) {
-  return String(str ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    return String(str ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 }
 
 export function estadoDotClass(estado) {
-  const s = (estado || '').toUpperCase();
-  if (s === 'ACTIVO') return 'dot-aprobada';
-  if (s === 'INACTIVO') return 'dot-pendiente';
-  if (s === 'FINALIZADO') return 'dot-rechazada';
-  return 'dot-pendiente';
+    const s = (estado || '').toUpperCase();
+    if (s === 'ACTIVO') return 'dot-aprobada';
+    if (s === 'INACTIVO') return 'dot-pendiente';
+    if (s === 'FINALIZADO') return 'dot-rechazada';
+    return 'dot-pendiente';
 }
 
 export function renderProfilePhoto(url) {
-  const profileImg = document.getElementById('profileImg');
-  const profileFallback = document.getElementById('profileFallback');
-  if (!profileImg || !profileFallback) return;
+    const profileImg = document.getElementById('profileImg');
+    const profileFallback = document.getElementById('profileFallback');
+    if (!profileImg || !profileFallback) return;
 
-  if (!url || url.trim() === '') {
-    profileImg.style.display = 'none';
-    profileFallback.style.display = 'block';
-    return;
-  }
+    if (!url || url.trim() === '') {
+        profileImg.style.display = 'none';
+        profileFallback.style.display = 'block';
+        return;
+    }
 
-  profileImg.onload = () => {
-    profileImg.style.display = 'block';
-    profileFallback.style.display = 'none';
-  };
+    profileImg.onload = () => {
+        profileImg.style.display = 'block';
+        profileFallback.style.display = 'none';
+    };
 
-  profileImg.onerror = () => {
-    profileImg.style.display = 'none';
-    profileFallback.style.display = 'block';
-  };
+    profileImg.onerror = () => {
+        profileImg.style.display = 'none';
+        profileFallback.style.display = 'block';
+    };
 
-  profileImg.src = addCacheBuster(url);
+    profileImg.src = addCacheBuster(url);
 }
 
 export function showCustomAlert(message, title = 'Atención') {
-  const customAlert = document.getElementById('customAlert');
-  const customAlertBackdrop = document.getElementById('customAlertBackdrop');
-  const customAlertTitle = document.getElementById('customAlertTitle');
-  const customAlertMessage = document.getElementById('customAlertMessage');
-  const customAlertOk = document.getElementById('customAlertOk');
-  const customAlertCancel = document.getElementById('customAlertCancel');
+    const customAlert = document.getElementById('customAlert');
+    const customAlertBackdrop = document.getElementById('customAlertBackdrop');
+    const customAlertTitle = document.getElementById('customAlertTitle');
+    const customAlertMessage = document.getElementById('customAlertMessage');
+    const customAlertOk = document.getElementById('customAlertOk');
+    const customAlertCancel = document.getElementById('customAlertCancel');
 
-  return new Promise((resolve) => {
-    if (!customAlert || !customAlertBackdrop) {
-      window.alert(message);
-      resolve(true);
-      return;
-    }
+    return new Promise((resolve) => {
+        if (!customAlert || !customAlertBackdrop) {
+            window.alert(message);
+            resolve(true);
+            return;
+        }
 
-    if (customAlertTitle) customAlertTitle.textContent = title;
-    if (customAlertMessage) customAlertMessage.textContent = message;
-	if (customAlertCancel) customAlertCancel.style.display = 'none';
+        if (customAlertTitle) customAlertTitle.textContent = title;
+        if (customAlertMessage) customAlertMessage.textContent = message;
+        if (customAlertCancel) customAlertCancel.style.display = 'none';
 
-    openModal(customAlert, customAlertBackdrop);
-    customAlert.setAttribute('aria-hidden', 'false');
-    customAlertBackdrop.setAttribute('aria-hidden', 'false');
+        openModal(customAlert, customAlertBackdrop);
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlertBackdrop.setAttribute('aria-hidden', 'false');
 
-    const handleOk = () => {
-      customAlertOk?.removeEventListener('click', handleOk);
-      closeCustomAlert();
-      resolve(true);
-    };
+        const handleOk = () => {
+            customAlertOk?.removeEventListener('click', handleOk);
+            closeCustomAlert();
+            resolve(true);
+        };
 
-    customAlertOk?.addEventListener('click', handleOk);
-  });
+        customAlertOk?.addEventListener('click', handleOk);
+    });
 }
 
 // Función para confirmaciones (Eliminar)
 export function showCustomConfirm(message, title = 'Confirmar acción') {
-  const customAlert = document.getElementById('customAlert');
-  const customAlertBackdrop = document.getElementById('customAlertBackdrop');
-  const customAlertTitle = document.getElementById('customAlertTitle');
-  const customAlertMessage = document.getElementById('customAlertMessage');
-  const customAlertOk = document.getElementById('customAlertOk');
-  const customAlertCancel = document.getElementById('customAlertCancel');
+    const customAlert = document.getElementById('customAlert');
+    const customAlertBackdrop = document.getElementById('customAlertBackdrop');
+    const customAlertTitle = document.getElementById('customAlertTitle');
+    const customAlertMessage = document.getElementById('customAlertMessage');
+    const customAlertOk = document.getElementById('customAlertOk');
+    const customAlertCancel = document.getElementById('customAlertCancel');
 
-  return new Promise((resolve) => {
-    if (!customAlert || !customAlertBackdrop || !customAlertCancel) {
-      resolve(window.confirm(message));
-      return;
-    }
+    return new Promise((resolve) => {
+        if (!customAlert || !customAlertBackdrop || !customAlertCancel) {
+            resolve(window.confirm(message));
+            return;
+        }
 
-    if (customAlertTitle) customAlertTitle.textContent = title;
-    if (customAlertMessage) customAlertMessage.textContent = message;
-    customAlertCancel.style.display = 'inline-flex'; // Muestra cancelar
+        if (customAlertTitle) customAlertTitle.textContent = title;
+        if (customAlertMessage) customAlertMessage.textContent = message;
+        customAlertCancel.style.display = 'inline-flex'; // Muestra cancelar
 
-    openModal(customAlert, customAlertBackdrop);
-    customAlert.setAttribute('aria-hidden', 'false');
-    customAlertBackdrop.setAttribute('aria-hidden', 'false');
+        openModal(customAlert, customAlertBackdrop);
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlertBackdrop.setAttribute('aria-hidden', 'false');
 
-    const handleOk = () => { cleanup(); resolve(true); };
-    const handleCancel = () => { cleanup(); resolve(false); };
+        const handleOk = () => { cleanup(); resolve(true); };
+        const handleCancel = () => { cleanup(); resolve(false); };
 
-    const cleanup = () => {
-      customAlertOk?.removeEventListener('click', handleOk);
-      customAlertCancel?.removeEventListener('click', handleCancel);
-      closeCustomAlert();
-    };
+        const cleanup = () => {
+            customAlertOk?.removeEventListener('click', handleOk);
+            customAlertCancel?.removeEventListener('click', handleCancel);
+            closeCustomAlert();
+        };
 
-    customAlertOk?.addEventListener('click', handleOk);
-    customAlertCancel?.addEventListener('click', handleCancel);
-  });
+        customAlertOk?.addEventListener('click', handleOk);
+        customAlertCancel?.addEventListener('click', handleCancel);
+    });
 }
 
 export function closeCustomAlert() {
-  const customAlert = document.getElementById('customAlert');
-  const customAlertBackdrop = document.getElementById('customAlertBackdrop');
+    const customAlert = document.getElementById('customAlert');
+    const customAlertBackdrop = document.getElementById('customAlertBackdrop');
 
-  closeModal(customAlert, customAlertBackdrop);
-  customAlert?.setAttribute('aria-hidden', 'true');
-  customAlertBackdrop?.setAttribute('aria-hidden', 'true');
+    closeModal(customAlert, customAlertBackdrop);
+    customAlert?.setAttribute('aria-hidden', 'true');
+    customAlertBackdrop?.setAttribute('aria-hidden', 'true');
 }
 
 export function renderCards(items, onOpenProyecto) {
-  const list = document.getElementById('supervisorProjectsList');
-  const empty = document.getElementById('supervisorProjectsEmpty');
-  if (!list || !empty) return;
+    const list = document.getElementById('supervisorProjectsList');
+    const empty = document.getElementById('supervisorProjectsEmpty');
+    if (!list || !empty) return;
 
-  list.querySelectorAll('.card-sol').forEach(x => x.remove());
+    list.querySelectorAll('.card-sol').forEach(x => x.remove());
 
-  if (!items || items.length === 0) {
-    empty.style.display = 'block';
-    return;
-  }
+    if (!items || items.length === 0) {
+        empty.style.display = 'block';
+        return;
+    }
 
-  empty.style.display = 'none';
+    empty.style.display = 'none';
 
-  for (const it of items) {
-    const card = document.createElement('div');
-    card.className = 'card-sol';
+    for (const it of items) {
+        const card = document.createElement('div');
+        card.className = 'card-sol';
 
-    const left = document.createElement('div');
-    left.className = 'left';
+        const left = document.createElement('div');
+        left.className = 'left';
 
-    const school = document.createElement('div');
-    school.className = 'school';
-    school.textContent = it.nombreEscuela ?? '—';
+        const school = document.createElement('div');
+        school.className = 'school';
+        school.textContent = it.nombreEscuela ?? '—';
 
-    const meta = document.createElement('div');
-    meta.className = 'meta';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
 
-    const dot = document.createElement('span');
-    dot.className = `state-dot ${estadoDotClass(it.estadoProyecto)}`;
+        const dot = document.createElement('span');
+        dot.className = `state-dot ${estadoDotClass(it.estadoProyecto)}`;
 
-    const p1 = document.createElement('span');
-    p1.textContent = `Constructor: ${it.constructor ?? '—'}`;
+        const p1 = document.createElement('span');
+        p1.textContent = `Constructor: ${it.constructor ?? '—'}`;
 
-    const p2 = document.createElement('span');
-    p2.textContent = `Fecha: ${it.fechaAprobacion ?? ''}`;
+        const p2 = document.createElement('span');
+        p2.textContent = `Fecha: ${it.fechaAprobacion ?? ''}`;
 
-    meta.appendChild(dot);
-    meta.appendChild(p1);
-    meta.appendChild(p2);
+        meta.appendChild(dot);
+        meta.appendChild(p1);
+        meta.appendChild(p2);
 
-    left.appendChild(school);
-    left.appendChild(meta);
+        left.appendChild(school);
+        left.appendChild(meta);
 
-    const btn = document.createElement('button');
-    btn.className = 'btn-detail';
-    btn.type = 'button';
-    btn.textContent = 'Ver detalle';
-    btn.addEventListener('click', () => onOpenProyecto?.(it.idProyecto));
+        const btn = document.createElement('button');
+        btn.className = 'btn-detail';
+        btn.type = 'button';
+        btn.textContent = 'Ver detalle';
+        btn.addEventListener('click', () => onOpenProyecto?.(it.idProyecto));
 
-    card.appendChild(left);
-    card.appendChild(btn);
-    list.appendChild(card);
-  }
+        card.appendChild(left);
+        card.appendChild(btn);
+        list.appendChild(card);
+    }
 }
 
 export function renderDetalleProyecto(dto) {
-  const badgeEstado = document.getElementById('badgeEstado');
-  const detalleMeta = document.getElementById('detalleMeta');
-  const detalleBody = document.getElementById('detalleBody');
+    const badgeEstado = document.getElementById('badgeEstado');
+    const detalleMeta = document.getElementById('detalleMeta');
+    const detalleBody = document.getElementById('detalleBody');
 
-  if (badgeEstado) {
-    badgeEstado.textContent = (dto.estadoProyecto || '').toUpperCase();
-  }
+    if (badgeEstado) {
+        badgeEstado.textContent = (dto.estadoProyecto || '').toUpperCase();
+    }
 
-  if (detalleMeta) {
-    detalleMeta.innerHTML = `
+    if (detalleMeta) {
+        detalleMeta.innerHTML = `
       <div>Proyecto #${escapeHtml(dto.idProyecto)} • Solicitud #${escapeHtml(dto.idSolicitud)}</div>
       <div>Fecha de aprobación: ${escapeHtml(dto.fechaAprobacion ?? '')}</div>
       <div>Constructor: ${escapeHtml(dto.quienEnvia ?? '—')}</div>
       <div>Supervisor asignado: ${escapeHtml(dto.supervisorAsignado ?? '—')}</div>
     `;
-  }
+    }
 
-  if (detalleBody) {
-    detalleBody.innerHTML = `
+    if (detalleBody) {
+        detalleBody.innerHTML = `
       <div class="placeholder-detail">
         <div class="ph-grid">
           <div class="ph-box">
@@ -239,7 +240,7 @@ export function renderDetalleProyecto(dto) {
         </div>
       </div>
     `;
-  }
+    }
 }
 
 // --- Menú desplegable de la foto de perfil ---
@@ -269,114 +270,114 @@ function filtrarClavesExistentes(dto, claves = []) {
 }
 
 function resolverEstadoGrupo(dto, claves = []) {
-  const clavesFinales = filtrarClavesExistentes(dto, claves);
-  const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
+    const clavesFinales = filtrarClavesExistentes(dto, claves);
+    const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
 
-  if (!estados.length) return 'BLOQUEADA';
+    if (!estados.length) return 'BLOQUEADA';
 
-  if (estados.every(estado => estado === 'APROBADA')) {
-    return 'APROBADA';
-  }
+    if (estados.every(estado => estado === 'APROBADA')) {
+        return 'APROBADA';
+    }
 
-  if (
-    estados.some(estado =>
-      estado === 'EN_PROCESO' ||
-      estado === 'CON_OBSERVACIONES' ||
-      estado === 'DISPONIBLE' ||
-      estado === 'APROBADA'
-    )
-  ) {
-    return 'EN_PROCESO';
-  }
+    if (
+        estados.some(estado =>
+            estado === 'EN_PROCESO' ||
+            estado === 'CON_OBSERVACIONES' ||
+            estado === 'DISPONIBLE' ||
+            estado === 'APROBADA'
+        )
+    ) {
+        return 'EN_PROCESO';
+    }
 
-  return 'BLOQUEADA';
+    return 'BLOQUEADA';
 }
 
 function obtenerNumeroNiveles(tipoEdificacion) {
-  const tipo = String(tipoEdificacion || '').toUpperCase();
-  if (tipo === 'U3C') return 3;
-  if (tipo === 'U2C') return 2;
-  return 1;
+    const tipo = String(tipoEdificacion || '').toUpperCase();
+    if (tipo === 'U3C') return 3;
+    if (tipo === 'U2C') return 2;
+    return 1;
 }
 
 function buildEstructuraClaves(dto) {
-  const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
-  const claves = [];
+    const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
+    const claves = [];
 
-  for (let nivel = 1; nivel <= niveles; nivel++) {
-    claves.push(
-      `estructura_n${nivel}_habilitado_castillos`,
-      `estructura_n${nivel}_habilitado_columnas`,
-      `estructura_n${nivel}_habilitado_muros_concreto`,
-      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
-      `estructura_n${nivel}_cimbra_verticales`,
-      `estructura_n${nivel}_concreto_verticales`,
-      `estructura_n${nivel}_habilitado_dalas`,
-      `estructura_n${nivel}_habilitado_vigas_trabes`,
-      `estructura_n${nivel}_cimbra_horizontales`,
-      `estructura_n${nivel}_concreto_horizontales`,
-      `estructura_n${nivel}_cimbra_losa`,
-      `estructura_n${nivel}_habilitado_losa`,
-      `estructura_n${nivel}_concreto_losa`,
-      `estructura_n${nivel}_habilitado_barandal_concreto`,
-      `estructura_n${nivel}_cimbra_otros_concreto`,
-      `estructura_n${nivel}_concreto_otros_concreto`
-    );
-  }
+    for (let nivel = 1;nivel <= niveles;nivel++) {
+        claves.push(
+            `estructura_n${nivel}_habilitado_castillos`,
+            `estructura_n${nivel}_habilitado_columnas`,
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+            `estructura_n${nivel}_cimbra_verticales`,
+            `estructura_n${nivel}_concreto_verticales`,
+            `estructura_n${nivel}_habilitado_dalas`,
+            `estructura_n${nivel}_habilitado_vigas_trabes`,
+            `estructura_n${nivel}_cimbra_horizontales`,
+            `estructura_n${nivel}_concreto_horizontales`,
+            `estructura_n${nivel}_cimbra_losa`,
+            `estructura_n${nivel}_habilitado_losa`,
+            `estructura_n${nivel}_concreto_losa`,
+            `estructura_n${nivel}_habilitado_barandal_concreto`,
+            `estructura_n${nivel}_cimbra_otros_concreto`,
+            `estructura_n${nivel}_concreto_otros_concreto`
+        );
+    }
 
-  return filtrarClavesExistentes(dto, claves);
+    return filtrarClavesExistentes(dto, claves);
 }
 
 function claseVisualDesdeEstado(estado) {
-  const e = normalizarEstadoEtapa(estado);
+    const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'APROBADA') return 'done';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
-  return 'locked';
+    if (e === 'APROBADA') return 'done';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
+    return 'locked';
 }
 
 function claseAcordeonDesdeClaves(dto, claves = []) {
-  return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
+    return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
 }
 
 function iconoVisualDesdeEstado(estado) {
-  const e = normalizarEstadoEtapa(estado);
+    const e = normalizarEstadoEtapa(estado);
 
-  if (e === 'APROBADA') return '/assets/iconos/listo.png';
-  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
-  return '/assets/iconos/bloqueado.png';
+    if (e === 'APROBADA') return '/assets/iconos/listo.png';
+    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
+    return '/assets/iconos/bloqueado.png';
 }
 
 export function renderProcesoSupervisor(dto) {
-  const container = document.getElementById('supervisorProcesoContent');
-  if (!container) return;
+    const container = document.getElementById('supervisorProcesoContent');
+    if (!container) return;
 
-  const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
+    const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
 
-  const cimentacionClaves = [
-    'excavacion',
-    'plantilla_concreto',
-    'zapata',
-    'contratrabe',
-    'columnas_castillos_cimentacion',
-    'cimbra_murete_enrase',
-    'concreto_cimentacion',
-    'habilitado_cadenas_cimentacion',
-    'relleno'
-  ];
+    const cimentacionClaves = [
+        'excavacion',
+        'plantilla_concreto',
+        'zapata',
+        'contratrabe',
+        'columnas_castillos_cimentacion',
+        'cimbra_murete_enrase',
+        'concreto_cimentacion',
+        'habilitado_cadenas_cimentacion',
+        'relleno'
+    ];
 
-  const estructuraClaves = buildEstructuraClaves(dto);
+    const estructuraClaves = buildEstructuraClaves(dto);
 
-  const acabadosClaves = [
-    'pisos',
-    'guarnicion'
-  ];
+    const acabadosClaves = [
+        'pisos',
+        'guarnicion'
+    ];
 
-  const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
-  const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
-  const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
+    const cimentacionEstado = resolverEstadoGrupo(dto, cimentacionClaves);
+    const estructuraEstado = resolverEstadoGrupo(dto, estructuraClaves);
+    const acabadosEstado = resolverEstadoGrupo(dto, acabadosClaves);
 
-  const cardBtn = (label, bloque, estado) => `
+    const cardBtn = (label, bloque, estado) => `
     <button class="process-mini-stage status-${claseVisualDesdeEstado(estado)}" type="button" data-bloque="${bloque}" data-estado="${claseVisualDesdeEstado(estado)}">
       <span class="process-mini-stage-icon">
         <img src="${iconoVisualDesdeEstado(estado)}" alt="">
@@ -385,7 +386,7 @@ export function renderProcesoSupervisor(dto) {
     </button>
   `;
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div class="process-mini-shell">
       <div class="process-mini-top">
         <button class="process-mini-back" id="btnBackProcesoSupervisor" type="button" aria-label="Volver">
@@ -421,15 +422,15 @@ export function renderProcesoSupervisor(dto) {
 }
 
 export function renderBloqueSupervisor(dto, bloque) {
-  const container = document.getElementById('supervisorBloqueContent');
-  if (!container) return;
+    const container = document.getElementById('supervisorBloqueContent');
+    if (!container) return;
 
-  const stageBtn = (nombre, etapa) => {
-    const estadoReal = resolverEstado(dto, etapa);
-    const estadoVisual = claseVisualDesdeEstado(estadoReal);
-    const icono = iconoVisualDesdeEstado(estadoReal);
+    const stageBtn = (nombre, etapa) => {
+        const estadoReal = resolverEstado(dto, etapa);
+        const estadoVisual = claseVisualDesdeEstado(estadoReal);
+        const icono = iconoVisualDesdeEstado(estadoReal);
 
-    return `
+        return `
       <button
         class="process-mini-stage status-${estadoVisual} compact-stage"
         type="button"
@@ -442,14 +443,14 @@ export function renderBloqueSupervisor(dto, bloque) {
         <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
       </button>
     `;
-  };
+    };
 
-  const subBloqueBtn = (nombre, subbloque, clavesHijas = []) => {
-    const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
-    const estadoVisual = claseVisualDesdeEstado(estadoReal);
-    const icono = iconoVisualDesdeEstado(estadoReal);
+    const subBloqueBtn = (nombre, subbloque, clavesHijas = []) => {
+        const estadoReal = resolverEstadoGrupo(dto, clavesHijas);
+        const estadoVisual = claseVisualDesdeEstado(estadoReal);
+        const icono = iconoVisualDesdeEstado(estadoReal);
 
-    return `
+        return `
       <button
         class="process-mini-stage status-${estadoVisual} compact-stage"
         type="button"
@@ -461,47 +462,47 @@ export function renderBloqueSupervisor(dto, bloque) {
         <span class="process-mini-stage-label">${escapeHtml(nombre)}</span>
       </button>
     `;
-  };
+    };
 
-  const estructuraNivel = (nivel) => {
-    const clavesVerticales = [
-      `estructura_n${nivel}_habilitado_castillos`,
-      `estructura_n${nivel}_habilitado_columnas`,
-      `estructura_n${nivel}_habilitado_muros_concreto`,
-      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
-      `estructura_n${nivel}_cimbra_verticales`,
-      `estructura_n${nivel}_concreto_verticales`
-    ];
+    const estructuraNivel = (nivel) => {
+        const clavesVerticales = [
+            `estructura_n${nivel}_habilitado_castillos`,
+            `estructura_n${nivel}_habilitado_columnas`,
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+            `estructura_n${nivel}_cimbra_verticales`,
+            `estructura_n${nivel}_concreto_verticales`
+        ];
 
-    const clavesHorizontales = [
-      `estructura_n${nivel}_habilitado_dalas`,
-      `estructura_n${nivel}_habilitado_vigas_trabes`,
-      `estructura_n${nivel}_cimbra_horizontales`,
-      `estructura_n${nivel}_concreto_horizontales`,
-      `estructura_n${nivel}_cimbra_losa`,
-      `estructura_n${nivel}_habilitado_losa`,
-      `estructura_n${nivel}_concreto_losa`
-    ];
+        const clavesHorizontales = [
+            `estructura_n${nivel}_habilitado_dalas`,
+            `estructura_n${nivel}_habilitado_vigas_trabes`,
+            `estructura_n${nivel}_cimbra_horizontales`,
+            `estructura_n${nivel}_concreto_horizontales`,
+            `estructura_n${nivel}_cimbra_losa`,
+            `estructura_n${nivel}_habilitado_losa`,
+            `estructura_n${nivel}_concreto_losa`
+        ];
 
-    const clavesOtros = [
-      `estructura_n${nivel}_habilitado_barandal_concreto`,
-      `estructura_n${nivel}_cimbra_otros_concreto`,
-      `estructura_n${nivel}_concreto_otros_concreto`
-    ];
+        const clavesOtros = [
+            `estructura_n${nivel}_habilitado_barandal_concreto`,
+            `estructura_n${nivel}_cimbra_otros_concreto`,
+            `estructura_n${nivel}_concreto_otros_concreto`
+        ];
 
-    const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
+        const incluirOtros = clavesOtros.some(clave => claveExiste(dto, clave));
 
-    const claseNivel = claseAcordeonDesdeClaves(dto, [
-      ...clavesVerticales,
-      ...clavesHorizontales,
-      ...(incluirOtros ? clavesOtros : [])
-    ]);
+        const claseNivel = claseAcordeonDesdeClaves(dto, [
+            ...clavesVerticales,
+            ...clavesHorizontales,
+            ...(incluirOtros ? clavesOtros : [])
+        ]);
 
-    const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
-    const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
-    const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
+        const claseVerticales = claseAcordeonDesdeClaves(dto, clavesVerticales);
+        const claseHorizontales = claseAcordeonDesdeClaves(dto, clavesHorizontales);
+        const claseOtros = claseAcordeonDesdeClaves(dto, clavesOtros);
 
-    return `
+        return `
       <div class="structure-accordion ${claseNivel}">
         <button class="structure-accordion-toggle ${claseNivel}" type="button">
           <span class="structure-accordion-title">Estructura nivel ${nivel}</span>
@@ -523,9 +524,9 @@ export function renderBloqueSupervisor(dto, bloque) {
               ${stageBtn('Habilitado de castillos', `estructura_n${nivel}_habilitado_castillos`)}
               ${stageBtn('Habilitado de columnas', `estructura_n${nivel}_habilitado_columnas`)}
               ${subBloqueBtn('Muros', `estructura_n${nivel}_muros`, [
-                `estructura_n${nivel}_habilitado_muros_concreto`,
-                `estructura_n${nivel}_habilitado_cadenas_intermedias`
-              ])}
+            `estructura_n${nivel}_habilitado_muros_concreto`,
+            `estructura_n${nivel}_habilitado_cadenas_intermedias`
+        ])}
               ${stageBtn('Cimbra', `estructura_n${nivel}_cimbra_verticales`)}
               ${stageBtn('Concreto', `estructura_n${nivel}_concreto_verticales`)}
             </div>
@@ -569,14 +570,14 @@ export function renderBloqueSupervisor(dto, bloque) {
         </div>
       </div>
     `;
-  };
+    };
 
-  let titulo = 'Bloque';
-  let html = '';
+    let titulo = 'Bloque';
+    let html = '';
 
-  if (bloque === 'cimentacion') {
-    titulo = 'Cimentación';
-    html = `
+    if (bloque === 'cimentacion') {
+        titulo = 'Cimentación';
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Excavación', 'excavacion')}
         ${stageBtn('Plantilla de concreto', 'plantilla_concreto')}
@@ -587,63 +588,63 @@ export function renderBloqueSupervisor(dto, bloque) {
         ${stageBtn('Relleno', 'relleno')}
       </div>
     `;
-  } else if (bloque === 'cimentacion_acero_refuerzo') {
-    titulo = 'Habilitado del acero de refuerzo';
-    html = `
+    } else if (bloque === 'cimentacion_acero_refuerzo') {
+        titulo = 'Habilitado del acero de refuerzo';
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Zapata', 'zapata')}
         ${stageBtn('Contratrabe', 'contratrabe')}
         ${stageBtn('Columnas o castillos', 'columnas_castillos_cimentacion')}
       </div>
     `;
-  } else if (bloque === 'estructura') {
-    titulo = 'Estructura';
+    } else if (bloque === 'estructura') {
+        titulo = 'Estructura';
 
-    const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
-    const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
+        const tipo = (dto.tipoEdificacion ?? '').toUpperCase();
+        const niveles = tipo === 'U3C' ? 3 : (tipo === 'U2C' ? 2 : 1);
 
-    html = `
+        html = `
       <div class="structure-list">
         ${estructuraNivel(1)}
         ${niveles >= 2 ? estructuraNivel(2) : ''}
         ${niveles >= 3 ? estructuraNivel(3) : ''}
       </div>
     `;
-  } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_muros')) {
-    const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
-    titulo = `Muros - nivel ${nivel}`;
-    html = `
+    } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_muros')) {
+        const nivel = bloque.match(/estructura_n(\d+)_muros/)?.[1] || '1';
+        titulo = `Muros - nivel ${nivel}`;
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Habilitado de muros de concreto', `estructura_n${nivel}_habilitado_muros_concreto`)}
         ${subBloqueBtn('Mampostería', `estructura_n${nivel}_mamposteria`, [`estructura_n${nivel}_habilitado_cadenas_intermedias`])}
       </div>
     `;
-  } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_mamposteria')) {
-    const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
-    titulo = `Mampostería - nivel ${nivel}`;
-    html = `
+    } else if (bloque.startsWith('estructura_n') && bloque.endsWith('_mamposteria')) {
+        const nivel = bloque.match(/estructura_n(\d+)_mamposteria/)?.[1] || '1';
+        titulo = `Mampostería - nivel ${nivel}`;
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Habilitado de cadenas intermedias', `estructura_n${nivel}_habilitado_cadenas_intermedias`)}
       </div>
     `;
-  } else if (bloque === 'preliminares') {
-    titulo = 'Trabajos preliminares';
-    html = `
+    } else if (bloque === 'preliminares') {
+        titulo = 'Trabajos preliminares';
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Limpieza, trazo y nivelación', 'limpieza_trazo_nivelacion')}
       </div>
     `;
-  } else if (bloque === 'acabados') {
-    titulo = 'Albañilería y acabados';
-    html = `
+    } else if (bloque === 'acabados') {
+        titulo = 'Albañilería y acabados';
+        html = `
       <div class="process-mini-list">
         ${stageBtn('Pisos', 'pisos')}
         ${stageBtn('Guarnición', 'guarnicion')}
       </div>
     `;
-  }
+    }
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div class="process-mini-shell">
       <div class="process-mini-top">
         <button class="process-mini-back" id="btnBackBloqueSupervisor" type="button" aria-label="Volver">
@@ -659,14 +660,58 @@ export function renderBloqueSupervisor(dto, bloque) {
 }
 
 export function renderEtapaSupervisor(dto, etapaKey, etapaNombre, detalleEtapa) {
-  const container = document.getElementById('supervisorEtapaContent');
-  if (!container) return;
+    const container = document.getElementById('supervisorEtapaContent');
+    if (!container) return;
 
-  const titulo = etapaNombre || 'Etapa';
-  const observacion = detalleEtapa?.ultimaObservacion;
-  const entrega = detalleEtapa?.entregaActual;
+    const titulo = etapaNombre || 'Etapa';
+    const observacion = detalleEtapa?.ultimaObservacion;
+    const entrega = detalleEtapa?.entregaActual;
+    const archivos = entrega?.archivos || [];
 
-  container.innerHTML = `
+    // Función auxiliar para asignar color al badge
+    const getBadgeClass = (tipoStr) => {
+        const s = (tipoStr || '').toLowerCase();
+        if (s.includes('aprobada') || s.includes('aprobado')) return 'badge-aprobacion';
+        if (s.includes('observacion') || s.includes('observaciones')) return 'badge-observacion';
+        if (s.includes('borrador')) return 'badge-borrador';
+        return 'badge-entrega';
+    };
+
+    // Función para capitalizar texto y quitar guiones bajos
+    const formatearTexto = (texto) => {
+        if (!texto) return '';
+        const textoLimpio = texto.replace(/_/g, ' ');
+        return textoLimpio.charAt(0).toUpperCase() + textoLimpio.slice(1).toLowerCase();
+    };
+
+    // Armar lista de archivos
+    let listaArchivosHtml = '';
+    let archivosList = archivos;
+    if (archivosList.length === 0 && entrega?.archivoUrl) {
+        archivosList = [{ url: entrega.archivoUrl, nombre: entrega.nombreArchivo || 'Archivo adjunto' }];
+    }
+
+    if (archivosList.length > 0) {
+        listaArchivosHtml = '<div class="teams-file-list" style="margin-top: 15px; margin-bottom: 20px;">';
+        archivosList.forEach(arch => {
+            listaArchivosHtml += `
+              <div class="teams-file-item">
+                  <div class="t-file-left">
+                      <span class="t-file-icon">🖼️</span>
+                      <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
+                  </div>
+                  <div class="t-file-right">
+                      <a href="${escapeHtml(arch.url)}" target="_blank" style="padding: 6px 12px; font-size: 12px; background: rgba(21, 80, 147, 0.05); color: var(--orange); border-radius: 8px; font-weight: 700; text-decoration: none; transition: background 0.2s;">
+                         Ver evidencia
+                      </a>
+                  </div>
+              </div>
+          `;
+        });
+        listaArchivosHtml += '</div>';
+    }
+
+    container.innerHTML = `
     <div class="etapa-mini-shell">
       <div class="etapa-mini-top">
         <button class="process-mini-back" id="btnBackEtapaSupervisor" type="button" aria-label="Volver">
@@ -678,88 +723,117 @@ export function renderEtapaSupervisor(dto, etapaKey, etapaNombre, detalleEtapa) 
         </button>
       </div>
 
-      <div class="etapa-mini-grid">
-        <div class="etapa-card etapa-card-observaciones">
-          <div class="etapa-card-title">Observaciones del supervisor</div>
-
-          ${
-              observacion
-              ? `
-                <div class="historial-card-body" style="margin-bottom:14px;">
-                  <div class="historial-user">${escapeHtml(observacion.usuarioNombre || '—')}</div>
-                  <div class="historial-date">${escapeHtml(observacion.fecha || '')}</div>
-                  <div class="historial-text">${escapeHtml(observacion.mensaje || '')}</div>
-                </div>
-              `
-              : ''
-          }
-
-          <div class="supervisor-observation-box">
-            <textarea id="txtObservationSupervisor" class="supervisor-observation-textarea" placeholder="Escribe una observación..."></textarea>
-            <div class="supervisor-observation-actions">
-              <button id="btnSendObservationSupervisor" class="supervisor-send-btn" type="button">
-                <img src="/assets/iconos/enviar.png" alt="Enviar">
-              </button>
-            </div>
-          </div>
-        </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 14px;">
 
         <div class="etapa-card etapa-card-entrega">
           <div class="etapa-card-title">Trabajo del constructor</div>
 
-          ${
-              entrega
-              ? `
-                <div class="historial-card-body">
-                  <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
-                  <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
-                  <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
-                  <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
-                  ${
-                      entrega.archivoUrl
-                      ? `<div class="historial-file"><a href="${entrega.archivoUrl}" target="_blank">${escapeHtml(entrega.nombreArchivo || 'Ver archivo')}</a></div>`
-                      : ''
-                  }
+          ${entrega
+            ? `
+                <div class="submission-info-card">
+                    <div class="sic-header">
+                        <h4 class="sic-header-title">Detalles del reporte</h4>
+                    </div>
+                    <div class="sic-body">
+						<div class="sic-field">
+							<span class="sic-label">Entregado por</span>
+							<span class="sic-value">${escapeHtml(entrega.usuarioNombre || '—')}</span>
+						</div>
+					
+                        <div class="sic-field">
+                            <span class="sic-label">Fecha de subida</span>
+                            <span class="sic-value">${escapeHtml(entrega.fechaSubida || '—')}</span>
+                        </div>
+                        
+                        <div class="sic-field">
+                            <span class="sic-label">Número de versión</span>
+                            <span class="sic-value">${escapeHtml(entrega.version ?? '')}</span>
+                        </div>
+                        
+                        <div class="sic-field">
+                            <span class="sic-label">Estado de la evaluación</span>
+                            <div class="sic-value">
+                                <span class="entrega-type ${getBadgeClass(entrega.estadoEntrega)}">
+                                    ${escapeHtml(formatearTexto(entrega.estadoEntrega))}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                ${listaArchivosHtml}
               `
-              : `
-                <div class="etapa-empty" style="margin-top:22px;">
+            : `
+                <div class="etapa-empty" style="margin-top:22px; margin-bottom: 22px;">
                   Aún no hay entrega del constructor para esta etapa.
                 </div>
               `
-          }
-
-          ${
-              entrega && entrega.estadoEntrega === 'ENVIADA' && detalleEtapa?.estadoEtapa !== 'APROBADA'
-              ? `
-                <div class="supervisor-approve-wrap">
-                  <button id="btnApproveReportSupervisor" class="etapa-btn-send" type="button">Reporte aprobado</button>
-                </div>
-              `
-              : ''
-          }
+        }
         </div>
+
+        ${(entrega && (entrega.estadoEntrega === 'ENVIADA' || entrega.estadoEntrega === 'APROBADA' || entrega.estadoEntrega === 'CON_OBSERVACIONES')) ? `
+          <div class="etapa-card etapa-card-observaciones">
+            <div class="etapa-card-title">Evaluación del supervisor</div>
+
+            ${(observacion && entrega.estadoEntrega === 'CON_OBSERVACIONES')
+            ? `
+				                  <div class="historial-card-body" style="margin-bottom:14px;">
+				                    <div class="historial-user">${escapeHtml(observacion.usuarioNombre || '—')}</div>
+				                    <div class="historial-date">${escapeHtml(observacion.fecha || '')}</div>
+				                    <div class="historial-text">${escapeHtml(observacion.mensaje || '')}</div>
+				                  </div>
+				                `
+            : ''
+            }
+
+            ${entrega.estadoEntrega === 'ENVIADA' ? `
+              <div class="supervisor-observation-box">
+                <textarea id="txtObservationSupervisor" class="supervisor-observation-textarea" placeholder="Si vas a devolver el reporte, escribe aquí tus observaciones."></textarea>
+                
+				<div class="supervisor-observation-actions" style="display:flex; justify-content: flex-end; margin-top: 12px; gap: 12px;">
+				  <button id="btnSendObservationSupervisor" class="etapa-btn-upload" type="button">
+				    Devolver reporte
+				  </button>
+				  
+                  <button id="btnApproveReportSupervisor" class="etapa-btn-send" type="button" box-shadow: 0 4px 10px rgba(47, 191, 113, 0.2);">
+                    Aprobar reporte
+                  </button>
+                </div>
+				` : entrega.estadoEntrega === 'APROBADA' ? `
+				              <div style="text-align: center; padding: 15px; background: #f0f4f8; border-radius: 8px; color: #4a5568; font-size: 0.95rem; margin-top: 16px;">
+				                  <strong style="display: block; margin-bottom: 5px;">Etapa aprobada</strong>
+				                  Este reporte ya fue evaluado y aprobado.
+				              </div>
+				            ` : `
+				              <div style="text-align: center; padding: 15px; background: #fffbeb; border-radius: 8px; color: #92400e; font-size: 0.95rem; margin-top: 16px;">
+				                  <strong style="display: block; margin-bottom: 5px;">Esperando correcciones</strong>
+				                  El constructor debe corregir las observaciones indicadas y volver a enviar el reporte.
+				              </div>
+				            `}
+				          </div>
+        ` : ''}
+
       </div>
     </div>
   `;
 }
 
 export function renderHistorialSupervisor(historial) {
-  const container = document.getElementById('supervisorHistorialContent');
-  if (!container) return;
+    const container = document.getElementById('supervisorHistorialContent');
+    if (!container) return;
 
-  const items = Array.isArray(historial) ? historial : [];
+    const items = Array.isArray(historial) ? historial : [];
 
-  // Función auxiliar para asignar color al badge (igual que en constructor)
-  const getBadgeClass = (tipoStr) => {
-      const s = (tipoStr || '').toLowerCase();
-      if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
-      if (s.includes('observacion')) return 'badge-observacion';
-      if (s.includes('borrador')) return 'badge-borrador';
-      return 'badge-entrega';
-  };
+    // Función auxiliar para asignar color al badge (igual que en constructor)
+    const getBadgeClass = (tipoStr) => {
+        const s = (tipoStr || '').toLowerCase();
+        if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
+        if (s.includes('observacion')) return 'badge-observacion';
+        if (s.includes('borrador')) return 'badge-borrador';
+        return 'badge-entrega';
+    };
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div class="process-mini-shell">
       <div class="process-mini-top">
         <button class="process-mini-back" id="btnBackHistorialSupervisor" type="button" aria-label="Volver">

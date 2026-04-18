@@ -2347,22 +2347,20 @@ body{
 }
 
 /* Estilos de las etiquetas (Badges) */
-.historial-type {
+.entrega-type {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 8px;
-  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.5px;
   margin-bottom: 10px;
-  text-transform: capitalize;
 }
 
 /* Colores dinámicos para los badges */
-.historial-type.badge-entrega { background: rgba(21, 80, 147, 0.1); color: var(--orange); }
-.historial-type.badge-aprobacion { background: rgba(47, 191, 113, 0.15); color: #20874e; }
-.historial-type.badge-observacion { background: rgba(246, 198, 74, 0.2); color: #b08215; }
-.historial-type.badge-borrador { background: rgba(108, 108, 108, 0.15); color: var(--muted);
+.entrega-type.badge-entrega { background: rgba(21, 80, 147, 0.1); color: var(--orange); }
+.entrega-type.badge-aprobacion { background: rgba(47, 191, 113, 0.15); color: #20874e; }
+.entrega-type.badge-observacion { background: rgba(246, 198, 74, 0.2); color: #b08215; }
+.entrega-type.badge-borrador { background: rgba(108, 108, 108, 0.15); color: var(--muted);
 }
 
 .historial-text {
@@ -2480,7 +2478,7 @@ body{
   cursor: default; /* Cambia la manita por el cursor normal para indicar que no hace nada */
 }
 
-/* DISEÑO COMPONENTE ARCHIVOS (TEMA CLARO) */
+/* DISEÑO COMPONENTE ARCHIVOS */
 .teams-file-list {
   display: flex;
   flex-direction: column;
@@ -2622,4 +2620,91 @@ body{
 .btn-descargar-pdf:focus {
   outline: 2px solid #80bdff;
   outline-offset: 2px;
+}
+
+/* =========================================
+   NUEVO DISEÑO ALTERNATIVO: FICHA DE ENTREGA
+   ========================================= */
+
+.submission-info-card {
+  background: #fff; /* Blanco puro para contrastar con el panel gris */
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden; /* Para que el borde redondeado aplique a la cabecera */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Cabecera sutil de la ficha */
+.sic-header {
+  background: rgba(21, 80, 147, 0.03); /* Un toque casi imperceptible de tu color azul */
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sic-header-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.8px;
+}
+
+/* Cuerpo de la ficha en Grid (Cuadrícula) */
+.sic-body {
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+  grid-auto-flow: column;
+}
+
+/* Estilo para cada campo (Etiqueta + Valor) */
+.sic-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Título del campo: pequeño, gris y en mayúsculas */
+.sic-label {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: #8d8a84; /* Un gris medio */
+  font-weight: 600;
+}
+
+/* Valor del campo: texto principal */
+.sic-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+  word-break: break-word; /* Por si el nombre es muy largo */
+}
+
+/* El campo de estado ocupa todo el ancho */
+.sic-field.full-width {
+  grid-column: span 2;
+  margin-top: 4px;
+}
+
+/* Ajustes para el badge de estado dentro de la ficha */
+.sic-value .historial-type {
+  margin-bottom: 0;
+  margin-top: 4px;
+  display: inline-block;
+  font-size: 14px;
+  padding: 5px 12px;
+}
+
+/* Responsividad para móviles */
+@media (max-width: 640px) {
+  .sic-body {
+    grid-template-columns: 1fr; /* Una sola columna en móvil */
+  }
+  .sic-field.full-width {
+    grid-column: span 1;
+  }
 }

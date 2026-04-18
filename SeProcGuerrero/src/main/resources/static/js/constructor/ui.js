@@ -640,6 +640,15 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
     const archivos = entrega?.archivos || [];
 
     const mostrarObservacion = observacion && entrega?.estadoEntrega === 'CON_OBSERVACIONES';
+	
+	// Función auxiliar para asignar color al badge del estado
+	    const getBadgeClass = (tipoStr) => {
+	        const s = (tipoStr || '').toLowerCase();
+	        if (s.includes('aprobada') || s.includes('aprobado')) return 'badge-aprobacion';
+	        if (s.includes('observacion') || s.includes('observaciones')) return 'badge-observacion';
+	        if (s.includes('borrador')) return 'badge-borrador';
+	        return 'badge-entrega'; // Aplica para ENVIADA
+	    };
 
     // Generar la lista visual de archivos
     let listaArchivosHtml = '';
@@ -671,19 +680,49 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
         });
         listaArchivosHtml += '</div>';
     }
+	
+	// Función para capitalizar texto y quitar guiones bajos
+	const formatearTexto = (texto) => {
+	    if (!texto) return '';
+	    
+	    // Cambiamos los guiones bajos por espacios
+	    const textoLimpio = texto.replace(/_/g, ' ');
+	    
+	    // Aplicamos la primera letra mayúscula y el resto en minúsculas
+	    return textoLimpio.charAt(0).toUpperCase() + textoLimpio.slice(1).toLowerCase();
+	};
 
     const tuTrabajoCardHtml = `
         <div class="etapa-card etapa-card-entrega">
           <div class="etapa-card-title">Tu trabajo</div>
 
-          ${entrega ? `
-                <div class="historial-card-body" style="margin-bottom:14px;">
-                  <div class="historial-user">${escapeHtml(entrega.usuarioNombre || '—')}</div>
-                  <div class="historial-date">${escapeHtml(entrega.fechaSubida || '')}</div>
-                  <div class="historial-text"><strong>Versión:</strong> ${escapeHtml(entrega.version ?? '')}</div>
-                  <div class="historial-text"><strong>Estado:</strong> ${escapeHtml(entrega.estadoEntrega || '')}</div>
-                </div>
-              ` : ''}
+		  ${entrega ? `
+		  		                  <div class="submission-info-card">
+		  		                      <div class="sic-header">
+		  		                          <h4 class="sic-header-title">Detalles del reporte</h4>
+		  		                      </div>
+		  		                      <div class="sic-body">
+		  		                          <div class="sic-field">
+		  		                              <span class="sic-label">Fecha de subida</span>
+		  		                              <span class="sic-value">${escapeHtml(entrega.fechaSubida || '—')}</span>
+		  		                          </div>
+		  		                          
+		  		                          <div class="sic-field">
+		  		                              <span class="sic-label">Número de versión</span>
+		  		                              <span class="sic-value">${escapeHtml(entrega.version ?? '')}</span>
+		  		                          </div>
+		  		                          
+		  		                          <div class="sic-field">
+		  		                              <span class="sic-label">Estado de la evaluación</span>
+		  		                              <div class="sic-value">
+		  		                                  <span class="entrega-type ${getBadgeClass(entrega.estadoEntrega)}">
+		  		                                      ${escapeHtml(formatearTexto(entrega.estadoEntrega))}
+		  		                                  </span>
+		  		                              </div>
+		  		                          </div>
+		  		                      </div>
+		  		                  </div>
+		  		                ` : ''}
 
           <div id="enlaceReporte_${etapaKey}" style="text-align: center; margin-bottom: 12px;"></div>
 
@@ -711,7 +750,7 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
 			               <input type="file" id="reporteFile_${etapaKey}" accept="image/png, image/jpeg, image/webp" hidden>
 
 			               <button class="etapa-btn-upload" id="btnUploadReporte_${etapaKey}" type="button">
-			                  ${entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : '+ Agregar imagen'}
+			                  ${entrega?.estadoEntrega === 'CON_OBSERVACIONES' ? 'Subir corrección' : 'Agregar imagen'}
 			               </button>
 
 			               ${entrega?.estadoEntrega === 'BORRADOR' && archivos.length > 0 ? `
@@ -767,7 +806,7 @@ export function fillSelect(selectEl, items, placeholder = 'Seleccionar') {
 }
 
 export function setActiveNav(navId) {
-    document.querySelectorAll('.sidebar .nav-link').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.sidebar .nav-item').forEach(x => x.classList.remove('active'));
     if (navId) {
         document.getElementById(navId)?.classList.add('active');
     }
