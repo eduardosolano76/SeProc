@@ -157,6 +157,7 @@ public class ConstructorProyectosApiController {
     public ResponseEntity<?> subirReporteEtapa(@PathVariable Integer id,
                                                @PathVariable String etapa,
                                                @RequestParam("file") MultipartFile file,
+                                               @RequestParam(value = "nota", required = false) String nota,
                                                Authentication auth) {
         
         var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
@@ -188,7 +189,8 @@ public class ConstructorProyectosApiController {
                     usuario,
                     file.getOriginalFilename(),
                     key,
-                    publicUrl
+                    publicUrl,
+                    nota
             );
 
             return ResponseEntity.ok(Map.of(
@@ -334,6 +336,33 @@ public class ConstructorProyectosApiController {
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @PostMapping("/{id}/etapas/{etapa}/archivo/nota")
+    public ResponseEntity<?> actualizarNotaArchivo(@PathVariable Integer id,
+                                                   @PathVariable String etapa,
+                                                   @RequestParam("storagePath") String storagePath,
+                                                   @RequestParam("nota") String nota,
+                                                   Authentication auth) {
+        var usuarioOpt = usuarioRepo.findByUsername(auth.getName());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+        }
+
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        if (!usuarioOpt.get().getIdUsuario().equals(pOpt.get().getSolicitud().getIdUsuarioContratista())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes acceso a este proyecto.");
+        }
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            proyectoEtapaService.actualizarNotaDeBorrador(etapaActual, storagePath, nota);
+            return ResponseEntity.ok(Map.of("mensaje", "Nota actualizada correctamente."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

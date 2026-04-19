@@ -655,12 +655,32 @@ export function renderEtapaProyecto(dtoProceso, etapaKey, etapaNombre, detalleEt
     if (archivos.length > 0) {
         listaArchivosHtml = '<div class="teams-file-list" style="margin-top: 15px; margin-bottom: 20px;">';
         archivos.forEach(arch => {
-            listaArchivosHtml += `
-                <div class="teams-file-item">
-                    <div class="t-file-left">
-                        <span class="t-file-icon">🖼️</span>
-                        <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
-                    </div>
+            
+			const currentNota = (arch.nota && arch.nota !== 'SIN_NOTA') ? arch.nota : '';
+			
+			let notaVisual = '';
+			            if (entrega?.estadoEntrega === 'BORRADOR') {
+			                notaVisual = `
+			                    <input type="text" class="t-file-note-input" 
+			                           data-path="${escapeHtml(arch.path)}" 
+			                           value="${escapeHtml(currentNota)}" 
+			                           placeholder="Agrega una nota para esta imagen" 
+			                           autocomplete="off">
+			                `;
+			            } else if (currentNota) {
+			                notaVisual = `<span class="t-file-note-text">— ${escapeHtml(currentNota)}</span>`;
+			            }
+			
+			listaArchivosHtml += `
+			
+                <div class="teams-file-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+				<div class="t-file-left" style="flex: 1; display: flex; align-items: center; gap: 12px; overflow: hidden; min-width: 0;">
+				                    <span class="t-file-icon" style="flex-shrink: 0;">🖼️</span>
+				                    <span class="t-file-name" style="flex-shrink: 0; max-width: 200px;">${escapeHtml(arch.nombre)}</span>
+				                    ${notaVisual}
+				                </div>
+					
+					
                     <div class="t-file-right">
                         <button class="t-btn-dots" type="button">•••</button>
                         <div class="t-dropdown-menu">
@@ -849,11 +869,20 @@ export function renderHistorialProyecto(historial) {
 
         let html = '<div class="teams-file-list" style="margin-top: 15px;">';
         archivos.forEach(arch => {
+			
+			const currentNota = (arch.nota && arch.nota !== 'SIN_NOTA') ? arch.nota : '';
+			            
+			            let notaVisual = '';
+			            if (currentNota) {
+notaVisual = `<span class="t-file-note-text">— ${escapeHtml(currentNota)}</span>`;
+			            }
+						
             html += `
-	                <div class="teams-file-item" style="padding: 6px 12px; margin-bottom: 6px;">
-	                    <div class="t-file-left">
+	                <div class="teams-file-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+	                    <div class="t-file-left" style="flex: 1; display: flex; align-items: center; gap: 12px; overflow: hidden; min-width: 0;">
 	                        <span class="t-file-icon">🖼️</span>
 	                        <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
+							${notaVisual}
 	                    </div>
 	                    <div class="t-file-right">
 	                        <a href="${escapeHtml(arch.url)}" target="_blank" class="historial-file" style="margin-top: 0; padding: 4px 8px;">Ver imagen</a>

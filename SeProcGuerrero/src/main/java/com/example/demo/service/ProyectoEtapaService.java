@@ -135,10 +135,13 @@ public class ProyectoEtapaService {
 	}
 
 	public ProyectoEtapaEntrega guardarBorrador(ProyectoEtapa etapa, Usuario constructor, String nombreArchivoOriginal,
-			String storagePath, String publicUrl) {
+			String storagePath, String publicUrl, String nota) {
+
 		var ultimaEntregaOpt = entregaRepo
 				.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
 		ProyectoEtapaEntrega entrega;
+
+		String notaSegura = (nota == null || nota.trim().isEmpty()) ? "SIN_NOTA" : nota.trim().replace("|", " ");
 
 		if (ultimaEntregaOpt.isPresent() && "BORRADOR".equalsIgnoreCase(ultimaEntregaOpt.get().getEstadoEntrega())) {
 			entrega = ultimaEntregaOpt.get();
@@ -146,12 +149,14 @@ public class ProyectoEtapaService {
 			String currentNames = entrega.getNombreArchivoOriginal() == null ? "" : entrega.getNombreArchivoOriginal();
 			String currentPaths = entrega.getArchivoStoragePath() == null ? "" : entrega.getArchivoStoragePath();
 			String currentUrls = entrega.getArchivoUrl() == null ? "" : entrega.getArchivoUrl();
+			String currentNotas = entrega.getComentarioConstructor() == null ? "" : entrega.getComentarioConstructor();
 
 			// Concatenar con |
 			entrega.setNombreArchivoOriginal(
 					currentNames.isEmpty() ? nombreArchivoOriginal : currentNames + "|" + nombreArchivoOriginal);
 			entrega.setArchivoStoragePath(currentPaths.isEmpty() ? storagePath : currentPaths + "|" + storagePath);
 			entrega.setArchivoUrl(currentUrls.isEmpty() ? publicUrl : currentUrls + "|" + publicUrl);
+			entrega.setComentarioConstructor(currentNotas.isEmpty() ? notaSegura : currentNotas + "|" + notaSegura);
 			entrega.setFechaSubida(LocalDateTime.now());
 		} else {
 			long versiones = entregaRepo.countByProyectoEtapa_IdProyectoEtapa(etapa.getIdProyectoEtapa());
@@ -164,6 +169,7 @@ public class ProyectoEtapaService {
 			entrega.setProviderArchivo("FIREBASE");
 			entrega.setArchivoStoragePath(storagePath);
 			entrega.setArchivoUrl(publicUrl);
+			entrega.setComentarioConstructor(notaSegura);
 			entrega.setEstadoEntrega("BORRADOR");
 			entrega.setFechaSubida(LocalDateTime.now());
 		}
@@ -175,33 +181,86 @@ public class ProyectoEtapaService {
 
 		return entregaRepo.save(entrega);
 	}
-	
+
 	public void eliminarArchivoDeBorrador(ProyectoEtapa etapa, String storagePathTarget) {
+		ProyectoEtapaEntrega entrega = entregaRepo
+				.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa())
+				.orElseThrow(() -> new IllegalArgumentException("No hay entregas para esta etapa."));
+
+		if (!"BORRADOR".equalsIgnoreCase(entrega.getEstadoEntrega())) {
+			throw new IllegalArgumentException("Solo se pueden eliminar archivos en estado BORRADOR.");
+		}
+
+		// Separar las cadenas concatenadas por "|"
+		String[] paths = entrega.getArchivoStoragePath() != null ? entrega.getArchivoStoragePath().split("\\|")
+				: new String[0];
+		String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
+		String[] names = entrega.getNombreArchivoOriginal() != null ? entrega.getNombreArchivoOriginal().split("\\|")
+				: new String[0];
+		String[] notas = entrega.getComentarioConstructor() != null ? entrega.getComentarioConstructor().split("\\|") 
+				: new String[0];
+
+		List<String> newPaths = new ArrayList<>();
+		List<String> newUrls = new ArrayList<>();
+		List<String> newNames = new ArrayList<>();
+		List<String> newNotas = new ArrayList<>();
+
+		boolean found = false;
+		for (int i = 0; i < paths.length; i++) {
+			if (!paths[i].equals(storagePathTarget)) {
+				newPaths.add(paths[i]);
+				if (i < urls.length)
+					newUrls.add(urls[i]);
+				if (i < names.length)
+					newNames.add(names[i]);
+				if (i < notas.length) 
+					newNotas.add(notas[i]);
+			} else {
+				found = true; // Encontramos el archivo a eliminar
+			}
+		}
+
+		if (!found) {
+			throw new IllegalArgumentException("El archivo no se encontró en el borrador.");
+		}
+
+		// Si ya no quedan imágenes, eliminamos el registro de la BD
+		if (newPaths.isEmpty()) {
+			entregaRepo.delete(entrega);
+			etapa.setEstado(ESTADO_EN_PROCESO);
+			proyectoEtapaRepo.save(etapa);
+		} else {
+			// Si aún quedan más imágenes, volvemos a concatenar y actualizar el registro
+			entrega.setArchivoStoragePath(String.join("|", newPaths));
+			entrega.setArchivoUrl(String.join("|", newUrls));
+			entrega.setNombreArchivoOriginal(String.join("|", newNames));
+			entrega.setComentarioConstructor(String.join("|", newNotas));
+			entregaRepo.save(entrega);
+		}
+	}
+	
+	public void actualizarNotaDeBorrador(ProyectoEtapa etapa, String storagePathTarget, String nuevaNota) {
 	    ProyectoEtapaEntrega entrega = entregaRepo
 	            .findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa())
 	            .orElseThrow(() -> new IllegalArgumentException("No hay entregas para esta etapa."));
 
 	    if (!"BORRADOR".equalsIgnoreCase(entrega.getEstadoEntrega())) {
-	        throw new IllegalArgumentException("Solo se pueden eliminar archivos en estado BORRADOR.");
+	        throw new IllegalArgumentException("Solo se pueden editar notas en estado BORRADOR.");
 	    }
 
-	    // Separar las cadenas concatenadas por "|"
 	    String[] paths = entrega.getArchivoStoragePath() != null ? entrega.getArchivoStoragePath().split("\\|") : new String[0];
-	    String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
-	    String[] names = entrega.getNombreArchivoOriginal() != null ? entrega.getNombreArchivoOriginal().split("\\|") : new String[0];
+	    String[] notas = entrega.getComentarioConstructor() != null ? entrega.getComentarioConstructor().split("\\|") : new String[0];
+	    String notaSegura = (nuevaNota == null || nuevaNota.trim().isEmpty()) ? "SIN_NOTA" : nuevaNota.trim().replace("|", " ");
 
-	    List<String> newPaths = new ArrayList<>();
-	    List<String> newUrls = new ArrayList<>();
-	    List<String> newNames = new ArrayList<>();
-
+	    List<String> newNotas = new ArrayList<>();
 	    boolean found = false;
+
 	    for (int i = 0; i < paths.length; i++) {
-	        if (!paths[i].equals(storagePathTarget)) {
-	            newPaths.add(paths[i]);
-	            if (i < urls.length) newUrls.add(urls[i]);
-	            if (i < names.length) newNames.add(names[i]);
+	        if (paths[i].equals(storagePathTarget)) {
+	            newNotas.add(notaSegura); 
+	            found = true;
 	        } else {
-	            found = true; // Encontramos el archivo a eliminar
+	            newNotas.add(i < notas.length ? notas[i] : "SIN_NOTA"); 
 	        }
 	    }
 
@@ -209,22 +268,10 @@ public class ProyectoEtapaService {
 	        throw new IllegalArgumentException("El archivo no se encontró en el borrador.");
 	    }
 
-	    // AQUI ESTA LA MAGIA: Si ya no quedan imágenes, eliminamos el registro de la BD
-	    if (newPaths.isEmpty()) {
-	        entregaRepo.delete(entrega);
-	        
-	        // Nos aseguramos de que la etapa vuelva a estar en el estado inicial
-	        etapa.setEstado(ESTADO_EN_PROCESO); 
-	        proyectoEtapaRepo.save(etapa);
-	    } else {
-	        // Si aún quedan más imágenes, volvemos a concatenar y actualizar el registro
-	        entrega.setArchivoStoragePath(String.join("|", newPaths));
-	        entrega.setArchivoUrl(String.join("|", newUrls));
-	        entrega.setNombreArchivoOriginal(String.join("|", newNames));
-	        entregaRepo.save(entrega);
-	    }
+	    entrega.setComentarioConstructor(String.join("|", newNotas));
+	    entregaRepo.save(entrega);
 	}
-	
+
 	public void confirmarEntregaAlSupervisor(ProyectoEtapa etapa, Usuario constructor) {
 		var ultimaEntregaOpt = entregaRepo
 				.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa());
@@ -382,25 +429,28 @@ public class ProyectoEtapaService {
 			} else {
 				entregaMap.put("usuarioNombre", "—");
 			}
-			
-		    List<Map<String, String>> archivosList = new ArrayList<>();
-		    if (entrega.getNombreArchivoOriginal() != null && !entrega.getNombreArchivoOriginal().isEmpty()) {
-		        String[] names = entrega.getNombreArchivoOriginal().split("\\|");
-		        String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
-		        String[] paths = entrega.getArchivoStoragePath() != null ? entrega.getArchivoStoragePath().split("\\|") : new String[0];
 
-		        for (int i = 0; i < names.length; i++) {
-		            Map<String, String> archObj = new HashMap<>();
-		            archObj.put("nombre", names[i]);
-		            archObj.put("url", i < urls.length ? urls[i] : "");
-		            archObj.put("path", i < paths.length ? paths[i] : "");
-		            archivosList.add(archObj);
-		        }
-		    }
-		    
-		    entregaMap.put("archivos", archivosList);
-		    
-		    dto.put("entregaActual", entregaMap);
+			List<Map<String, String>> archivosList = new ArrayList<>();
+			if (entrega.getNombreArchivoOriginal() != null && !entrega.getNombreArchivoOriginal().isEmpty()) {
+				String[] names = entrega.getNombreArchivoOriginal().split("\\|");
+				String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
+				String[] paths = entrega.getArchivoStoragePath() != null ? entrega.getArchivoStoragePath().split("\\|") : new String[0];
+				String[] notas = entrega.getComentarioConstructor() != null ? entrega.getComentarioConstructor().split("\\|") : new String[0];
+				
+				for (int i = 0; i < names.length; i++) {
+					Map<String, String> archObj = new HashMap<>();
+					archObj.put("nombre", names[i]);
+					archObj.put("url", i < urls.length ? urls[i] : "");
+					archObj.put("path", i < paths.length ? paths[i] : "");
+					String notaReal = (i < notas.length && !notas[i].equals("SIN_NOTA")) ? notas[i] : "";
+			        archObj.put("nota", notaReal);
+					archivosList.add(archObj);
+				}
+			}
+
+			entregaMap.put("archivos", archivosList);
+
+			dto.put("entregaActual", entregaMap);
 		} else {
 			dto.put("entregaActual", null);
 		}
@@ -458,20 +508,26 @@ public class ProyectoEtapaService {
 			eventoBorrador.put("fechaOrden", fechaOrden);
 			eventoBorrador.put("usuarioNombre", nombreConstructor);
 			eventoBorrador.put("usuarioRol", "Constructor");
-			
-            List<Map<String, String>> listaArchivos = new ArrayList<>();
-            if (entrega.getArchivoUrl() != null && !entrega.getArchivoUrl().isEmpty()) {
-                String[] urls = entrega.getArchivoUrl().split("\\|");
-                String[] names = entrega.getNombreArchivoOriginal() != null ? entrega.getNombreArchivoOriginal().split("\\|") : new String[urls.length];
-                for(int i = 0; i < urls.length; i++){
-                    Map<String, String> arch = new HashMap<>();
-                    arch.put("url", urls[i]);
-                    arch.put("nombre", i < names.length && names[i] != null ? names[i] : "Imagen " + (i+1));
-                    listaArchivos.add(arch);
-                }
-            }
-            eventoBorrador.put("archivos", listaArchivos);
 
+			List<Map<String, String>> listaArchivos = new ArrayList<>();
+			if (entrega.getArchivoUrl() != null && !entrega.getArchivoUrl().isEmpty()) {
+				String[] urls = entrega.getArchivoUrl().split("\\|");
+				String[] names = entrega.getNombreArchivoOriginal() != null
+						? entrega.getNombreArchivoOriginal().split("\\|")
+						: new String[urls.length];
+				String[] notas = entrega.getComentarioConstructor() != null ? entrega.getComentarioConstructor().split("\\|") : new String[0];
+				
+				for (int i = 0; i < urls.length; i++) {
+					Map<String, String> arch = new HashMap<>();
+					arch.put("url", urls[i]);
+					arch.put("nombre", i < names.length && names[i] != null ? names[i] : "Imagen " + (i + 1));
+					String notaReal = (i < notas.length && !notas[i].equals("SIN_NOTA")) ? notas[i] : "";
+                    arch.put("nota", notaReal);
+					
+					listaArchivos.add(arch);
+				}
+			}
+			eventoBorrador.put("archivos", listaArchivos);
 
 			historial.add(eventoBorrador);
 		}
@@ -666,40 +722,43 @@ public class ProyectoEtapaService {
 
 		return nivel >= inicio && nivel <= fin;
 	}
-	
+
 	public byte[] generarPdfDeImagenesAprobadas(Integer idProyecto, String claveVisual) throws Exception {
-        ProyectoEtapa etapa = obtenerEtapaPorClaveVisual(idProyecto, claveVisual);
-        ProyectoEtapaEntrega entrega = entregaRepo
-                .findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa())
-                .orElseThrow(() -> new IllegalArgumentException("No hay entregas para esta etapa."));
+		ProyectoEtapa etapa = obtenerEtapaPorClaveVisual(idProyecto, claveVisual);
+		ProyectoEtapaEntrega entrega = entregaRepo
+				.findFirstByProyectoEtapa_IdProyectoEtapaOrderByVersionDesc(etapa.getIdProyectoEtapa())
+				.orElseThrow(() -> new IllegalArgumentException("No hay entregas para esta etapa."));
 
-        if (!"APROBADA".equalsIgnoreCase(entrega.getEstadoEntrega())) {
-            throw new IllegalArgumentException("Solo se pueden descargar reportes de etapas APROBADAS.");
-        }
+		if (!"APROBADA".equalsIgnoreCase(entrega.getEstadoEntrega())) {
+			throw new IllegalArgumentException("Solo se pueden descargar reportes de etapas APROBADAS.");
+		}
 
-        String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
+		String[] urls = entrega.getArchivoUrl() != null ? entrega.getArchivoUrl().split("\\|") : new String[0];
 
-        Document document = new Document(PageSize.LETTER);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        PdfWriter.getInstance(document, out);
-        document.open();
+		Document document = new Document(PageSize.LETTER);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PdfWriter.getInstance(document, out);
+		document.open();
 
-        for (String urlStr : urls) {
-            if (urlStr == null || urlStr.trim().isEmpty()) continue;
-            try {
-                Image img = Image.getInstance(new URL(urlStr));
-                // Escalar imagen para que quepa en el ancho de la página respetando los márgenes
-                float scaler = ((document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin()) / img.getWidth()) * 100;
-                img.scalePercent(scaler);
-                img.setAlignment(Image.ALIGN_CENTER);
-                document.add(img);
-            } catch (Exception e) {
-                System.err.println("Error al cargar la imagen para el PDF: " + urlStr);
-            }
-        }
-        
-        document.close();
-        return out.toByteArray();
-    }
+		for (String urlStr : urls) {
+			if (urlStr == null || urlStr.trim().isEmpty())
+				continue;
+			try {
+				Image img = Image.getInstance(new URL(urlStr));
+				// Escalar imagen para que quepa en el ancho de la página respetando los
+				// márgenes
+				float scaler = ((document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin())
+						/ img.getWidth()) * 100;
+				img.scalePercent(scaler);
+				img.setAlignment(Image.ALIGN_CENTER);
+				document.add(img);
+			} catch (Exception e) {
+				System.err.println("Error al cargar la imagen para el PDF: " + urlStr);
+			}
+		}
+
+		document.close();
+		return out.toByteArray();
+	}
 
 }

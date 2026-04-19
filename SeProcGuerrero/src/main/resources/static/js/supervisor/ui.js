@@ -694,12 +694,23 @@ export function renderEtapaSupervisor(dto, etapaKey, etapaNombre, detalleEtapa) 
     if (archivosList.length > 0) {
         listaArchivosHtml = '<div class="teams-file-list" style="margin-top: 15px; margin-bottom: 20px;">';
         archivosList.forEach(arch => {
+			
+			const currentNota = (arch.nota && arch.nota !== 'SIN_NOTA') ? arch.nota : '';
+			            
+			            let notaVisual = '';
+			            if (currentNota) {
+	notaVisual = `<span class="t-file-note-text">— ${escapeHtml(currentNota)}</span>`;
+			            }
+			
             listaArchivosHtml += `
-              <div class="teams-file-item">
-                  <div class="t-file-left">
-                      <span class="t-file-icon">🖼️</span>
-                      <span class="t-file-name">${escapeHtml(arch.nombre)}</span>
-                  </div>
+			<div class="teams-file-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+			<div class="t-file-left" style="flex: 1; display: flex; align-items: center; gap: 12px; overflow: hidden; min-width: 0;">
+			                    <span class="t-file-icon" style="flex-shrink: 0;">🖼️</span>
+			                    <span class="t-file-name" style="flex-shrink: 0; max-width: 200px;">${escapeHtml(arch.nombre)}</span>
+			                    ${notaVisual}
+			                </div>
+				  
+				  
                   <div class="t-file-right">
                       <a href="${escapeHtml(arch.url)}" target="_blank" style="padding: 6px 12px; font-size: 12px; background: rgba(21, 80, 147, 0.05); color: var(--orange); border-radius: 8px; font-weight: 700; text-decoration: none; transition: background 0.2s;">
                          Ver evidencia

@@ -2708,3 +2708,43 @@ body{
     grid-column: span 1;
   }
 }
+
+/* Input sutil transparente */
+.t-file-note-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    color: #6c6c6c;
+    font-size: 14px;
+    font-style: italic;
+    width: 100%; 
+    flex: 1; 
+    min-width: 0; 
+    transition: color 0.2s ease, font-style 0.2s ease;
+    padding: 0;
+    margin: 0;
+    text-overflow: ellipsis; 
+}
+
+.t-file-note-input:focus {
+    color: #111;
+    font-style: normal;
+}
+
+.t-file-note-input::placeholder {
+    color: rgb(128, 128, 128);
+    font-style: italic;
+}
+
+.t-file-note-text {
+    color: #6c6c6c;
+    font-size: 14px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1; 
+    min-width: 0; 
+    display: block; 
+    width: 100%;
+}

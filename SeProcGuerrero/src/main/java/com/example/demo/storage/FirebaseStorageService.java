@@ -28,8 +28,8 @@ public class FirebaseStorageService implements StorageService {
         if (!ALLOWED.contains(file.getContentType())) {
             throw new IllegalArgumentException("Formato no permitido. Usa PNG/JPG/WEBP.");
         }
-        if (file.getSize() > 2 * 1024 * 1024) {
-            throw new IllegalArgumentException("Máximo 2MB.");
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("Máximo 10MB.");
         }
 
         String ext = extension(file.getOriginalFilename());
@@ -101,8 +101,8 @@ public class FirebaseStorageService implements StorageService {
             throw new IllegalArgumentException("Formato no permitido. Solo se aceptan imágenes (PNG, JPG, WEBP).");
         }
         
-        if (file.getSize() > 5 * 1024 * 1024) { 
-            throw new IllegalArgumentException("La imagen no debe superar los 5MB.");
+        if (file.getSize() > 20 * 1024 * 1024) { 
+            throw new IllegalArgumentException("La imagen no debe superar los 20MB.");
         }
         
         String safeUsername = sanitize(username);

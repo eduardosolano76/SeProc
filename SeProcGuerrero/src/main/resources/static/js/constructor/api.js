@@ -115,6 +115,7 @@ export async function uploadReportPdf(idProyecto, etapa, file) {
   const { token, header } = getCsrf();
   const form = new FormData();
   form.append("file", file);
+  uploadReportPdf
 
   const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${etapa}/reporte`, {
     method: "POST",
@@ -128,6 +129,26 @@ export async function uploadReportPdf(idProyecto, etapa, file) {
 
   if (!res.ok) throw new Error(data.message || text || "No se pudo subir el reporte.");
   return data;
+}
+
+export async function updateReportNote(idProyecto, etapa, storagePath, nota) {
+    const { token, header } = getCsrf();
+    const form = new FormData();
+    form.append("storagePath", storagePath);
+    form.append("nota", nota);
+
+    const res = await fetch(`/api/constructor/proyectos/${idProyecto}/etapas/${etapa}/archivo/nota`, {
+        method: "POST",
+        body: form,
+        headers: token && header ? { [header]: token } : {}
+    });
+
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch (e) { data = {}; }
+
+    if (!res.ok) throw new Error(data.message || text || "No se pudo actualizar la nota.");
+    return data;
 }
 
 export async function fetchDetalleEtapa(idProyecto, etapa) {

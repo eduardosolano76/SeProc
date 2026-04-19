@@ -354,6 +354,43 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
             };
         });
 
+        // LÓGICA DE GUARDADO AUTOMÁTICO DE NOTAS (AUTO-SAVE)
+        const noteInputs = document.querySelectorAll('.t-file-note-input');
+        noteInputs.forEach(input => {
+            let lastValue = input.value; // Guardamos el valor inicial
+
+            // Cuando el usuario sale del input (pierde el foco)
+            input.onblur = async () => {
+                const newValue = input.value.trim();
+
+                // Solo guardamos si el texto realmente cambió
+                if (newValue !== lastValue) {
+                    const originalColor = input.style.color;
+                    try {
+                        input.style.color = '#3b82f6'; // Feedback visual sutil (azul)
+                        const path = input.dataset.path;
+
+                        await api.updateReportNote(currentProcesoDto.idProyecto, etapaKey, path, newValue);
+                        lastValue = newValue; // Actualizamos la referencia
+                        input.style.color = '#22c55e'; // Verde de éxito brevemente
+
+                        setTimeout(() => input.style.color = originalColor, 1000);
+                    } catch (err) {
+                        ui.showCustomAlert(err.message, 'Error al guardar nota');
+                        input.value = lastValue; // Revertimos al valor anterior si falla
+                        input.style.color = originalColor;
+                    }
+                }
+            };
+
+            // Permitir guardar al presionar la tecla "Enter"
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    input.blur(); // Quita el foco y activa el onblur de arriba
+                }
+            };
+        });
+
         // Cerrar menús al hacer click en cualquier otra parte
         document.addEventListener('click', () => {
             document.querySelectorAll('.t-dropdown-menu').forEach(m => m.classList.remove('show'));
@@ -364,7 +401,7 @@ async function openEtapaConstructor(etapaKey, etapaNombre) {
             btnSend.onclick = async () => {
                 const confirmado = await ui.showCustomConfirm(
                     "¿Estás seguro de entregar este reporte? Una vez enviado, el supervisor podrá evaluarlo.",
-                    "Confirmar Entrega"
+                    "Confirmar entrega"
                 );
 
                 if (!confirmado) return;
