@@ -134,8 +134,8 @@
 				</div>
 			</header>
 
-			<section class="panel" aria-label="Sección principal">
-				<div class="panel-head">
+			<section class="panel panel-scroll" aria-label="Sección principal">
+				<div class="panel-head" id="centralPanelHead">
 					<div>
 						<h2 class="panel-title" id="sectionTitle"
 							th:text="${ view=='solicitudes' ? 'Solicitudes de proyectos'
@@ -180,18 +180,34 @@
 
 					<!-- PROYECTOS -->
 					<div th:if="${view=='proyectos'}">
-						<div class="tabs" id="tabsProyectos" role="tablist"
-							aria-label="Filtros de proyectos">
-							<button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
-							<button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
-							<button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
-						</div>
+  <section id="centralProjectsView">
+    <div class="tabs" id="centralProjectTabs" role="tablist" aria-label="Filtros de proyectos">
+      <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+      <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+      <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+    </div>
 
-						<div class="cards" id="proyectosList">
-							<div class="empty" id="proyectosEmpty">Aún no hay proyectos
-								para mostrar.</div>
-						</div>
-					</div>
+    <div class="cards" id="centralProjectsList">
+      <div class="empty" id="centralProjectsEmpty">Aún no hay proyectos para mostrar.</div>
+    </div>
+  </section>
+
+  <section id="centralProcesoView" style="display:none;">
+    <div id="centralProcesoContent"></div>
+  </section>
+
+  <section id="centralBloqueView" style="display:none;">
+    <div id="centralBloqueContent"></div>
+  </section>
+
+  <section id="centralEtapaView" style="display:none;">
+    <div id="centralEtapaContent"></div>
+  </section>
+
+  <section id="centralHistorialView" style="display:none;">
+    <div id="centralHistorialContent"></div>
+  </section>
+</div>
 
 					<!-- USUARIOS -->
 					<div th:if="${#strings.startsWith(view,'usuarios-')}">
@@ -412,5 +428,6 @@
 	</div>
 
 	<script type="module" th:src="@{/js/central/app.js}" defer></script>
+	<script type="module" th:src="@{/js/central/central-projects.js}" defer></script>
 </body>
 </html>

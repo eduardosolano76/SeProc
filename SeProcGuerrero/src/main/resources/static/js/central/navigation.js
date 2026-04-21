@@ -129,6 +129,8 @@ export async function loadPanelFromUrl({
     if (typeof onAfterLoad === 'function') {
       onAfterLoad(view);
     }
+	
+	window.dispatchEvent(new CustomEvent('panelLoaded', { detail: { view } }));
   } catch (e) {
     window.location.href = href;
   }

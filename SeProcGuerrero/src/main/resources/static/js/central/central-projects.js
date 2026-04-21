@@ -1,4 +1,4 @@
-import { fetchJson } from './api.js';
+import * as api from './api.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 let currentEstado = 'ACTIVO';
@@ -18,28 +18,8 @@ function escapeHtml(str) {
         .replaceAll("'", '&#039;');
 }
 
-function syncAdminPanelHead(viewName) {
-    const panelHead = document.getElementById('adminPanelHead');
-    if (!panelHead) return;
-
-    const hide = ['proceso', 'bloque', 'etapa', 'historial'].includes(viewName);
-    panelHead.style.display = hide ? 'none' : 'flex';
-}
-
 function isProjectsView() {
-    return !!document.getElementById('adminProjectsList');
-}
-
-async function apiGet(url) {
-    const res = await fetchJson(url, { method: 'GET' });
-    if (!res.ok) throw new Error(res.message || 'Error al consultar la información.');
-    return res.data;
-}
-
-async function apiPost(url) {
-    const res = await fetchJson(url, { method: 'POST' });
-    if (!res.ok) throw new Error(res.message || 'Error al procesar la solicitud.');
-    return res.data;
+    return !!document.getElementById('centralProjectsList');
 }
 
 function estadoDotClass(estado) {
@@ -150,12 +130,20 @@ function claseAcordeonDesdeClaves(dto, claves = []) {
     return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
 }
 
-function showAdminView(viewName) {
-    const projectsView = document.getElementById('adminProjectsView');
-    const procesoView = document.getElementById('adminProcesoView');
-    const bloqueView = document.getElementById('adminBloqueView');
-    const etapaView = document.getElementById('adminEtapaView');
-    const historialView = document.getElementById('adminHistorialView');
+function syncCentralPanelHead(viewName) {
+    const panelHead = document.getElementById('centralPanelHead');
+    if (!panelHead) return;
+
+    const hide = ['proceso', 'bloque', 'etapa', 'historial'].includes(viewName);
+    panelHead.style.display = hide ? 'none' : 'flex';
+}
+
+function showCentralView(viewName) {
+    const projectsView = document.getElementById('centralProjectsView');
+    const procesoView = document.getElementById('centralProcesoView');
+    const bloqueView = document.getElementById('centralBloqueView');
+    const etapaView = document.getElementById('centralEtapaView');
+    const historialView = document.getElementById('centralHistorialView');
 
     if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
     if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
@@ -163,38 +151,38 @@ function showAdminView(viewName) {
     if (etapaView) etapaView.style.display = viewName === 'etapa' ? 'block' : 'none';
     if (historialView) historialView.style.display = viewName === 'historial' ? 'block' : 'none';
 
-    syncAdminPanelHead(viewName);
+    syncCentralPanelHead(viewName);
 }
 
 function syncTabsVisually() {
-    document.querySelectorAll('#adminProjectTabs .tab').forEach(tab => tab.classList.remove('active'));
-    const tab = document.querySelector(`#adminProjectTabs .tab[data-estado="${currentEstado}"]`);
+    document.querySelectorAll('#centralProjectTabs .tab').forEach(tab => tab.classList.remove('active'));
+    const tab = document.querySelector(`#centralProjectTabs .tab[data-estado="${currentEstado}"]`);
     if (tab) tab.classList.add('active');
 }
 
 async function fetchProjects(estado) {
-    return await apiGet(`/api/admin/proyectos?estado=${encodeURIComponent(estado)}`);
+  return await api.fetchProyectos(estado);
 }
 
 async function fetchProjectDetail(id) {
-    return await apiGet(`/api/admin/proyectos/${id}`);
+  return await api.fetchDetalleProyecto(id);
 }
 
 async function fetchEtapaDetail(idProyecto, etapa) {
-    return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
+  return await api.fetchDetalleEtapaProyecto(idProyecto, etapa);
 }
 
 async function fetchEtapaHistorial(idProyecto, etapa) {
-    return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
+  return await api.fetchHistorialEtapaProyecto(idProyecto, etapa);
 }
 
 async function changeProjectState(idProyecto, estado) {
-    return await apiPost(`/api/admin/proyectos/${idProyecto}/estado?estado=${encodeURIComponent(estado)}`);
+  return await api.cambiarEstadoProyecto(idProyecto, estado);
 }
 
 function renderCards(items) {
-    const list = document.getElementById('adminProjectsList');
-    const empty = document.getElementById('adminProjectsEmpty');
+    const list = document.getElementById('centralProjectsList');
+    const empty = document.getElementById('centralProjectsEmpty');
     if (!list || !empty) return;
 
     list.querySelectorAll('.card-sol').forEach(x => x.remove());
@@ -258,13 +246,13 @@ function renderProcessStateMenu(dto) {
 
     return `
         <div class="project-status-wrap">
-            <button class="project-status-trigger" id="adminProjectStateTrigger" type="button">
+            <button class="project-status-trigger" id="centralProjectStateTrigger" type="button">
                 <span class="project-status-dot ${estadoDotClass(actual)}"></span>
                 <span class="project-status-text">${escapeHtml(estadoLabel(actual))}</span>
                 <span class="project-status-arrow">▾</span>
             </button>
 
-            <div class="project-status-menu" id="adminProjectStateMenu">
+            <div class="project-status-menu" id="centralProjectStateMenu">
                 ${opciones.map(op => `
                     <button class="project-status-option" type="button" data-estado="${op}">
                         <span class="project-status-dot ${estadoDotClass(op)}"></span>
@@ -276,8 +264,8 @@ function renderProcessStateMenu(dto) {
     `;
 }
 
-function renderProcesoAdmin(dto) {
-    const container = document.getElementById('adminProcesoContent');
+function renderProcesoCentral(dto) {
+    const container = document.getElementById('centralProcesoContent');
     if (!container) return;
 
     const preliminaresEstado = resolverEstado(dto, 'limpieza_trazo_nivelacion');
@@ -318,7 +306,7 @@ function renderProcesoAdmin(dto) {
     container.innerHTML = `
         <div class="process-mini-shell">
             <div class="process-mini-top">
-                <button class="process-mini-back" id="btnBackProcesoAdmin" type="button" aria-label="Volver">
+                <button class="process-mini-back" id="btnBackProcesoCentral" type="button" aria-label="Volver">
                     <img src="/assets/iconos/regresar.png" alt="Volver">
                 </button>
                 <div class="process-mini-chip">PROCESO CONSTRUCTIVO</div>
@@ -355,8 +343,8 @@ function renderProcesoAdmin(dto) {
     `;
 }
 
-function renderBloqueAdmin(dto, bloque) {
-    const container = document.getElementById('adminBloqueContent');
+function renderBloqueCentral(dto, bloque) {
+    const container = document.getElementById('centralBloqueContent');
     if (!container) return;
 
     const stageBtn = (nombre, etapa) => {
@@ -583,7 +571,7 @@ function renderBloqueAdmin(dto, bloque) {
     container.innerHTML = `
         <div class="process-mini-shell">
             <div class="process-mini-top">
-                <button class="process-mini-back" id="btnBackBloqueAdmin" type="button" aria-label="Volver">
+                <button class="process-mini-back" id="btnBackBloqueCentral" type="button" aria-label="Volver">
                     <img src="/assets/iconos/regresar.png" alt="Volver">
                 </button>
                 <div class="process-mini-chip">${escapeHtml(titulo)}</div>
@@ -631,8 +619,8 @@ function renderArchivosEvidencia(archivos = []) {
     `;
 }
 
-function renderEtapaAdmin(etapaKey, etapaNombre, detalleEtapa) {
-    const container = document.getElementById('adminEtapaContent');
+function renderEtapaCentral(etapaKey, etapaNombre, detalleEtapa) {
+    const container = document.getElementById('centralEtapaContent');
     if (!container) return;
 
     const titulo = etapaNombre || 'Etapa';
@@ -643,11 +631,11 @@ function renderEtapaAdmin(etapaKey, etapaNombre, detalleEtapa) {
     container.innerHTML = `
         <div class="etapa-mini-shell">
             <div class="etapa-mini-top">
-                <button class="process-mini-back" id="btnBackEtapaAdmin" type="button" aria-label="Volver">
+                <button class="process-mini-back" id="btnBackEtapaCentral" type="button" aria-label="Volver">
                     <img src="/assets/iconos/regresar.png" alt="Volver">
                 </button>
                 <div class="process-mini-chip">${escapeHtml(titulo.toUpperCase())}</div>
-                <button class="etapa-mini-history" id="btnHistoryAdmin" type="button" title="Historial">
+                <button class="etapa-mini-history" id="btnHistoryCentral" type="button" title="Historial">
                     <img src="/assets/iconos/historial.png" alt="Historial">
                 </button>
             </div>
@@ -713,8 +701,8 @@ function renderEtapaAdmin(etapaKey, etapaNombre, detalleEtapa) {
     `;
 }
 
-function renderHistorialAdmin(historial) {
-    const container = document.getElementById('adminHistorialContent');
+function renderHistorialCentral(historial) {
+    const container = document.getElementById('centralHistorialContent');
     if (!container) return;
 
     const items = Array.isArray(historial) ? historial : [];
@@ -738,7 +726,7 @@ function renderHistorialAdmin(historial) {
     container.innerHTML = `
       <div class="process-mini-shell">
         <div class="process-mini-top">
-          <button class="process-mini-back" id="btnBackHistorialAdmin" type="button" aria-label="Volver">
+          <button class="process-mini-back" id="btnBackHistorialCentral" type="button" aria-label="Volver">
             <img src="/assets/iconos/regresar.png" alt="Volver">
           </button>
           <div class="process-mini-chip">HISTORIAL</div>
@@ -773,7 +761,7 @@ function renderHistorialAdmin(historial) {
 
 
 function bindTabs() {
-    document.querySelectorAll('#adminProjectTabs .tab').forEach(tab => {
+    document.querySelectorAll('#centralProjectTabs .tab').forEach(tab => {
         if (tab.dataset.bound === 'true') return;
         tab.dataset.bound = 'true';
 
@@ -785,7 +773,7 @@ function bindTabs() {
 }
 
 function bindSearch() {
-    const searchInput = document.getElementById('searchInput');
+    const searchInput = document.getElementById('searchCentral');
     if (!searchInput || searchInput.dataset.projectsBound === 'true') return;
 
     searchInput.dataset.projectsBound = 'true';
@@ -809,22 +797,22 @@ function bindSearch() {
 }
 
 function bindPanelEvents() {
-    const btnBackProceso = document.getElementById('btnBackProcesoAdmin');
+    const btnBackProceso = document.getElementById('btnBackProcesoCentral');
     if (btnBackProceso) btnBackProceso.onclick = volverAListaProyectos;
 
-    const btnBackBloque = document.getElementById('btnBackBloqueAdmin');
+    const btnBackBloque = document.getElementById('btnBackBloqueCentral');
     if (btnBackBloque) btnBackBloque.onclick = volverAProceso;
 
-    const btnBackEtapa = document.getElementById('btnBackEtapaAdmin');
+    const btnBackEtapa = document.getElementById('btnBackEtapaCentral');
     if (btnBackEtapa) btnBackEtapa.onclick = volverABloque;
 
-    const btnBackHistorial = document.getElementById('btnBackHistorialAdmin');
+    const btnBackHistorial = document.getElementById('btnBackHistorialCentral');
     if (btnBackHistorial) btnBackHistorial.onclick = volverAEtapa;
 
-    const btnHistory = document.getElementById('btnHistoryAdmin');
+    const btnHistory = document.getElementById('btnHistoryCentral');
     if (btnHistory) btnHistory.onclick = openHistorial;
 
-    const processContent = document.getElementById('adminProcesoContent');
+    const processContent = document.getElementById('centralProcesoContent');
     if (processContent) {
         processContent.querySelectorAll('.process-mini-stage[data-bloque]').forEach(btn => {
             btn.onclick = () => {
@@ -835,7 +823,7 @@ function bindPanelEvents() {
         });
     }
 
-    const bloqueContent = document.getElementById('adminBloqueContent');
+    const bloqueContent = document.getElementById('centralBloqueContent');
     if (bloqueContent) {
         bloqueContent.querySelectorAll('.structure-accordion-toggle').forEach(toggle => {
             toggle.onclick = () => {
@@ -865,8 +853,8 @@ function bindPanelEvents() {
 }
 
 function bindProjectStateDropdown() {
-    const trigger = document.getElementById('adminProjectStateTrigger');
-    const menu = document.getElementById('adminProjectStateMenu');
+    const trigger = document.getElementById('centralProjectStateTrigger');
+    const menu = document.getElementById('centralProjectStateMenu');
 
     if (!trigger || !menu) return;
 
@@ -885,12 +873,12 @@ function bindProjectStateDropdown() {
 }
 
 function bindProjectStateOutsideClickOnce() {
-    if (window.__adminStateOutsideBound) return;
-    window.__adminStateOutsideBound = true;
+    if (window.__centralStateOutsideBound) return;
+    window.__centralStateOutsideBound = true;
 
     document.addEventListener('click', (ev) => {
         const wrap = document.querySelector('.project-status-wrap');
-        const menu = document.getElementById('adminProjectStateMenu');
+        const menu = document.getElementById('centralProjectStateMenu');
         if (!wrap || !menu) return;
 
         if (!ev.target.closest('.project-status-wrap')) {
@@ -930,10 +918,10 @@ async function loadAndRenderProjects() {
     if (!isProjectsView()) return;
 
     try {
-        showAdminView('projects');
+        showCentralView('projects');
         syncTabsVisually();
 
-        const searchInput = document.getElementById('searchInput');
+        const searchInput = document.getElementById('searchCentral');
         if (searchInput) searchInput.value = '';
 
         currentList = await fetchProjects(currentEstado);
@@ -949,11 +937,11 @@ async function openDetalleProyecto(idProyecto) {
         currentBloqueKey = null;
         bloqueStack = [];
 
-        renderProcesoAdmin(currentProcesoDto);
-        showAdminView('proceso');
+        renderProcesoCentral(currentProcesoDto);
+        showCentralView('proceso');
         bindPanelEvents();
 
-        const procesoView = document.getElementById('adminProcesoView');
+        const procesoView = document.getElementById('centralProcesoView');
         if (procesoView) procesoView.scrollTop = 0;
     } catch (e) {
         await showCustomAlert(`No se pudo cargar el detalle: ${e.message}`, 'Error');
@@ -965,11 +953,11 @@ function openBloque(bloque) {
 
     bloqueStack = [];
     currentBloqueKey = bloque;
-    renderBloqueAdmin(currentProcesoDto, bloque);
-    showAdminView('bloque');
+    renderBloqueCentral(currentProcesoDto, bloque);
+    showCentralView('bloque');
     bindPanelEvents();
 
-    const bloqueView = document.getElementById('adminBloqueView');
+    const bloqueView = document.getElementById('centralBloqueView');
     if (bloqueView) bloqueView.scrollTop = 0;
 }
 
@@ -981,11 +969,11 @@ function openSubBloque(subbloque) {
     }
 
     currentBloqueKey = subbloque;
-    renderBloqueAdmin(currentProcesoDto, subbloque);
-    showAdminView('bloque');
+    renderBloqueCentral(currentProcesoDto, subbloque);
+    showCentralView('bloque');
     bindPanelEvents();
 
-    const bloqueView = document.getElementById('adminBloqueView');
+    const bloqueView = document.getElementById('centralBloqueView');
     if (bloqueView) bloqueView.scrollTop = 0;
 }
 
@@ -997,11 +985,11 @@ async function openEtapa(etapaKey, etapaNombre) {
         currentEtapaNombre = etapaNombre;
 
         const detalleEtapa = await fetchEtapaDetail(currentProcesoDto.idProyecto, etapaKey);
-        renderEtapaAdmin(etapaKey, etapaNombre, detalleEtapa);
-        showAdminView('etapa');
+        renderEtapaCentral(etapaKey, etapaNombre, detalleEtapa);
+        showCentralView('etapa');
         bindPanelEvents();
 
-        const etapaView = document.getElementById('adminEtapaView');
+        const etapaView = document.getElementById('centralEtapaView');
         if (etapaView) etapaView.scrollTop = 0;
     } catch (e) {
         await showCustomAlert(`No se pudo cargar la etapa: ${e.message}`, 'Error');
@@ -1013,11 +1001,11 @@ async function openHistorial() {
 
     try {
         const historial = await fetchEtapaHistorial(currentProcesoDto.idProyecto, currentEtapaKey);
-        renderHistorialAdmin(historial);
-        showAdminView('historial');
+        renderHistorialCentral(historial);
+        showCentralView('historial');
         bindPanelEvents();
 
-        const historialView = document.getElementById('adminHistorialView');
+        const historialView = document.getElementById('centralHistorialView');
         if (historialView) historialView.scrollTop = 0;
     } catch (e) {
         await showCustomAlert(`No se pudo cargar el historial: ${e.message}`, 'Error');
@@ -1030,38 +1018,38 @@ function volverAListaProyectos() {
     currentEtapaKey = null;
     currentEtapaNombre = null;
     currentProcesoDto = null;
-    showAdminView('projects');
+    showCentralView('projects');
 }
 
 function volverAProceso() {
     if (!currentProcesoDto) {
-        showAdminView('proceso');
+        showCentralView('proceso');
         return;
     }
 
     if (bloqueStack.length > 0) {
         currentBloqueKey = bloqueStack.pop();
-        renderBloqueAdmin(currentProcesoDto, currentBloqueKey);
-        showAdminView('bloque');
+        renderBloqueCentral(currentProcesoDto, currentBloqueKey);
+        showCentralView('bloque');
         bindPanelEvents();
 
-        const bloqueView = document.getElementById('adminBloqueView');
+        const bloqueView = document.getElementById('centralBloqueView');
         if (bloqueView) bloqueView.scrollTop = 0;
         return;
     }
 
     currentBloqueKey = null;
-    renderProcesoAdmin(currentProcesoDto);
-    showAdminView('proceso');
+    renderProcesoCentral(currentProcesoDto);
+    showCentralView('proceso');
     bindPanelEvents();
 }
 
 function volverABloque() {
-    showAdminView('bloque');
+    showCentralView('bloque');
 }
 
 function volverAEtapa() {
-    showAdminView('etapa');
+    showCentralView('etapa');
 }
 
 function initProjectsModule() {

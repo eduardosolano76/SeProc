@@ -18,7 +18,7 @@ async function fetchText(url, options = {}) {
   return text;
 }
 
-async function fetchJson(url, options = {}) {
+export async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
 
@@ -96,6 +96,14 @@ export async function fetchProyectos(estado) {
 
 export async function fetchDetalleProyecto(id) {
   return await fetchJson(`/api/central/proyectos/${id}`);
+}
+
+export async function fetchDetalleEtapaProyecto(idProyecto, etapa) {
+  return await fetchJson(`/api/central/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
+}
+
+export async function fetchHistorialEtapaProyecto(idProyecto, etapa) {
+  return await fetchJson(`/api/central/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
 }
 
 export async function cambiarEstadoProyecto(id, estado) {

@@ -161,50 +161,53 @@
 			
 			<input id="profileFile" type="file" accept="image/*" hidden>
 
-			<section class="panel" aria-label="Sección principal">
-				<div class="panel-head"
-					th:style="${view == 'password' ? 'display: none;' : ''}">
-					<div>
-						<h2 class="panel-title" id="sectionTitle"
-							th:text="${ view=='proyectos' ? 'Proyectos' :
-              view=='pendientes' ? 'Solicitudes pendientes' :
-              view=='usuarios-supervisores' ? 'Supervisores' :
-              view=='usuarios-constructores' ? 'Constructores' :
-              view=='usuarios-directores' ? 'Directores' :
-              view=='usuarios-central' ? 'Central' :
-              view=='usuarios-administrador' ? 'Administrador' :
-              view=='password' ? 'Cambiar contraseña' :
-              'Proyectos' }">
-							Supervisores</h2>
-					</div>
+			<section class="panel panel-scroll" aria-label="Sección principal">
 
-					<button class="add-btn" id="btnAdd" type="button"
-						style="display: none;">
-						<img id="btnAddIcon"
-							th:src="@{/assets/iconos/agregar-proyecto.png}" alt="Agregar">
-					</button>
-
-				</div>
-
-				<div id="panelContent">
 
 					<!-- Vista proyectos -->
-					<div th:if="${view=='proyectos'}">
-						<div class="panel-sub">Consulta y administra todos los
-							proyectos del sistema</div>
+					<div id="panelContent" class="panel-scroll">
 
-						<div class="tabs" id="adminProjectTabs" role="tablist"
-							aria-label="Filtros de proyectos">
-							<button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
-							<button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
-							<button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
-						</div>
+  <section id="adminProjectsView">
+    <div class="panel-head" id="adminPanelHead"
+    th:style="${view == 'password' ? 'display: none;' : ''}">
+      <div>
+        <h2 class="panel-title">Proyectos</h2>
+        <div class="panel-sub">Consulta y administra todos los proyectos del sistema</div>
+      </div>
 
-						<div class="cards" id="adminProjectsList">
-							<div class="empty" id="adminProjectsEmpty">Aún no hay
-								proyectos para mostrar.</div>
-						</div>
-					</div>
+      <button class="add-btn" id="btnAdd" type="button" style="display:none;">
+        <img id="btnAddIcon" th:src="@{/assets/iconos/agregar-proyecto.png}" alt="Agregar">
+      </button>
+    </div>
+
+    <div class="tabs" id="adminProjectTabs" role="tablist" aria-label="Filtros de proyectos">
+      <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
+      <button class="tab" type="button" data-estado="INACTIVO">Inactivos</button>
+      <button class="tab" type="button" data-estado="FINALIZADO">Finalizados</button>
+    </div>
+
+    <div class="cards" id="adminProjectsList">
+      <div class="empty" id="adminProjectsEmpty">Aún no hay proyectos para mostrar.</div>
+    </div>
+  </section>
+
+  <section id="adminProcesoView" style="display:none;">
+    <div id="adminProcesoContent"></div>
+  </section>
+
+  <section id="adminBloqueView" style="display:none;">
+    <div id="adminBloqueContent"></div>
+  </section>
+
+  <section id="adminEtapaView" style="display:none;">
+    <div id="adminEtapaContent"></div>
+  </section>
+
+  <section id="adminHistorialView" style="display:none;">
+    <div id="adminHistorialContent"></div>
+  </section>
+
+</div>
 
 					<!-- Vista usuarios por rol -->
 					<div th:if="${#strings.startsWith(view,'usuarios-')}">
@@ -443,34 +446,6 @@
 		</div>
 	</div>
 
-	<div class="modal" id="projectDetailModal" aria-hidden="true">
-		<div class="modal-backdrop"></div>
-
-		<div class="modal-card project-modal-card" role="dialog"
-			aria-modal="true" aria-labelledby="projectDetailTitle">
-			<div class="modal-head">
-				<h3 id="projectDetailTitle">Detalle del proyecto</h3>
-				<button class="modal-close" type="button" id="projectDetailClose">✕</button>
-			</div>
-
-			<div class="project-top">
-				<div class="badge-state" id="projectBadgeEstado">—</div>
-				<div class="project-meta" id="projectDetalleMeta"></div>
-			</div>
-
-			<div class="project-detail-body" id="projectDetalleBody"></div>
-
-			<div class="action-row project-action-row">
-				<button class="action-btn ok" type="button"
-					id="btnAdminProyectoActivo">Activo</button>
-				<button class="action-btn" type="button"
-					id="btnAdminProyectoInactivo">Inactivo</button>
-				<button class="action-btn bad" type="button"
-					id="btnAdminProyectoFinalizado">Finalizado</button>
-			</div>
-		</div>
-	</div>
-	
 
 	<script th:inline="javascript">
 		window.LOGGED_USERNAME = /*[[${loggedUsername}]]*/"";
@@ -482,6 +457,7 @@
 	<script type="module" th:src="@{/js/admin/app.js}" defer></script>
 
 	<!-- Solo para la vista de proyectos, así no cargamos el código innecesariamente en otras vistas -->
-	<script th:src="@{/js/admin/admin-projects.js}" defer></script>
+	<script type="module" th:src="@{/js/admin/admin-projects.js}" defer></script>
+
 </body>
 </html>

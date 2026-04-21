@@ -30,11 +30,7 @@ function currentIsSolicitudView() {
 }
 
 function syncTabsVisually() {
-  if (currentIsProjectView()) {
-    document.querySelectorAll('#tabsProyectos .tab').forEach(t => t.classList.remove('active'));
-    const activeTab = document.querySelector(`#tabsProyectos .tab[data-estado="${currentEstadoProyectos}"]`);
-    if (activeTab) activeTab.classList.add('active');
-  } else if (currentIsSolicitudView()) {
+  if (currentIsSolicitudView()) {
     document.querySelectorAll('#tabsSolicitudes .tab').forEach(t => t.classList.remove('active'));
     const activeTab = document.querySelector(`#tabsSolicitudes .tab[data-estado="${currentEstadoSolicitudes}"]`);
     if (activeTab) activeTab.classList.add('active');
@@ -43,9 +39,6 @@ function syncTabsVisually() {
 
 function drawCurrentList() {
   if (currentIsProjectView()) {
-    ui.renderCards(currentList, 'proyectosList', 'proyectosEmpty', 'PROYECTO', {
-      onOpenProyecto: openDetalleProyecto
-    });
     return;
   }
 
@@ -59,20 +52,17 @@ function drawCurrentList() {
 async function loadAndRender() {
   try {
     currentView = getParam('view') || 'solicitudes';
-    syncTabsVisually(); // Sincroniza la pestaña correcta
+    syncTabsVisually();
 
-    // Limpiamos el buscador
     const searchInput = document.getElementById('searchCentral');
     if (searchInput) searchInput.value = '';
 
     if (currentIsProjectView()) {
-      currentList = await api.fetchProyectos(currentEstadoProyectos); // Usa la variable de proyectos
-      drawCurrentList();
       return;
     }
 
     if (currentIsSolicitudView()) {
-      currentList = await api.fetchSolicitudes(currentEstadoSolicitudes); // Usa la variable de solicitudes
+      currentList = await api.fetchSolicitudes(currentEstadoSolicitudes);
       drawCurrentList();
     }
   } catch (e) {
@@ -92,21 +82,6 @@ async function openDetalleSolicitud(idSolicitud) {
     );
   } catch (e) {
     await ui.showCustomAlert(`No se pudo cargar detalle: ${e.message}`, 'Error');
-  }
-}
-
-async function openDetalleProyecto(idProyecto) {
-  try {
-    selectedProyectoId = idProyecto;
-    const dto = await api.fetchDetalleProyecto(idProyecto);
-    ui.renderDetalleProyecto(dto);
-
-    ui.openModal(
-      document.getElementById('detalleModal'),
-      document.getElementById('detalleBackdrop')
-    );
-  } catch (e) {
-    await ui.showCustomAlert(`No se pudo cargar detalle del proyecto: ${e.message}`, 'Error');
   }
 }
 
@@ -423,24 +398,13 @@ function bindTabs() {
       await loadAndRender();
     });
   });
-
-  document.querySelectorAll('#tabsProyectos .tab').forEach(t => {
-    if (t.dataset.bound === 'true') return;
-    t.dataset.bound = 'true';
-
-    t.addEventListener('click', async () => {
-      document.querySelectorAll('#tabsProyectos .tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      currentEstadoProyectos = t.dataset.estado; // Guarda en proyectos
-      await loadAndRender();
-    });
-  });
 }
 
 function bindSearch() {
   const searchInput = document.getElementById('searchCentral');
   searchInput?.addEventListener('input', () => {
-    if (!currentIsProjectView() && !currentIsSolicitudView()) return;
+    if (currentIsProjectView()) return;
+    if (!currentIsSolicitudView()) return;
 
     const q = (searchInput.value || '').toLowerCase().trim();
 
@@ -455,15 +419,9 @@ function bindSearch() {
       (x.supervisor ?? '').toLowerCase().includes(q)
     );
 
-    if (currentIsProjectView()) {
-      ui.renderCards(filtered, 'proyectosList', 'proyectosEmpty', 'PROYECTO', {
-        onOpenProyecto: openDetalleProyecto
-      });
-    } else {
-      ui.renderCards(filtered, 'solicitudesList', 'solicitudesEmpty', 'SOLICITUD', {
-        onOpenSolicitud: openDetalleSolicitud
-      });
-    }
+    ui.renderCards(filtered, 'solicitudesList', 'solicitudesEmpty', 'SOLICITUD', {
+      onOpenSolicitud: openDetalleSolicitud
+    });
   });
 }
 

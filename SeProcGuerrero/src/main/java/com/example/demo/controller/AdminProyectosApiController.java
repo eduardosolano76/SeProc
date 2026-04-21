@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.modelo.Proyecto;
+import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.SolicitudProyecto;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.service.ProyectoEtapaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,11 +18,14 @@ public class AdminProyectosApiController {
 
     private final ProyectoRepository proyectoRepo;
     private final UsuarioRepository usuarioRepo;
+    private final ProyectoEtapaService proyectoEtapaService;
 
     public AdminProyectosApiController(ProyectoRepository proyectoRepo,
-                                       UsuarioRepository usuarioRepo) {
+                                       UsuarioRepository usuarioRepo,
+                                       ProyectoEtapaService proyectoEtapaService) {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
+        this.proyectoEtapaService = proyectoEtapaService;
     }
 
     @GetMapping
@@ -96,13 +101,44 @@ public class AdminProyectosApiController {
         dto.put("tipoEdificacion", s.getTipoEdificacion() != null
                 ? s.getTipoEdificacion().getNombre()
                 : "");
+
         dto.put("modoVista", "ADMIN");
         dto.put("soloLectura", true);
         dto.put("puedeSubir", false);
         dto.put("puedeComentar", false);
         dto.put("puedeAprobar", false);
 
+        dto.put("estadosEtapa", proyectoEtapaService.obtenerEstadosVisuales(id));
+
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/{id}/etapas/{etapa}")
+    public ResponseEntity<?> detalleEtapa(@PathVariable Integer id,
+                                          @PathVariable String etapa) {
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            return ResponseEntity.ok(proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/etapas/{etapa}/historial")
+    public ResponseEntity<?> historialEtapa(@PathVariable Integer id,
+                                            @PathVariable String etapa) {
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/{id}/estado")
@@ -112,9 +148,9 @@ public class AdminProyectosApiController {
         if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
 
         String nuevoEstado = estado == null ? "" : estado.trim().toUpperCase();
-        if (!nuevoEstado.equals("ACTIVO") &&
-            !nuevoEstado.equals("INACTIVO") &&
-            !nuevoEstado.equals("FINALIZADO")) {
+        if (!nuevoEstado.equals("ACTIVO")
+                && !nuevoEstado.equals("INACTIVO")
+                && !nuevoEstado.equals("FINALIZADO")) {
             return ResponseEntity.badRequest().body("Estado no válido.");
         }
 
@@ -122,6 +158,8 @@ public class AdminProyectosApiController {
         p.setEstadoProyecto(nuevoEstado);
         proyectoRepo.save(p);
 
-        return ResponseEntity.ok("OK");
+        return ResponseEntity.ok(new HashMap<String, Object>() {{
+            put("message", "Estado actualizado correctamente.");
+        }});
     }
 }

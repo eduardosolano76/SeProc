@@ -23,33 +23,33 @@
 
         <div class="grid">
           <div class="field">
-            <label for="nombre">Nombre</label>
+            <label for="nombre">Nombre(s):</label>
             <input id="nombre" type="text" th:field="*{nombre}" required />
             <div class="err" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}">Error</div>
           </div>
 
           <div class="field">
-            <label for="apellido">Apellido</label>
+            <label for="apellido">Apellidos:</label>
             <input id="apellido" type="text" th:field="*{apellido}" required />
             <div class="err" th:if="${#fields.hasErrors('apellido')}" th:errors="*{apellido}">Error</div>
           </div>
         </div>
 
         <div class="field">
-          <label for="email">Correo</label>
+          <label for="email">Correo electrónico:</label>
           <input id="email" type="email" th:field="*{email}" required />
           <div class="err" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Error</div>
         </div>
 
         <div class="grid">
           <div class="field">
-            <label for="username">Nombre de usuario</label>
+            <label for="username">Nombre de usuario:</label>
             <input id="username" type="text" th:field="*{username}" required />
             <div class="err" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Error</div>
           </div>
 
           <div class="field">
-            <label for="password">Contraseña</label>
+            <label for="password">Contraseña:</label>
             <input id="password" type="password" th:field="*{password}" required />
             <div class="err" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Error</div>
           </div>
