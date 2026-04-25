@@ -56,7 +56,10 @@ Cada rol cuenta con vistas y acciones específicas según el flujo del proceso c
 ### Seguimiento del proceso constructivo
 ![Proceso constructivo](assets/capturas/proceso-constructivo.png)
 
-### Historial y seguimiento
+### Subida de evidencias
+![Subida de evidencias](assets/capturas/subir-evidencias.png)
+
+### Historial
 ![Historial](assets/capturas/historial.png)
 
 ## Mi participación
