@@ -992,10 +992,8 @@ body{
   box-shadow: 0 4px 14px rgba(0,0,0,.06);
   position: relative;
   border: 1px solid rgba(0,0,0,0.04);
-  /* Quitamos el min-height fijo para que se adapten al texto */
 }
 
-/* El "Punto" de la línea de tiempo */
 .historial-card::before {
   content: '';
   position: absolute;
@@ -1005,11 +1003,10 @@ body{
   height: 16px;
   border-radius: 50%;
   border: 4px solid var(--panel); 
-  background: #ccc; /* Color gris por defecto por si no hay tipo */
+  background: #ccc; 
   transition: background 0.3s ease;
 }
 
-/* Colores dinámicos para los puntos de la línea de tiempo */
 .historial-card.badge-entrega::before {
   background: var(--orange); /* Azul */
 }
@@ -1049,7 +1046,7 @@ body{
   font-weight: 600;
 }
 
-/* Estilos de las etiquetas (Badges) */
+/* Estilos de las etiquetas */
 .historial-type {
   display: inline-block;
   padding: 6px 12px;

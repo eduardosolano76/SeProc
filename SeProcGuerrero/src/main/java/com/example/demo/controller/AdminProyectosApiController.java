@@ -109,7 +109,6 @@ public class AdminProyectosApiController {
         dto.put("puedeAprobar", false);
 
         dto.put("estadosEtapa", proyectoEtapaService.obtenerEstadosVisuales(id));
-
         return ResponseEntity.ok(dto);
     }
 
@@ -154,12 +153,10 @@ public class AdminProyectosApiController {
             return ResponseEntity.badRequest().body("Estado no válido.");
         }
 
-        Proyecto p = pOpt.get();
-        p.setEstadoProyecto(nuevoEstado);
-        proyectoRepo.save(p);
+        Proyecto proyecto = pOpt.get();
+        proyecto.setEstadoProyecto(nuevoEstado);
+        proyectoRepo.save(proyecto);
 
-        return ResponseEntity.ok(new HashMap<String, Object>() {{
-            put("message", "Estado actualizado correctamente.");
-        }});
+        return ResponseEntity.ok().build();
     }
 }

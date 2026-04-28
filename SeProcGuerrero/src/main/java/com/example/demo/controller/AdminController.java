@@ -192,7 +192,7 @@ public class AdminController {
     //subiendo una nueva foto de perfil para el usuario logueado, recibiendo
     //el archivo de la foto en formato multipart/form-data, 
     //y devolviendo una respuesta JSON con la URL pública de la nueva foto
-    @PostMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/admin/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody
     public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
         Map<String, String> response = perfilService.subirFotoPerfil(file, principal.getName());
@@ -200,7 +200,7 @@ public class AdminController {
     }
     
     // Método para manejar las solicitudes GET a la ruta "/perfil/foto"
-    @GetMapping("/perfil/foto")
+    @GetMapping("/admin/perfil/foto")
     @ResponseBody
     public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
         Map<String, String> response = perfilService.obtenerFotoPerfil(principal.getName());
@@ -217,12 +217,12 @@ public class AdminController {
     }
     
     // Método para manejar las solicitudes DELETE a la ruta "/perfil/foto"
-    @DeleteMapping("/perfil/foto")
+    @DeleteMapping("/admin/perfil/foto")
     @ResponseBody
     public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
         perfilService.eliminarFotoPerfil(principal.getName());
         return ResponseEntity.ok(Map.of(
-            "message", "Foto eliminada correctamente", 
+            "message", "Foto eliminada correctamente",
             "url", "/assets/iconos/sinFotoPerfil.png"
         ));
     }

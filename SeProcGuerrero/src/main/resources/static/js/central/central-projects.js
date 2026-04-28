@@ -705,15 +705,16 @@ function renderHistorialCentral(historial) {
     const container = document.getElementById('centralHistorialContent');
     if (!container) return;
 
-    const items = Array.isArray(historial) ? historial : [];
+	const items = Array.isArray(historial)
+	  ? historial.filter(item => !String(item?.tipo || '').toLowerCase().includes('borrador'))
+	  : [];
 
-    const getBadgeClass = (tipoStr) => {
-        const s = (tipoStr || '').toLowerCase();
-        if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
-        if (s.includes('observacion')) return 'badge-observacion';
-        if (s.includes('borrador')) return 'badge-borrador';
-        return 'badge-entrega';
-    };
+	  const getBadgeClass = (tipoStr) => {
+	      const s = (tipoStr || '').toLowerCase();
+	      if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
+	      if (s.includes('observacion')) return 'badge-observacion';
+	      return 'badge-entrega';
+	  };
 
     const getRoleClass = (rolStr) => {
         const s = (rolStr || '').toLowerCase();

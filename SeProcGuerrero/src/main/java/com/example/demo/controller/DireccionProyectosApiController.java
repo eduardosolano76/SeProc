@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.modelo.Proyecto;
+import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.SolicitudProyecto;
 import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
+import com.example.demo.service.ProyectoEtapaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,11 +18,14 @@ public class DireccionProyectosApiController {
 
     private final ProyectoRepository proyectoRepo;
     private final UsuarioRepository usuarioRepo;
+    private final ProyectoEtapaService proyectoEtapaService;
 
     public DireccionProyectosApiController(ProyectoRepository proyectoRepo,
-                                           UsuarioRepository usuarioRepo) {
+                                           UsuarioRepository usuarioRepo,
+                                           ProyectoEtapaService proyectoEtapaService) {
         this.proyectoRepo = proyectoRepo;
         this.usuarioRepo = usuarioRepo;
+        this.proyectoEtapaService = proyectoEtapaService;
     }
 
     @GetMapping
@@ -29,7 +34,6 @@ public class DireccionProyectosApiController {
                 .stream()
                 .map(p -> {
                     SolicitudProyecto s = p.getSolicitud();
-
                     var contratista = usuarioRepo.findById(s.getIdUsuarioContratista()).orElse(null);
                     var supervisor = usuarioRepo.findById(p.getIdUsuarioSupervisor()).orElse(null);
 
@@ -37,12 +41,8 @@ public class DireccionProyectosApiController {
                         put("idProyecto", p.getIdProyecto());
                         put("idSolicitud", s.getIdSolicitud());
                         put("nombreEscuela", s.getNombreEscuela());
-                        put("constructor", contratista != null
-                                ? (contratista.getNombre() + " " + contratista.getApellido())
-                                : "—");
-                        put("supervisor", supervisor != null
-                                ? (supervisor.getNombre() + " " + supervisor.getApellido())
-                                : "—");
+                        put("constructor", contratista != null ? (contratista.getNombre() + " " + contratista.getApellido()) : "—");
+                        put("supervisor", supervisor != null ? (supervisor.getNombre() + " " + supervisor.getApellido()) : "—");
                         put("fechaAprobacion", p.getFechaAprobacion() != null
                                 ? p.getFechaAprobacion().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                                 : "");
@@ -81,27 +81,40 @@ public class DireccionProyectosApiController {
                 : "—");
 
         dto.put("nombreEscuela", s.getNombreEscuela());
-        dto.put("cct1", s.getCct1());
-        dto.put("cct2", s.getCct2());
-        dto.put("estado", s.getEstado().getNombre());
-        dto.put("municipio", s.getMunicipio().getNombre());
-        dto.put("ciudad", s.getLocalidad().getNombre());
-        dto.put("calleNumero", s.getCalleNumero());
-        dto.put("cp", s.getCp());
-        dto.put("responsableInmueble", s.getResponsableInmueble());
-        dto.put("contacto", s.getContacto());
-        dto.put("numInmueblesEvaluar", s.getNumInmueblesEvaluar());
-        dto.put("numEntreEjes", s.getNumEntreEjes());
         dto.put("tipoObra", s.getTipoObra());
         dto.put("tipoEdificacion", s.getTipoEdificacion() != null
                 ? s.getTipoEdificacion().getNombre()
                 : "");
-        dto.put("modoVista", "DIRECCION");
+
+        dto.put("estadosEtapa", proyectoEtapaService.obtenerEstadosVisuales(id));
         dto.put("soloLectura", true);
-        dto.put("puedeSubir", false);
-        dto.put("puedeComentar", false);
-        dto.put("puedeAprobar", false);
 
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/{id}/etapas/{etapa}")
+    public ResponseEntity<?> detalleEtapa(@PathVariable Integer id, @PathVariable String etapa) {
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            return ResponseEntity.ok(proyectoEtapaService.obtenerDetalleActualEtapa(etapaActual));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/etapas/{etapa}/historial")
+    public ResponseEntity<?> historialEtapa(@PathVariable Integer id, @PathVariable String etapa) {
+        var pOpt = proyectoRepo.findById(id);
+        if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        try {
+            ProyectoEtapa etapaActual = proyectoEtapaService.obtenerEtapaPorClaveVisual(id, etapa);
+            return ResponseEntity.ok(proyectoEtapaService.obtenerHistorialEtapa(etapaActual));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

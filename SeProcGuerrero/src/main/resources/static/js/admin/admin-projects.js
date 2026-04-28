@@ -1,4 +1,4 @@
-import { fetchJson } from './api.js';
+import { fetchJson, buildHeaders } from './api.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 let currentEstado = 'ACTIVO';
@@ -10,270 +10,278 @@ let currentEtapaKey = null;
 let currentEtapaNombre = null;
 
 function escapeHtml(str) {
-    return String(str ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-}
-
-function syncAdminPanelHead(viewName) {
-    const panelHead = document.getElementById('adminPanelHead');
-    if (!panelHead) return;
-
-    const hide = ['proceso', 'bloque', 'etapa', 'historial'].includes(viewName);
-    panelHead.style.display = hide ? 'none' : 'flex';
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function isProjectsView() {
-    return !!document.getElementById('adminProjectsList');
+  return !!document.getElementById('adminProjectsList');
 }
 
 async function apiGet(url) {
-    const res = await fetchJson(url, { method: 'GET' });
-    if (!res.ok) throw new Error(res.message || 'Error al consultar la información.');
-    return res.data;
+  const res = await fetchJson(url, { method: 'GET' });
+
+  if (Array.isArray(res)) return res;
+  if (res && typeof res === 'object' && !('ok' in res) && !('data' in res)) return res;
+
+  if (!res.ok) throw new Error(res.message || 'Error al consultar la información.');
+  return res.data;
 }
 
 async function apiPost(url) {
-    const res = await fetchJson(url, { method: 'POST' });
-    if (!res.ok) throw new Error(res.message || 'Error al procesar la solicitud.');
-    return res.data;
+  const res = await fetchJson(url, {
+    method: 'POST',
+    headers: buildHeaders()
+  });
+
+  if (res && typeof res === 'object' && !('ok' in res) && !('data' in res)) return res;
+
+  if (!res.ok) throw new Error(res.message || 'Error al procesar la solicitud.');
+  return res.data;
 }
 
 function estadoDotClass(estado) {
-    const s = (estado || '').toUpperCase();
-    if (s === 'ACTIVO') return 'dot-aprobada';
-    if (s === 'INACTIVO') return 'dot-inactivo';
-    if (s === 'FINALIZADO') return 'dot-rechazada';
-    return 'dot-inactivo';
+  const s = (estado || '').toUpperCase();
+  if (s === 'ACTIVO') return 'dot-aprobada';
+  if (s === 'INACTIVO') return 'dot-inactivo';
+  if (s === 'FINALIZADO') return 'dot-rechazada';
+  return 'dot-inactivo';
 }
 
 function estadoLabel(estado) {
-    const s = (estado || '').toUpperCase();
-    if (s === 'ACTIVO') return 'Activo';
-    if (s === 'INACTIVO') return 'Inactivo';
-    if (s === 'FINALIZADO') return 'Finalizado';
-    return 'Inactivo';
+  const s = (estado || '').toUpperCase();
+  if (s === 'ACTIVO') return 'Activo';
+  if (s === 'INACTIVO') return 'Inactivo';
+  if (s === 'FINALIZADO') return 'Finalizado';
+  return 'Inactivo';
 }
 
 function normalizarEstadoEtapa(estado) {
-    return String(estado || 'BLOQUEADA').trim().toUpperCase();
+  return String(estado || 'BLOQUEADA').trim().toUpperCase();
 }
 
 function resolverEstado(dto, clave) {
-    return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
+  return normalizarEstadoEtapa(dto?.estadosEtapa?.[clave]);
 }
 
 function claveExiste(dto, clave) {
-    return Object.prototype.hasOwnProperty.call(dto?.estadosEtapa || {}, clave);
+  return Object.prototype.hasOwnProperty.call(dto?.estadosEtapa || {}, clave);
 }
 
 function filtrarClavesExistentes(dto, claves = []) {
-    const existentes = (claves || []).filter(clave => claveExiste(dto, clave));
-    return existentes.length ? existentes : (claves || []);
+  const existentes = (claves || []).filter(clave => claveExiste(dto, clave));
+  return existentes.length ? existentes : (claves || []);
 }
 
 function resolverEstadoGrupo(dto, claves = []) {
-    const clavesFinales = filtrarClavesExistentes(dto, claves);
-    const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
+  const clavesFinales = filtrarClavesExistentes(dto, claves);
+  const estados = clavesFinales.map(clave => resolverEstado(dto, clave));
 
-    if (!estados.length) return 'BLOQUEADA';
+  if (!estados.length) return 'BLOQUEADA';
 
-    if (estados.every(estado => estado === 'APROBADA')) {
-        return 'APROBADA';
-    }
+  if (estados.every(estado => estado === 'APROBADA')) return 'APROBADA';
 
-    if (estados.some(estado =>
-        estado === 'EN_PROCESO' ||
-        estado === 'CON_OBSERVACIONES' ||
-        estado === 'DISPONIBLE' ||
-        estado === 'APROBADA'
-    )) {
-        return 'EN_PROCESO';
-    }
+  if (estados.some(estado =>
+      estado === 'EN_PROCESO' ||
+      estado === 'CON_OBSERVACIONES' ||
+      estado === 'DISPONIBLE' ||
+      estado === 'APROBADA'
+  )) {
+    return 'EN_PROCESO';
+  }
 
-    return 'BLOQUEADA';
+  return 'BLOQUEADA';
 }
 
 function obtenerNumeroNiveles(tipoEdificacion) {
-    const tipo = String(tipoEdificacion || '').toUpperCase();
-    if (tipo === 'U3C') return 3;
-    if (tipo === 'U2C') return 2;
-    return 1;
+  const tipo = String(tipoEdificacion || '').toUpperCase();
+  if (tipo === 'U3C') return 3;
+  if (tipo === 'U2C') return 2;
+  return 1;
 }
 
 function buildEstructuraClaves(dto) {
-    const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
-    const claves = [];
+  const niveles = obtenerNumeroNiveles(dto?.tipoEdificacion);
+  const claves = [];
 
-    for (let nivel = 1; nivel <= niveles; nivel++) {
-        claves.push(
-            `estructura_n${nivel}_habilitado_castillos`,
-            `estructura_n${nivel}_habilitado_columnas`,
-            `estructura_n${nivel}_habilitado_muros_concreto`,
-            `estructura_n${nivel}_habilitado_cadenas_intermedias`,
-            `estructura_n${nivel}_cimbra_verticales`,
-            `estructura_n${nivel}_concreto_verticales`,
-            `estructura_n${nivel}_habilitado_dalas`,
-            `estructura_n${nivel}_habilitado_vigas_trabes`,
-            `estructura_n${nivel}_cimbra_horizontales`,
-            `estructura_n${nivel}_concreto_horizontales`,
-            `estructura_n${nivel}_cimbra_losa`,
-            `estructura_n${nivel}_habilitado_losa`,
-            `estructura_n${nivel}_concreto_losa`,
-            `estructura_n${nivel}_habilitado_barandal_concreto`,
-            `estructura_n${nivel}_cimbra_otros_concreto`,
-            `estructura_n${nivel}_concreto_otros_concreto`
-        );
-    }
+  for (let nivel = 1; nivel <= niveles; nivel++) {
+    claves.push(
+      `estructura_n${nivel}_habilitado_castillos`,
+      `estructura_n${nivel}_habilitado_columnas`,
+      `estructura_n${nivel}_habilitado_muros_concreto`,
+      `estructura_n${nivel}_habilitado_cadenas_intermedias`,
+      `estructura_n${nivel}_cimbra_verticales`,
+      `estructura_n${nivel}_concreto_verticales`,
+      `estructura_n${nivel}_habilitado_dalas`,
+      `estructura_n${nivel}_habilitado_vigas_trabes`,
+      `estructura_n${nivel}_cimbra_horizontales`,
+      `estructura_n${nivel}_concreto_horizontales`,
+      `estructura_n${nivel}_cimbra_losa`,
+      `estructura_n${nivel}_habilitado_losa`,
+      `estructura_n${nivel}_concreto_losa`,
+      `estructura_n${nivel}_habilitado_barandal_concreto`,
+      `estructura_n${nivel}_cimbra_otros_concreto`,
+      `estructura_n${nivel}_concreto_otros_concreto`
+    );
+  }
 
-    return filtrarClavesExistentes(dto, claves);
+  return filtrarClavesExistentes(dto, claves);
 }
 
 function claseVisualDesdeEstado(estado) {
-    const e = normalizarEstadoEtapa(estado);
-    if (e === 'APROBADA') return 'done';
-    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
-    return 'locked';
+  const e = normalizarEstadoEtapa(estado);
+  if (e === 'APROBADA') return 'done';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return 'current';
+  return 'locked';
 }
 
 function iconoVisualDesdeEstado(estado) {
-    const e = normalizarEstadoEtapa(estado);
-    if (e === 'APROBADA') return '/assets/iconos/listo.png';
-    if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
-    return '/assets/iconos/bloqueado.png';
+  const e = normalizarEstadoEtapa(estado);
+  if (e === 'APROBADA') return '/assets/iconos/listo.png';
+  if (e === 'EN_PROCESO' || e === 'CON_OBSERVACIONES' || e === 'DISPONIBLE') return '/assets/iconos/proceso.png';
+  return '/assets/iconos/bloqueado.png';
 }
 
 function claseAcordeonDesdeClaves(dto, claves = []) {
-    return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
+  return `status-${claseVisualDesdeEstado(resolverEstadoGrupo(dto, claves))}`;
+}
+
+function syncAdminPanelHead(viewName) {
+  const panelHead = document.getElementById('adminPanelHead');
+  if (!panelHead) return;
+
+  const hide = ['proceso', 'bloque', 'etapa', 'historial'].includes(viewName);
+  panelHead.style.display = hide ? 'none' : 'flex';
 }
 
 function showAdminView(viewName) {
-    const projectsView = document.getElementById('adminProjectsView');
-    const procesoView = document.getElementById('adminProcesoView');
-    const bloqueView = document.getElementById('adminBloqueView');
-    const etapaView = document.getElementById('adminEtapaView');
-    const historialView = document.getElementById('adminHistorialView');
+  const projectsView = document.getElementById('adminProjectsView');
+  const procesoView = document.getElementById('adminProcesoView');
+  const bloqueView = document.getElementById('adminBloqueView');
+  const etapaView = document.getElementById('adminEtapaView');
+  const historialView = document.getElementById('adminHistorialView');
 
-    if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
-    if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
-    if (bloqueView) bloqueView.style.display = viewName === 'bloque' ? 'block' : 'none';
-    if (etapaView) etapaView.style.display = viewName === 'etapa' ? 'block' : 'none';
-    if (historialView) historialView.style.display = viewName === 'historial' ? 'block' : 'none';
+  if (projectsView) projectsView.style.display = viewName === 'projects' ? 'block' : 'none';
+  if (procesoView) procesoView.style.display = viewName === 'proceso' ? 'block' : 'none';
+  if (bloqueView) bloqueView.style.display = viewName === 'bloque' ? 'block' : 'none';
+  if (etapaView) etapaView.style.display = viewName === 'etapa' ? 'block' : 'none';
+  if (historialView) historialView.style.display = viewName === 'historial' ? 'block' : 'none';
 
-    syncAdminPanelHead(viewName);
+  syncAdminPanelHead(viewName);
 }
 
 function syncTabsVisually() {
-    document.querySelectorAll('#adminProjectTabs .tab').forEach(tab => tab.classList.remove('active'));
-    const tab = document.querySelector(`#adminProjectTabs .tab[data-estado="${currentEstado}"]`);
-    if (tab) tab.classList.add('active');
+  document.querySelectorAll('#adminProjectTabs .tab').forEach(tab => tab.classList.remove('active'));
+  const tab = document.querySelector(`#adminProjectTabs .tab[data-estado="${currentEstado}"]`);
+  if (tab) tab.classList.add('active');
 }
 
 async function fetchProjects(estado) {
-    return await apiGet(`/api/admin/proyectos?estado=${encodeURIComponent(estado)}`);
+  return await apiGet(`/api/admin/proyectos?estado=${encodeURIComponent(estado)}`);
 }
 
 async function fetchProjectDetail(id) {
-    return await apiGet(`/api/admin/proyectos/${id}`);
+  return await apiGet(`/api/admin/proyectos/${id}`);
 }
 
 async function fetchEtapaDetail(idProyecto, etapa) {
-    return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
+  return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}`);
 }
 
 async function fetchEtapaHistorial(idProyecto, etapa) {
-    return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
+  return await apiGet(`/api/admin/proyectos/${idProyecto}/etapas/${encodeURIComponent(etapa)}/historial`);
 }
 
 async function changeProjectState(idProyecto, estado) {
-    return await apiPost(`/api/admin/proyectos/${idProyecto}/estado?estado=${encodeURIComponent(estado)}`);
+  return await apiPost(`/api/admin/proyectos/${idProyecto}/estado?estado=${encodeURIComponent(estado)}`);
 }
 
 function renderCards(items) {
-    const list = document.getElementById('adminProjectsList');
-    const empty = document.getElementById('adminProjectsEmpty');
-    if (!list || !empty) return;
+  const list = document.getElementById('adminProjectsList');
+  const empty = document.getElementById('adminProjectsEmpty');
+  if (!list || !empty) return;
 
-    list.querySelectorAll('.card-sol').forEach(x => x.remove());
+  list.querySelectorAll('.card-sol').forEach(x => x.remove());
 
-    if (!items || items.length === 0) {
-        empty.style.display = 'block';
-        return;
-    }
+  if (!items || items.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
 
-    empty.style.display = 'none';
+  empty.style.display = 'none';
 
-    for (const it of items) {
-        const card = document.createElement('div');
-        card.className = 'card-sol';
+  for (const it of items) {
+    const card = document.createElement('div');
+    card.className = 'card-sol';
 
-        const left = document.createElement('div');
-        left.className = 'left';
+    const left = document.createElement('div');
+    left.className = 'left';
 
-        const school = document.createElement('div');
-        school.className = 'school';
-        school.textContent = it.nombreEscuela ?? '—';
+    const school = document.createElement('div');
+    school.className = 'school';
+    school.textContent = it.nombreEscuela ?? '—';
 
-        const meta = document.createElement('div');
-        meta.className = 'meta';
+    const meta = document.createElement('div');
+    meta.className = 'meta';
 
-        const dot = document.createElement('span');
-        dot.className = `state-dot ${estadoDotClass(it.estadoProyecto)}`;
+    const dot = document.createElement('span');
+    dot.className = `state-dot ${estadoDotClass(it.estadoProyecto)}`;
 
-        const p1 = document.createElement('span');
-        p1.textContent = `Constructor: ${it.constructor ?? '—'}`;
+    const p1 = document.createElement('span');
+    p1.textContent = `Constructor: ${it.constructor ?? '—'}`;
 
-        const p2 = document.createElement('span');
-        p2.textContent = `Supervisor: ${it.supervisor ?? '—'}`;
+    const p2 = document.createElement('span');
+    p2.textContent = `Supervisor: ${it.supervisor ?? '—'}`;
 
-        const p3 = document.createElement('span');
-        p3.textContent = `Fecha: ${it.fechaAprobacion ?? ''}`;
+    const p3 = document.createElement('span');
+    p3.textContent = `Fecha: ${it.fechaAprobacion ?? ''}`;
 
-        meta.appendChild(dot);
-        meta.appendChild(p1);
-        meta.appendChild(p2);
-        meta.appendChild(p3);
+    meta.appendChild(dot);
+    meta.appendChild(p1);
+    meta.appendChild(p2);
+    meta.appendChild(p3);
 
-        left.appendChild(school);
-        left.appendChild(meta);
+    left.appendChild(school);
+    left.appendChild(meta);
 
-        const btn = document.createElement('button');
-        btn.className = 'btn-detail';
-        btn.type = 'button';
-        btn.textContent = 'Ver detalle';
-        btn.addEventListener('click', () => openDetalleProyecto(it.idProyecto));
+    const btn = document.createElement('button');
+    btn.className = 'btn-detail';
+    btn.type = 'button';
+    btn.textContent = 'Ver detalle';
+    btn.addEventListener('click', () => openDetalleProyecto(it.idProyecto));
 
-        card.appendChild(left);
-        card.appendChild(btn);
-        list.appendChild(card);
-    }
+    card.appendChild(left);
+    card.appendChild(btn);
+    list.appendChild(card);
+  }
 }
 
 function renderProcessStateMenu(dto) {
-    const actual = String(dto?.estadoProyecto || 'INACTIVO').toUpperCase();
-    const opciones = ['ACTIVO', 'INACTIVO', 'FINALIZADO'].filter(x => x !== actual);
+  const actual = String(dto?.estadoProyecto || 'INACTIVO').toUpperCase();
+  const opciones = ['ACTIVO', 'INACTIVO', 'FINALIZADO'].filter(x => x !== actual);
 
-    return `
-        <div class="project-status-wrap">
-            <button class="project-status-trigger" id="adminProjectStateTrigger" type="button">
-                <span class="project-status-dot ${estadoDotClass(actual)}"></span>
-                <span class="project-status-text">${escapeHtml(estadoLabel(actual))}</span>
-                <span class="project-status-arrow">▾</span>
-            </button>
+  return `
+    <div class="project-status-wrap">
+      <button class="project-status-trigger" id="adminProjectStateTrigger" type="button">
+        <span class="project-status-dot ${estadoDotClass(actual)}"></span>
+        <span class="project-status-text">${escapeHtml(estadoLabel(actual))}</span>
+        <span class="project-status-arrow">▾</span>
+      </button>
 
-            <div class="project-status-menu" id="adminProjectStateMenu">
-                ${opciones.map(op => `
-                    <button class="project-status-option" type="button" data-estado="${op}">
-                        <span class="project-status-dot ${estadoDotClass(op)}"></span>
-                        <span>${escapeHtml(estadoLabel(op))}</span>
-                    </button>
-                `).join('')}
-            </div>
-        </div>
-    `;
+      <div class="project-status-menu" id="adminProjectStateMenu">
+        ${opciones.map(op => `
+          <button class="project-status-option" type="button" data-estado="${op}">
+            <span class="project-status-dot ${estadoDotClass(op)}"></span>
+            <span>${escapeHtml(estadoLabel(op))}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function renderProcesoAdmin(dto) {
@@ -717,15 +725,16 @@ function renderHistorialAdmin(historial) {
     const container = document.getElementById('adminHistorialContent');
     if (!container) return;
 
-    const items = Array.isArray(historial) ? historial : [];
+	const items = Array.isArray(historial)
+	  ? historial.filter(item => !String(item?.tipo || '').toLowerCase().includes('borrador'))
+	  : [];
 
-    const getBadgeClass = (tipoStr) => {
-        const s = (tipoStr || '').toLowerCase();
-        if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
-        if (s.includes('observacion')) return 'badge-observacion';
-        if (s.includes('borrador')) return 'badge-borrador';
-        return 'badge-entrega';
-    };
+	  const getBadgeClass = (tipoStr) => {
+	      const s = (tipoStr || '').toLowerCase();
+	      if (s.includes('aprobacion') || s.includes('aprobado')) return 'badge-aprobacion';
+	      if (s.includes('observacion')) return 'badge-observacion';
+	      return 'badge-entrega';
+	  };
 
     const getRoleClass = (rolStr) => {
         const s = (rolStr || '').toLowerCase();
@@ -785,7 +794,7 @@ function bindTabs() {
 }
 
 function bindSearch() {
-    const searchInput = document.getElementById('searchInput');
+    const searchInput = document.getElementById('searchAdmin');
     if (!searchInput || searchInput.dataset.projectsBound === 'true') return;
 
     searchInput.dataset.projectsBound = 'true';
@@ -885,8 +894,8 @@ function bindProjectStateDropdown() {
 }
 
 function bindProjectStateOutsideClickOnce() {
-    if (window.__adminStateOutsideBound) return;
-    window.__adminStateOutsideBound = true;
+    if (window.__adminProjectStateOutsideBound) return;
+    window.__adminProjectStateOutsideBound = true;
 
     document.addEventListener('click', (ev) => {
         const wrap = document.querySelector('.project-status-wrap');
@@ -933,7 +942,7 @@ async function loadAndRenderProjects() {
         showAdminView('projects');
         syncTabsVisually();
 
-        const searchInput = document.getElementById('searchInput');
+        const searchInput = document.getElementById('searchAdmin');
         if (searchInput) searchInput.value = '';
 
         currentList = await fetchProjects(currentEstado);
@@ -1077,7 +1086,7 @@ function initProjectsModule() {
 document.addEventListener('DOMContentLoaded', initProjectsModule);
 
 window.addEventListener('panelLoaded', (e) => {
-    if (e.detail?.view === 'proyectos') {
-        initProjectsModule();
-    }
+  if (e.detail?.view === 'proyectos') {
+    initProjectsModule();
+  }
 });

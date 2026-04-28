@@ -179,7 +179,7 @@
 					</div>
 
 					<!-- PROYECTOS -->
-					<div th:if="${view=='proyectos'}">
+<th:block th:if="${view=='proyectos'}">
   <section id="centralProjectsView">
     <div class="tabs" id="centralProjectTabs" role="tablist" aria-label="Filtros de proyectos">
       <button class="tab active" type="button" data-estado="ACTIVO">Activos</button>
@@ -207,7 +207,7 @@
   <section id="centralHistorialView" style="display:none;">
     <div id="centralHistorialContent"></div>
   </section>
-</div>
+</th:block>
 
 					<!-- USUARIOS -->
 					<div th:if="${#strings.startsWith(view,'usuarios-')}">

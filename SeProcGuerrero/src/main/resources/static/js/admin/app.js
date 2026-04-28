@@ -1,361 +1,592 @@
-// app.js - Módulo principal que une todo: maneja eventos globales, estado de la vista, y coordina entre api.js, ui.js y navigation.js
-import { fetchJson } from './api.js';
-import { 
-    showCustomAlert, 
-    showCustomConfirm, 
-    openUserModal, 
-    closeUserModal, 
-    setModalMode, 
-    resetPasswordVisibility,
-    syncSidebarWithUrl,
-    syncAddButtonWithUrl,
-    setActiveNav,
-	
-	closeProfileMenu,
-	toggleProfileMenu
-	
-} from './ui.js';
-import { loadPanelFromUrl, getViewFromUrl } from './navigation.js';
+import * as api from './api.js';
+import * as ui from './ui.js';
+import {
+  getParam,
+  getViewFromUrl,
+  setActiveNav,
+  setActiveSubItem,
+  syncSidebarWithView,
+  syncAddButton,
+  loadPanelFromUrl
+} from './navigation.js';
 
-// Estado global de la vista
+
+let currentView = getParam('view') || 'solicitudes';
+let currentEstadoSolicitudes = 'PENDIENTE';
+let currentList = [];
+
+let selectedSolicitudId = null;
 let currentUserId = null;
-let modalMode = "EDIT"; // "CREATE" | "EDIT"
+let userModalMode = 'EDIT';
 
-// Inicialización 
-document.addEventListener("DOMContentLoaded", () => {
-    const view = getViewFromUrl();
-    syncAddButtonWithUrl(view);
-    syncSidebarWithUrl(view);
-    
-    // Cargar la vista inicial si es necesario
-    if (view === 'pendientes') setActiveNav('navSolicitudes');
-    else if (view === 'password') setActiveNav('navPassword');
-    else if (!view.startsWith('usuarios-')) setActiveNav('navProyectos');
+function currentIsSolicitudView() {
+  return currentView === 'solicitudes';
+}
 
-    bindUserRowClicks();
-});
+function syncTabsVisually() {
+  if (!currentIsSolicitudView()) return;
+  document.querySelectorAll('#tabsSolicitudes .tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.querySelector(`#tabsSolicitudes .tab[data-estado="${currentEstadoSolicitudes}"]`);
+  if (activeTab) activeTab.classList.add('active');
+}
 
-// Eventos de navegacion y menú
-document.getElementById('navProyectos')?.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    loadPanelFromUrl('/admin?view=proyectos', true);
-});
+async function loadAndRender() {
+  try {
+    currentView = getParam('view') || 'solicitudes';
+    syncTabsVisually();
 
-// Abrir/Cerrar submenú de Usuarios
-document.getElementById('navUsuarios')?.addEventListener('click', () => {
-    const navUsuarios = document.getElementById('navUsuarios');
-    const submenuUsuarios = document.getElementById('submenuUsuarios');
-    
+    const searchInput = document.getElementById('searchAdmin');
+    if (searchInput) searchInput.value = '';
+
+    if (currentIsSolicitudView()) {
+      currentList = await api.fetchSolicitudes(currentEstadoSolicitudes);
+      ui.renderCards(currentList, 'solicitudesList', 'solicitudesEmpty', 'SOLICITUD', {
+        onOpenSolicitud: openDetalleSolicitud
+      });
+    }
+  } catch (e) {
+    await ui.showCustomAlert(`No se pudieron cargar datos: ${e.message}`, 'Error');
+  }
+}
+
+async function openDetalleSolicitud(idSolicitud) {
+  try {
+    selectedSolicitudId = idSolicitud;
+    const dto = await api.fetchDetalleSolicitud(idSolicitud);
+    ui.renderDetalleSolicitud(dto);
+    ui.openModal(document.getElementById('detalleModal'), document.getElementById('detalleBackdrop'));
+  } catch (e) {
+    await ui.showCustomAlert(`No se pudo cargar detalle: ${e.message}`, 'Error');
+  }
+}
+
+function bindTabs() {
+  document.querySelectorAll('#tabsSolicitudes .tab').forEach(t => {
+    if (t.dataset.bound === 'true') return;
+    t.dataset.bound = 'true';
+
+    t.addEventListener('click', async () => {
+      currentEstadoSolicitudes = t.dataset.estado;
+      syncTabsVisually();
+      await loadAndRender();
+    });
+  });
+}
+
+function bindSearch() {
+  const searchInput = document.getElementById('searchAdmin');
+  if (!searchInput || searchInput.dataset.bound === 'true') return;
+  searchInput.dataset.bound = 'true';
+
+  searchInput.addEventListener('input', async () => {
+    if (!currentIsSolicitudView()) return;
+
+    const q = (searchInput.value || '').toLowerCase().trim();
+    if (!q) {
+      await loadAndRender();
+      return;
+    }
+
+    const filtered = currentList.filter(x =>
+      (x.nombreEscuela ?? '').toLowerCase().includes(q) ||
+      (x.quienEnvia ?? '').toLowerCase().includes(q) ||
+      (x.tipoObra ?? '').toLowerCase().includes(q) ||
+      (x.tipoEdificacion ?? '').toLowerCase().includes(q)
+    );
+
+    ui.renderCards(filtered, 'solicitudesList', 'solicitudesEmpty', 'SOLICITUD', {
+      onOpenSolicitud: openDetalleSolicitud
+    });
+  });
+}
+
+function bindPendingApprovalButtons() {
+  window.aprobarUsuario = function (btn) {
+    const id = btn.dataset.id;
+    const select = document.getElementById(`rol-${id}`);
+    const hidden = document.getElementById(`rolHidden-${id}`);
+
+    if (!select || !hidden || !select.value) {
+      alert('Selecciona un rol.');
+      return;
+    }
+
+    hidden.value = select.value;
+    document.getElementById(`aprobar-${id}`)?.submit();
+  };
+}
+
+function bindUserRowClicks() {
+  document.querySelectorAll('.user-row').forEach(row => {
+    if (row.dataset.bound === 'true') return;
+    row.dataset.bound = 'true';
+
+    row.addEventListener('click', async () => {
+      const id = row.dataset.id;
+      if (!id) return;
+
+      currentUserId = id;
+      userModalMode = 'EDIT';
+      ui.setUserModalMode('EDIT');
+
+      try {
+        const dto = await api.fetchUserDetail(id);
+        document.getElementById('mNombre').value = dto.nombre || '';
+        document.getElementById('mApellido').value = dto.apellido || '';
+        document.getElementById('mUsername').value = dto.username || '';
+        document.getElementById('mEmail').value = dto.email || '';
+        document.getElementById('mRol').value = dto.rolNombre || '';
+        document.getElementById('mRolNombre').value = dto.rolNombre || '';
+        document.getElementById('mPassword').value = '';
+        ui.openUserModal();
+      } catch (e) {
+        await ui.showCustomAlert(`No se pudo cargar el usuario: ${e.message}`, 'Error');
+      }
+    });
+  });
+}
+
+function openCreateUserModal() {
+  const btnAdd = document.getElementById('btnAdd');
+  if (btnAdd?.dataset.action !== 'usuario') return;
+
+  const rol = btnAdd.dataset.rol || '';
+
+  currentUserId = null;
+  userModalMode = 'CREATE';
+  ui.setUserModalMode('CREATE');
+
+  document.getElementById('mNombre').value = '';
+  document.getElementById('mApellido').value = '';
+  document.getElementById('mUsername').value = '';
+  document.getElementById('mEmail').value = '';
+  document.getElementById('mPassword').value = '';
+  document.getElementById('mRol').value = rol || 'nuevo';
+  document.getElementById('mRolNombre').value = rol || '';
+
+  ui.openUserModal();
+}
+
+async function reloadCurrentUsersPanel() {
+  await loadPanelFromUrl({
+    href: window.location.href,
+    push: false,
+    onAfterLoad: () => {
+      bindUserRowClicks();
+      bindPendingApprovalButtons();
+      bindTabs();
+      bindSearch();
+      loadAndRender();
+    }
+  });
+}
+
+async function handleSaveUser() {
+  const payload = {
+    nombre: document.getElementById('mNombre').value.trim(),
+    apellido: document.getElementById('mApellido').value.trim(),
+    username: document.getElementById('mUsername').value.trim(),
+    email: document.getElementById('mEmail').value.trim(),
+    password: document.getElementById('mPassword').value || '',
+    rolNombre: document.getElementById('mRolNombre').value || ''
+  };
+
+  if (userModalMode === 'CREATE') {
+    if (!payload.password.trim()) {
+      await ui.showCustomAlert('Password es obligatorio para crear.', 'Atención');
+      return;
+    }
+
+    try {
+      await api.createUser(payload);
+      await ui.showCustomAlert('Usuario creado', 'Éxito');
+      ui.closeUserModal();
+      await reloadCurrentUsersPanel();
+    } catch (e) {
+      await ui.showCustomAlert(e.message || 'No se pudo crear.', 'Error');
+    }
+    return;
+  }
+
+  if (!currentUserId) return;
+
+  try {
+    await api.updateUser(currentUserId, payload);
+    await ui.showCustomAlert('Usuario actualizado', 'Éxito');
+    ui.closeUserModal();
+    await reloadCurrentUsersPanel();
+  } catch (e) {
+    await ui.showCustomAlert(e.message || 'No se pudo actualizar.', 'Error');
+  }
+}
+
+async function handleDeleteUser() {
+  if (!currentUserId) return;
+
+  const ok = await ui.showCustomConfirm('¿Seguro que quieres eliminar este usuario?', 'Eliminar usuario');
+  if (!ok) return;
+
+  try {
+    await api.deleteUser(currentUserId);
+    await ui.showCustomAlert('Usuario eliminado', 'Éxito');
+    ui.closeUserModal();
+    await reloadCurrentUsersPanel();
+  } catch (e) {
+    await ui.showCustomAlert(e.message || 'No se pudo eliminar.', 'Error');
+  }
+}
+
+function bindNavigation() {
+  document.getElementById('navSolicitudesProyecto')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await loadPanelFromUrl({
+      href: '/admin?view=solicitudes',
+      push: true,
+      onAfterLoad: () => {
+        bindTabs();
+        bindSearch();
+        bindUserRowClicks();
+        bindPendingApprovalButtons();
+        loadAndRender();
+      }
+    });
+  });
+
+  document.getElementById('navProyectos')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await loadPanelFromUrl({
+      href: '/admin?view=proyectos',
+      push: true,
+      onAfterLoad: () => {
+        bindTabs();
+        bindSearch();
+        bindUserRowClicks();
+        bindPendingApprovalButtons();
+        loadAndRender();
+      }
+    });
+  });
+
+  document.getElementById('navPendientes')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await loadPanelFromUrl({
+      href: '/admin?view=pendientes',
+      push: true,
+      onAfterLoad: () => {
+        bindTabs();
+        bindSearch();
+        bindUserRowClicks();
+        bindPendingApprovalButtons();
+        loadAndRender();
+      }
+    });
+  });
+
+  document.getElementById('navPassword')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await loadPanelFromUrl({
+      href: '/admin?view=password',
+      push: true,
+      onAfterLoad: () => {
+        bindTabs();
+        bindSearch();
+        bindUserRowClicks();
+        bindPendingApprovalButtons();
+        loadAndRender();
+      }
+    });
+  });
+
+  const navUsuarios = document.getElementById('navUsuarios');
+  const submenuUsuarios = document.getElementById('submenuUsuarios');
+
+  navUsuarios?.addEventListener('click', () => {
     const isOpen = navUsuarios.getAttribute('data-open') === 'true';
     navUsuarios.setAttribute('data-open', String(!isOpen));
     submenuUsuarios?.classList.toggle('open', !isOpen);
     setActiveNav('navUsuarios');
-});
+  });
 
-// Eventos de navegación principal
-document.getElementById('navSolicitudes')?.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    loadPanelFromUrl('/admin?view=pendientes', true);
-});
+  document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
+    if (a.dataset.bound === 'true') return;
+    a.dataset.bound = 'true';
 
-// Para el cambio de contraseña
-document.getElementById('navPassword')?.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    loadPanelFromUrl('/admin?view=password', true);
-});
+    a.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      if (!href) return;
 
-// Subitems de Usuarios
-document.querySelectorAll('#submenuUsuarios .sub-item').forEach(a => {
-    a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const href = a.getAttribute('href');
-        if (href) loadPanelFromUrl(href, true);
+      setActiveNav('navUsuarios');
+      setActiveSubItem(a);
+      navUsuarios?.setAttribute('data-open', 'true');
+      submenuUsuarios?.classList.add('open');
+
+      currentView = getViewFromUrl(href);
+      syncSidebarWithView(currentView);
+      syncAddButton(currentView);
+
+      await loadPanelFromUrl({
+        href,
+        push: true,
+        onAfterLoad: () => {
+          bindUserRowClicks();
+          bindPendingApprovalButtons();
+          bindTabs();
+          bindSearch();
+          loadAndRender();
+        }
+      });
     });
-});
+  });
 
-// Botón de menú móvil
-document.getElementById('btnMenu')?.addEventListener('click', () => {
-    document.getElementById('sidebar')?.classList.toggle('menu-open');
-});
-
-// Botón de retroceso/avance del navegador
-window.addEventListener('popstate', (e) => {
+  window.addEventListener('popstate', async (e) => {
     const href = (e.state && e.state.href) ? e.state.href : window.location.href;
-    loadPanelFromUrl(href, false);
-});
+    currentView = getViewFromUrl(href);
+    syncSidebarWithView(currentView);
+    syncAddButton(currentView);
 
-// Eventos del modal de usuarios
-document.getElementById('userModalClose')?.addEventListener('click', () => {
-    closeUserModal();
+    await loadPanelFromUrl({
+      href,
+      push: false,
+      onAfterLoad: () => {
+        bindUserRowClicks();
+        bindPendingApprovalButtons();
+        bindTabs();
+        bindSearch();
+        loadAndRender();
+      }
+    });
+  });
+}
+
+function initProfilePhoto() {
+  const profileBtn = document.getElementById('profileBtn');
+  const profileFile = document.getElementById('profileFile');
+  const btnViewPhoto = document.getElementById('btnViewPhoto');
+  const btnUploadPhoto = document.getElementById('btnUploadPhoto');
+  const btnDeletePhoto = document.getElementById('btnDeletePhoto');
+
+  const fotoUrl = profileBtn?.dataset?.foto || '';
+  ui.renderProfilePhoto(fotoUrl);
+
+  profileBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ui.toggleProfileMenu();
+  });
+
+  btnUploadPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    profileFile?.click();
+  });
+
+  btnViewPhoto?.addEventListener('click', () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+    if (currentFoto && !currentFoto.includes('sinFotoPerfil.png')) {
+      window.open(currentFoto, '_blank');
+    } else {
+      ui.showCustomAlert('Aún no has subido una foto de perfil.', 'Ver foto');
+    }
+  });
+
+  btnDeletePhoto?.addEventListener('click', async () => {
+    ui.closeProfileMenu();
+    const currentFoto = profileBtn?.dataset?.foto;
+
+    if (!currentFoto || currentFoto.includes('sinFotoPerfil.png')) {
+      return ui.showCustomAlert('No tienes una foto de perfil personalizada para eliminar.', 'Aviso');
+    }
+
+    const confirmado = await ui.showCustomConfirm('¿Estás seguro de que deseas eliminar tu foto de perfil?', 'Eliminar foto');
+    if (!confirmado) return;
+
+    try {
+      const data = await api.deleteProfilePhoto();
+      const defaultUrl = data?.url || '/assets/iconos/sinFotoPerfil.png';
+      ui.renderProfilePhoto(defaultUrl);
+      if (profileBtn) profileBtn.dataset.foto = defaultUrl;
+      ui.showCustomAlert('Tu foto de perfil ha sido eliminada.', 'Éxito');
+    } catch (err) {
+      ui.showCustomAlert(err.message, 'Error');
+    }
+  });
+
+  profileFile?.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+      const url = await api.uploadProfilePhoto(file);
+      ui.renderProfilePhoto(url);
+      if (profileBtn) profileBtn.dataset.foto = url;
+    } catch (err) {
+      ui.renderProfilePhoto(profileBtn?.dataset?.foto || '');
+      await ui.showCustomAlert(err.message || 'Error al subir la foto.', 'Error');
+    } finally {
+      profileFile.value = '';
+    }
+  });
+}
+
+function bindModalActions() {
+  document.getElementById('btnCerrarDetalle')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('detalleModal'), document.getElementById('detalleBackdrop'));
+  });
+
+  document.getElementById('detalleBackdrop')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('detalleModal'), document.getElementById('detalleBackdrop'));
+  });
+
+  document.getElementById('btnCerrarSup')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('supModal'), document.getElementById('supBackdrop'));
+  });
+
+  document.getElementById('supBackdrop')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('supModal'), document.getElementById('supBackdrop'));
+  });
+
+  document.getElementById('btnCerrarMotivo')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('motivoModal'), document.getElementById('motivoBackdrop'));
+  });
+
+  document.getElementById('motivoBackdrop')?.addEventListener('click', () => {
+    ui.closeModal(document.getElementById('motivoModal'), document.getElementById('motivoBackdrop'));
+  });
+
+  document.getElementById('userModalClose')?.addEventListener('click', () => {
+    ui.closeUserModal();
     currentUserId = null;
-});
+  });
 
-// Abrir modal para CREAR
-document.getElementById('btnAdd')?.addEventListener('click', () => {
-    const btnAdd = document.getElementById('btnAdd');
-    const rol = btnAdd.dataset.rol || "";
-
+  document.getElementById('userModalBackdrop')?.addEventListener('click', () => {
+    ui.closeUserModal();
     currentUserId = null;
-    modalMode = "CREATE";
-    setModalMode("CREATE");
+  });
 
-    document.getElementById('mNombre').value = '';
-    document.getElementById('mApellido').value = '';
-    document.getElementById('mUsername').value = '';
-    document.getElementById('mEmail').value = '';
-    document.getElementById('mRol').value = rol || 'nuevo';
-    document.getElementById('mRolNombre').value = rol || '';
+  document.getElementById('btnAprobar')?.addEventListener('click', async () => {
+    if (!selectedSolicitudId) return;
 
-    resetPasswordVisibility();
-    openUserModal();
-});
+    try {
+      const sups = await api.fetchSupervisores();
+      const selectSupervisor = document.getElementById('selectSupervisor');
+      if (selectSupervisor) {
+        selectSupervisor.innerHTML = `<option value="" selected disabled>Seleccionar</option>`;
+        for (const s of sups) {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.nombre;
+          selectSupervisor.appendChild(opt);
+        }
+      }
 
-// GUARDAR Usuario (Crear o Actualizar)
-document.getElementById('btnGuardarUsuario')?.addEventListener('click', async () => {
+      ui.openModal(document.getElementById('supModal'), document.getElementById('supBackdrop'));
+    } catch (e) {
+      await ui.showCustomAlert(`No se pudieron cargar supervisores: ${e.message}`, 'Error');
+    }
+  });
+
+  document.getElementById('btnRechazar')?.addEventListener('click', () => {
+    if (!selectedSolicitudId) return;
+    const txtMotivo = document.getElementById('txtMotivo');
+    if (txtMotivo) txtMotivo.value = '';
+    ui.openModal(document.getElementById('motivoModal'), document.getElementById('motivoBackdrop'));
+  });
+
+  document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async () => {
+    const supId = document.getElementById('selectSupervisor')?.value;
+    if (!supId) {
+      await ui.showCustomAlert('Selecciona un supervisor', 'Atención');
+      return;
+    }
+
+    try {
+      await api.postAprobar(selectedSolicitudId, supId);
+      ui.closeModal(document.getElementById('supModal'), document.getElementById('supBackdrop'));
+      ui.closeModal(document.getElementById('detalleModal'), document.getElementById('detalleBackdrop'));
+      await loadAndRender();
+      await ui.showCustomAlert('Solicitud aprobada', 'Éxito');
+    } catch (e) {
+      await ui.showCustomAlert(`No se pudo aprobar: ${e.message}`, 'Error');
+    }
+  });
+
+  document.getElementById('btnConfirmarRechazo')?.addEventListener('click', async () => {
+    const motivo = (document.getElementById('txtMotivo')?.value || '').trim();
+    if (!motivo) {
+      await ui.showCustomAlert('Escribe el motivo', 'Atención');
+      return;
+    }
+
+    try {
+      await api.postRechazar(selectedSolicitudId, motivo);
+      ui.closeModal(document.getElementById('motivoModal'), document.getElementById('motivoBackdrop'));
+      ui.closeModal(document.getElementById('detalleModal'), document.getElementById('detalleBackdrop'));
+      await loadAndRender();
+      await ui.showCustomAlert('Solicitud rechazada', 'Éxito');
+    } catch (e) {
+      await ui.showCustomAlert(`No se pudo rechazar: ${e.message}`, 'Error');
+    }
+  });
+
+  document.getElementById('btnGuardarUsuario')?.addEventListener('click', handleSaveUser);
+  document.getElementById('btnEliminarUsuario')?.addEventListener('click', handleDeleteUser);
+  document.getElementById('btnAdd')?.addEventListener('click', openCreateUserModal);
+
+  document.getElementById('formCambiarPassword')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
     const payload = {
-        nombre: document.getElementById('mNombre').value.trim(),
-        apellido: document.getElementById('mApellido').value.trim(),
-        username: document.getElementById('mUsername').value.trim(),
-        email: document.getElementById('mEmail').value.trim(),
-        password: document.getElementById('mPassword')?.value || "",
-        rolNombre: document.getElementById('mRolNombre')?.value || ""
+      actual: document.getElementById('passActual')?.value || '',
+      nueva: document.getElementById('passNueva')?.value || '',
+      repetida: document.getElementById('passRepetida')?.value || ''
     };
 
-    if (modalMode === "CREATE") {
-        const { ok, message } = await fetchJson(`/admin/usuarios/crear`, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        
-        if (!ok) return showCustomAlert(message || "No se pudo crear.", "Error");
-        
-        await showCustomAlert("El usuario fue creado correctamente.", "Usuario creado");
-    } else {
-        if (!currentUserId) return;
-        const { ok, message } = await fetchJson(`/admin/usuarios/${currentUserId}/actualizar`, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        if (!ok) return showCustomAlert(message || "No se pudo actualizar.", "Error");
-        
-        await showCustomAlert("Los datos fueron actualizados correctamente.", "Usuario actualizado");
+    if (!payload.actual || !payload.nueva || !payload.repetida) {
+      await ui.showCustomAlert('Completa todos los campos.', 'Atención');
+      return;
     }
 
-    closeUserModal();
-    const currentView = getViewFromUrl();
-    loadPanelFromUrl(`/admin?view=${currentView}`, false);
-});
-
-// ELIMINAR Usuario
-document.getElementById('btnEliminarUsuario')?.addEventListener('click', async () => {
-    if (!currentUserId) return;
-
-    const confirmado = await showCustomConfirm("¿Estás seguro de que deseas eliminar este usuario de forma permanente?", "Eliminar usuario");
-    if (!confirmado) return;
-
-    const { ok, message } = await fetchJson(`/admin/usuarios/${currentUserId}/eliminar`, { method: 'POST' });
-
-    if (!ok) return showCustomAlert(message || "No se pudo eliminar el usuario.", "Error");
-
-    await showCustomAlert("El usuario fue eliminado correctamente.", "Eliminado");
-    closeUserModal();
-    
-    const currentView = getViewFromUrl();
-    loadPanelFromUrl(`/admin?view=${currentView}`, false);
-});
-
-// FUNCIONES DE TABLAS (Clicks en filas y Aprobar)
-// Como los módulos de ES6 no exponen funciones al HTML directamente, 
-// necesitamos atar esta función al objeto window para que los "onclick" en el HTML sigan funcionando.
-window.aprobarUsuario = function(btn) {
-    const id = btn.getAttribute('data-id');
-    const sel = document.getElementById('rol-' + id);
-    if (!sel.checkValidity()) {
-        sel.reportValidity();
-        return;
+    if (payload.nueva !== payload.repetida) {
+      await ui.showCustomAlert('Las contraseñas nuevas no coinciden.', 'Atención');
+      return;
     }
-    document.getElementById('rolHidden-' + id).value = sel.value;
-    document.getElementById('aprobar-' + id).submit();
-};
 
-// Función para mostrar el detalle de un usuario en el modal
-async function showUserDetail(id) {
     try {
-        const res = await fetch(`/admin/usuarios/${id}`, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const u = await res.json();
-
-        currentUserId = id;
-        modalMode = "EDIT";
-        setModalMode("EDIT");
-
-        document.getElementById('mNombre').value = u.nombre ?? '';
-        document.getElementById('mApellido').value = u.apellido ?? '';
-        document.getElementById('mUsername').value = u.username ?? '';
-        document.getElementById('mEmail').value = u.email ?? '';
-        
-		document.getElementById('mRol').value = (u.rol && u.rol.nombre) ? u.rol.nombre : 'sin rol';
-		
-		// Limpiamos el campo oculto para que no envíe roles accidentalmente
-		document.getElementById('mRolNombre').value = '';
-        
-        const btnDelete = document.getElementById("btnEliminarUsuario");
-        const logged = (window.LOGGED_USERNAME || "").toLowerCase();
-        const selected = (u.username || "").toLowerCase();
-        if (btnDelete) btnDelete.style.display = (selected === logged) ? "none" : "inline-flex";
-
-        resetPasswordVisibility();
-        openUserModal();
-    } catch (e) {
-       await showCustomAlert("No se pudo cargar la información del usuario.", "Error");
+      await api.changePassword(payload);
+      await ui.showCustomAlert('Contraseña actualizada.', 'Éxito');
+      e.target.reset();
+    } catch (err) {
+      await ui.showCustomAlert(err.message || 'No se pudo cambiar la contraseña.', 'Error');
     }
+  });
 }
 
-// Función para vincular los clics en las filas de usuario a la función de mostrar detalle
-function bindUserRowClicks() {
-    document.querySelectorAll('tr.user-row').forEach(tr => {
-        if (tr.dataset.bound === "true") return;
-        tr.dataset.bound = "true";
-        tr.style.cursor = "pointer";
-        tr.addEventListener('click', () => {
-            const id = tr.getAttribute('data-id');
-            if (id) showUserDetail(id);
-        });
-    });
-}
+document.addEventListener('DOMContentLoaded', () => {
+  setActiveNav(currentView);
+  syncSidebarWithView(currentView);
+  syncAddButton(currentView);
 
-// Re-vincular los clics de la tabla cuando navigation.js avisa que se cargó un nuevo panel
-window.addEventListener('panelLoaded', bindUserRowClicks);
-
-// Cambiar contraseña
-document.addEventListener('submit', async (e) => {
-    if (e.target.id === 'formCambiarPassword') {
-        e.preventDefault();
-        
-        const payload = {
-            passActual: document.getElementById('passActual').value.trim(),
-            passNueva: document.getElementById('passNueva').value.trim(),
-            passRepetida: document.getElementById('passRepetida').value.trim()
-        };
-
-        if (!payload.passActual || !payload.passNueva || !payload.passRepetida) {
-            return showCustomAlert("Todos los campos son obligatorios.", "Error");
-        }
-
-        const { ok, message } = await fetchJson('/admin/perfil/password', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        if (!ok) return showCustomAlert(message || "Ocurrió un error al cambiar la contraseña.", "Error");
-
-        await showCustomAlert("Tu contraseña ha sido actualizada correctamente.", "Éxito");
-        document.getElementById('formCambiarPassword').reset();
-    }
+  bindNavigation();
+  bindTabs();
+  bindSearch();
+  bindPendingApprovalButtons();
+  bindUserRowClicks();
+  initProfilePhoto();
+  bindModalActions();
+  loadAndRender();
 });
 
-// Logica de foto de perfil
-const profileBtn = document.getElementById('profileBtn');
-const profileFile = document.getElementById('profileFile');
-const profileImg = document.getElementById('profileImg');
+window.addEventListener('panelLoaded', (e) => {
+  const view = e.detail?.view || getParam('view') || 'solicitudes';
+  currentView = view;
 
-// Elementos del nuevo menú
-const btnViewPhoto = document.getElementById('btnViewPhoto');
-const btnUploadPhoto = document.getElementById('btnUploadPhoto');
-const btnDeletePhoto = document.getElementById('btnDeletePhoto');
+  syncSidebarWithView(currentView);
+  syncAddButton(currentView);
 
-function addCacheBuster(url) {
-  if (!url) return url;
-  return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
-}
-
-// 1. Abrir/Cerrar menú al hacer clic en el botón de perfil
-profileBtn?.addEventListener('click', (ev) => {
-    ev.stopPropagation(); // Evita interferencias
-    toggleProfileMenu(); 
-});
-
-// 3. Acción "Subir foto": abre el selector de archivos
-btnUploadPhoto?.addEventListener('click', () => {
-    closeProfileMenu(); // Cierra el menú primero
-    profileFile?.click(); // Abre el explorador de archivos
-});
-
-// 4. Acción "Ver foto": abre la foto actual en una pestaña nueva
-btnViewPhoto?.addEventListener('click', () => {
-    closeProfileMenu(); // Cierra el menú
-    const fotoUrl = profileBtn?.dataset?.foto;
-    if (fotoUrl && !fotoUrl.includes('sinFotoPerfil.png')) {
-        window.open(fotoUrl, '_blank'); // Abre la foto en una nueva pestaña
-    } else {
-        showCustomAlert("Aún no has subido una foto de perfil.", "Ver foto");
-    }
-});
-
-// 5. Manejar el cambio de archivo (cuando el usuario selecciona una imagen)
-profileFile?.addEventListener('change', async (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  // Previsualización inmediata
-  const previewUrl = URL.createObjectURL(file);
-  profileImg.src = previewUrl;
-
-  try {
-    const form = new FormData();
-    form.append("file", file);
-
-    // Obtener CSRF directamente para este fetch especial
-    const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-    const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-    const headers = {};
-    if (token && header) headers[header] = token;
-
-    // Subir al servidor (tu endpoint actual)
-    const res = await fetch("/perfil/foto", {
-      method: "POST",
-      body: form,
-      headers: headers
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.message || "No se pudo subir la foto.");
-
-    // Actualizar con la URL final y cache buster
-    const finalUrl = addCacheBuster(data.url);
-    profileImg.src = finalUrl;
-    if (profileBtn) profileBtn.dataset.foto = data.url;
-
-  } catch (err) {
-    // Si falla, revertir a la foto anterior
-    profileImg.src = addCacheBuster(profileBtn?.dataset?.foto);
-    await showCustomAlert(err.message || "Error al subir la foto.", "Error");
-  }
-});
-
-// 6. Acción "Eliminar foto": pide confirmación y hace la petición
-btnDeletePhoto?.addEventListener('click', async () => {
-    closeProfileMenu(); // Cierra el menú
-
-    const fotoUrl = profileBtn?.dataset?.foto;
-    // Validar si ya está usando la imagen por defecto
-    if (!fotoUrl || fotoUrl.includes('sinFotoPerfil.png')) {
-        return showCustomAlert("No tienes una foto de perfil personalizada para eliminar.", "Aviso");
-    }
-
-    const confirmado = await showCustomConfirm("¿Estás seguro de que deseas eliminar tu foto de perfil?", "Eliminar foto");
-    if (!confirmado) return;
-
-    // Petición DELETE al backend 
-    const { ok, message, data } = await fetchJson('/perfil/foto', { method: 'DELETE' });
-
-    if (!ok) return showCustomAlert(message || "No se pudo eliminar la foto.", "Error");
-
-    // Actualizar la interfaz a la imagen por defecto
-    const defaultUrl = data?.url || '/assets/iconos/sinFotoPerfil.png';
-    profileImg.src = defaultUrl;
-    if (profileBtn) profileBtn.dataset.foto = defaultUrl;
-    
-    showCustomAlert("Tu foto de perfil ha sido eliminada.", "Éxito");
+  bindTabs();
+  bindSearch();
+  bindPendingApprovalButtons();
+  bindUserRowClicks();
+  bindModalActions();
+  loadAndRender();
 });
