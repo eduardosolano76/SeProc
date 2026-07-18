@@ -85,11 +85,11 @@ public class UsuarioService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apellido es obligatorio.");
 		}
 
-		if (usuarioRepo.existsByUsername(dto.getUsername())) {
+		if (usuarioRepo.existsByUsernameIgnoreCase(dto.getUsername())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username ya existe.");
 		}
 
-		if (usuarioRepo.existsByEmail(dto.getEmail())) {
+		if (usuarioRepo.existsByEmailIgnoreCase(dto.getEmail())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email ya existe.");
 		}
 
@@ -139,12 +139,12 @@ public class UsuarioService {
 		}
 
 		if (dto.getUsername() != null && !dto.getUsername().equalsIgnoreCase(u.getUsername())
-				&& usuarioRepo.existsByUsername(dto.getUsername())) {
+				&& usuarioRepo.existsByUsernameIgnoreCase(dto.getUsername())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username ya existe.");
 		}
 
 		if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(u.getEmail())
-				&& usuarioRepo.existsByEmail(dto.getEmail())) {
+				&& usuarioRepo.existsByEmailIgnoreCase(dto.getEmail())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email ya existe.");
 		}
 

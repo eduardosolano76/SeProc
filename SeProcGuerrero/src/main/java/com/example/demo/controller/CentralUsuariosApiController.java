@@ -61,10 +61,10 @@ public class CentralUsuariosApiController {
 			return ResponseEntity.badRequest().body("Password obligatorio.");
 		}
 
-		if (usuarioRepo.existsByUsername(dto.getUsername())) {
+		if (usuarioRepo.existsByUsernameIgnoreCase(dto.getUsername())) {
 			return ResponseEntity.badRequest().body("Username ya existe.");
 		}
-		if (usuarioRepo.existsByEmail(dto.getEmail())) {
+		if (usuarioRepo.existsByEmailIgnoreCase(dto.getEmail())) {
 			return ResponseEntity.badRequest().body("Email ya existe.");
 		}
 
@@ -108,12 +108,12 @@ public class CentralUsuariosApiController {
 		}
 
 		if (dto.getUsername() != null && !dto.getUsername().equalsIgnoreCase(u.getUsername())
-				&& usuarioRepo.existsByUsername(dto.getUsername())) {
+				&& usuarioRepo.existsByUsernameIgnoreCase(dto.getUsername())) {
 			return ResponseEntity.badRequest().body("Username ya existe.");
 		}
 
 		if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(u.getEmail())
-				&& usuarioRepo.existsByEmail(dto.getEmail())) {
+				&& usuarioRepo.existsByEmailIgnoreCase(dto.getEmail())) {
 			return ResponseEntity.badRequest().body("Email ya existe.");
 		}
 

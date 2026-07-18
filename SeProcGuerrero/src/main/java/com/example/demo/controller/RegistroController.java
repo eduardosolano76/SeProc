@@ -1,118 +1,113 @@
 package com.example.demo.controller;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.RegistroDto;
 import com.example.demo.modelo.Institucion;
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.InstitucionRepository;
 import com.example.demo.repository.UsuarioRepository;
-import com.example.demo.storage.StorageService;
 
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
+@RequestMapping("/api/seproc/registro")
 public class RegistroController {
 
 	private final UsuarioRepository usuarioRepo;
 	private final PasswordEncoder encoder;
 	private final InstitucionRepository institucionRepo;
-	private final StorageService storageService;
-	
-	public RegistroController(UsuarioRepository usuarioRepo, PasswordEncoder encoder, InstitucionRepository institucionRepo, StorageService storageService) {
+
+	public RegistroController(UsuarioRepository usuarioRepo, PasswordEncoder encoder,
+			InstitucionRepository institucionRepo) {
+
 		this.usuarioRepo = usuarioRepo;
 		this.encoder = encoder;
 		this.institucionRepo = institucionRepo;
-		this.storageService = storageService;
-	}
-	
-	// GET: /registro/{abreviacion}
-	// Formulario
-	@GetMapping("/registro/{abreviacion}")
-	public String form(@PathVariable String abreviacion, Model model) {
-		// Buscar la institución
-		Institucion inst = institucionRepo.findByAbreviacionIgnoreCase(abreviacion).orElse(null);
-
-		// Si no existe o está inactiva, redirigir a un error genérico (o al login
-		// default)
-		if (inst == null || inst.getActiva() == 0) {
-			return "redirect:/login?error=institucion_invalida";
-		}
-
-		// Pasamos los datos al formulario
-		RegistroDto dto = new RegistroDto();
-		model.addAttribute("registro", dto);
-		model.addAttribute("institucion", inst); // Pasamos el objeto completo para usar su logo y nombre
-		model.addAttribute("abreviacionUrl", abreviacion.toLowerCase()); // Para armar el action del form
-		
-		model.addAttribute("logoUrl", storageService.publicLogoUrl(inst.getLogoUrl()));
-
-		return "registro/registro";
 	}
 
-	// POST: /registro/{abreviacion}
-	// Guardar registro como PENDIENTE (activo=false, sin rol)
-	@PostMapping("/registro/{abreviacion}")
-	public String registrar(@PathVariable String abreviacion, @Valid @ModelAttribute("registro") RegistroDto dto,
-			BindingResult br, Model model) {
+	@PostMapping("/{abreviacion}")
+	@Transactional
+	public ResponseEntity<Map<String, Object>> registrar(@PathVariable String abreviacion,
+			@Valid @RequestBody RegistroDto dto, BindingResult bindingResult) {
 
-		// Validar la institución nuevamente por seguridad
-		Institucion inst = institucionRepo.findByAbreviacionIgnoreCase(abreviacion).orElse(null);
-		if (inst == null || inst.getActiva() == 0) {
-			return "redirect:/login?error=institucion_invalida";
+		Institucion institucion = institucionRepo.findByAbreviacionIgnoreCase(abreviacion).orElse(null);
+
+		if (institucion == null || institucion.getActiva() == 0) {
+			return respuestaError(HttpStatus.NOT_FOUND, "La institución indicada no existe o no está activa.",
+					Map.of());
 		}
 
-		if (usuarioRepo.existsByUsername(dto.getUsername())) {
-			br.rejectValue("username", "username.duplicado", "Ese username ya está registrado.");
+		Map<String, String> errores = new LinkedHashMap<>();
+
+		bindingResult.getFieldErrors()
+				.forEach(error -> errores.putIfAbsent(error.getField(), error.getDefaultMessage()));
+
+		String username = dto.getUsername() == null ? "" : dto.getUsername().trim();
+
+		String email = dto.getEmail() == null ? "" : dto.getEmail().trim();
+
+		if (!username.isBlank() && usuarioRepo.existsByUsernameIgnoreCase(username)) {
+
+			errores.put("username", "Ese nombre de usuario ya está registrado.");
 		}
-		if (usuarioRepo.existsByEmail(dto.getEmail())) {
-			br.rejectValue("email", "email.duplicado", "Ese correo ya está registrado.");
+
+		if (!email.isBlank() && usuarioRepo.existsByEmailIgnoreCase(email)) {
+
+			errores.put("email", "Ese correo electrónico ya está registrado.");
 		}
 
-		if (br.hasErrors()) {
-			model.addAttribute("institucion", inst);
-			model.addAttribute("abreviacionUrl", abreviacion.toLowerCase());
-			return "registro/registro";
+		if (!errores.isEmpty()) {
+			return respuestaError(HttpStatus.BAD_REQUEST, "Revisa los datos marcados en el formulario.", errores);
 		}
 
-		Usuario u = new Usuario();
-		u.setUsername(dto.getUsername());
-		u.setPassword(encoder.encode(dto.getPassword()));
-		u.setNombre(dto.getNombre());
-		u.setApellido(dto.getApellido());
-		u.setEmail(dto.getEmail());
-		u.setFechaRegistro(LocalDate.now());
-		
-		u.setInstitucion(inst);
-		
-		// IMPORTANTE: queda pendiente
-		u.setActivo(false);
-		u.setRol(null); // el admin lo asigna al aprobar
+		Usuario usuario = new Usuario();
 
-		usuarioRepo.save(u);
+		usuario.setNombre(dto.getNombre().trim());
+		usuario.setApellido(dto.getApellido().trim());
+		usuario.setEmail(email);
+		usuario.setUsername(username);
+		usuario.setPassword(encoder.encode(dto.getPassword()));
 
-		return "redirect:/registro/" + abreviacion.toLowerCase() + "/exito";
+		usuario.setFechaRegistro(LocalDate.now());
+		usuario.setInstitucion(institucion);
+
+		// La cuenta queda esperando aprobación
+		usuario.setActivo(false);
+		usuario.setRol(null);
+
+		usuarioRepo.save(usuario);
+
+		Map<String, Object> respuesta = new LinkedHashMap<>();
+
+		respuesta.put("mensaje", "Tu solicitud fue enviada correctamente. "
+				+ "            Podrás iniciar sesión cuando el administrador\r\n"
+				+ "            de la institución active tu cuenta y te asigne un rol.");
+
+		return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
 	}
-	
-	// GET: /registro/{abreviacion}/exito
-	@GetMapping("/registro/{abreviacion}/exito")
-	public String exito(@PathVariable String abreviacion, Model model) {
-		Institucion inst = institucionRepo.findByAbreviacionIgnoreCase(abreviacion).orElse(null);
-		if (inst != null) {
-			model.addAttribute("institucion", inst);
-			model.addAttribute("abreviacionUrl", abreviacion.toLowerCase());
-			model.addAttribute("logoUrl", storageService.publicLogoUrl(inst.getLogoUrl()));
-		}
-		return "registro/registro-exito";
-	}
 
+	private ResponseEntity<Map<String, Object>> respuestaError(HttpStatus estado, String mensaje,
+			Map<String, String> errores) {
+
+		Map<String, Object> respuesta = new LinkedHashMap<>();
+
+		respuesta.put("mensaje", mensaje);
+		respuesta.put("errores", errores);
+
+		return ResponseEntity.status(estado).body(respuesta);
+	}
 }

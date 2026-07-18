@@ -16,4 +16,7 @@ public interface InstitucionRepository extends JpaRepository<Institucion, String
     boolean existsByAbreviacionIgnoreCase(String abreviacion);
     boolean existsBySchemaName(String schemaName);
 
+    boolean existsByNombreOficialIgnoreCase(
+    	    String nombreOficial
+    	);
 }

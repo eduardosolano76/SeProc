@@ -8,4 +8,11 @@ import com.example.demo.modelo.SolicitudInstitucion;
 @Repository
 public interface SolicitudInstitucionRepository extends JpaRepository<SolicitudInstitucion, Integer> {
 
+    boolean existsByNombreDependenciaIgnoreCase(
+        String nombreDependencia
+    );
+
+    boolean existsByAbreviacionIgnoreCase(
+        String abreviacion
+    );
 }

@@ -164,7 +164,7 @@ public class AdminSistemaService {
         usuario.setNombre(nombre);
         usuario.setApellido(apellido);
         
-        if (usuarioRepo.existsByEmail(sol.getEmailContacto())) {
+        if (usuarioRepo.existsByEmailIgnoreCase(sol.getEmailContacto())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Ya existe un usuario registrado con el correo: " + sol.getEmailContacto()
@@ -200,7 +200,7 @@ public class AdminSistemaService {
 
         username = username.trim().toLowerCase();
 
-        if (usuarioRepo.existsByUsername(username)) {
+        if (usuarioRepo.existsByUsernameIgnoreCase(username)) {
             username = username + "_" + idSolicitud;
         }
 

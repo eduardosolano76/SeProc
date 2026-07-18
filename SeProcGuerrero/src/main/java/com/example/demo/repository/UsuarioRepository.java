@@ -38,9 +38,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
         Optional<String> findSchemaNameByUsername(@Param("username") String username);
 
 	// Validaciones de registro (evita duplicados globales)
-	boolean existsByUsername(String username);
+    boolean existsByUsernameIgnoreCase(String username);
 
-	boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
 
 	// -- Metodos multitenant (Con institucion obligatoria) --
 
