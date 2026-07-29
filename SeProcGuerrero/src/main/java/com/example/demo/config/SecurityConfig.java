@@ -10,7 +10,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,8 +22,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.example.demo.security.AdminSistemaDetailsService;
 import com.example.demo.security.CustomUserDetailsService;
-import com.example.demo.security.RoleRedirectSuccessHandler;
-import com.example.demo.security.TenantLogoutSuccessHandler;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -130,9 +127,9 @@ public class SecurityConfig {
 
 	@Bean
 	@Order(2)
-	SecurityFilterChain securityFilterChain(HttpSecurity http, RoleRedirectSuccessHandler successHandler,
+	SecurityFilterChain securityFilterChain(HttpSecurity http,
 			CustomUserDetailsService customUserDetailsService, PasswordEncoder passwordEncoder,
-			TenantFilter tenantFilter, TenantLogoutSuccessHandler logoutHandler) throws Exception {
+			TenantFilter tenantFilter) throws Exception {
 
 		// EXPLÍCITAMENTE para los clientes
 		DaoAuthenticationProvider clientProvider = new DaoAuthenticationProvider(customUserDetailsService);
@@ -149,7 +146,7 @@ public class SecurityConfig {
 
 						// PÚBLICOS
 						.requestMatchers("/", "/auth/**", "/public/**", "/registro/**", "/api/seproc/**",
-								"/api/auth/login")
+								"/api/auth/login", "/api/auth/logout")
 						.permitAll()
 
 						// MÓDULOS POR ROL
@@ -219,9 +216,40 @@ public class SecurityConfig {
 
 							response.getWriter().flush();
 						})
+						.permitAll()
+						)
+		        .logout(logout -> logout
 
-						.permitAll());
-		http.removeConfigurer(DefaultLoginPageConfigurer.class);
+		            .logoutUrl("/api/auth/logout")
+
+		            .invalidateHttpSession(true)
+
+		            .clearAuthentication(true)
+
+		            .deleteCookies("JSESSIONID")
+
+		            .logoutSuccessHandler(
+		                (request, response,authentication) -> {
+
+		                    response.setStatus(
+		                        HttpServletResponse.SC_OK
+		                    );
+
+		                    response.setContentType(
+		                        "application/json;charset=UTF-8"
+		                    );
+
+		                    response.getWriter().write(
+		                        "{\"mensaje\":"
+		                        + "\"Sesión cerrada correctamente\"}"
+		                    );
+
+		                    response.getWriter().flush();
+		                }
+		            )
+
+		            .permitAll()
+		        );
 		return http.build();
 	}
 
@@ -256,7 +284,7 @@ public class SecurityConfig {
 
 		if (authorities.stream().anyMatch(
 				a -> a.getAuthority().equals("ROLE_ADMINISTRADOR") || a.getAuthority().equals("ADMINISTRADOR"))) {
-			return "/admin";
+			return "/seproc/admin-institucion/dashboard";
 		}
 
 		if (authorities.stream()

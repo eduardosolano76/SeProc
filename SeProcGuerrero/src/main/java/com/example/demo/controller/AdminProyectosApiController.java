@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.modelo.Institucion;
 import com.example.demo.modelo.Proyecto;
 import com.example.demo.modelo.ProyectoEtapa;
 import com.example.demo.modelo.SolicitudProyecto;
