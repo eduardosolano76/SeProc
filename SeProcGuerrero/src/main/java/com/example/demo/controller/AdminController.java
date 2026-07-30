@@ -48,301 +48,190 @@ public class AdminController {
 		this.storageService = storageService;
 	}
 
-    @GetMapping("/perfil")
-    public ResponseEntity<?> obtenerPerfil(
-            Principal principal) {
+	@GetMapping("/perfil")
+	public ResponseEntity<?> obtenerPerfil(Principal principal) {
 
-        Usuario usuario =
-                perfilService.obtenerUsuarioPorUsername(
-                        principal.getName());
+		Usuario usuario = perfilService.obtenerUsuarioPorUsername(principal.getName());
 
-        String fotoUrl =
-                storageService.publicUrl(usuario.getFoto());
+		String fotoUrl = storageService.publicUrl(usuario.getFoto());
 
-        if (fotoUrl == null || fotoUrl.isBlank()) {
-            fotoUrl =
-                    "/assets/iconos/sinFotoPerfil.png";
-        }
+		if (fotoUrl == null || fotoUrl.isBlank()) {
+			fotoUrl = "/assets/iconos/sinFotoPerfil.png";
+		}
 
-        String logoEmpresa =
-                "/assets/iconos/logo.jpg";
+		String logoEmpresa = "/assets/iconos/logo.jpg";
 
-        String abreviacion = "";
+		String abreviacion = "";
 
-        if (usuario.getInstitucion() != null) {
-            abreviacion =
-                    usuario.getInstitucion()
-                            .getAbreviacion();
+		if (usuario.getInstitucion() != null) {
+			abreviacion = usuario.getInstitucion().getAbreviacion();
 
-            String logoGuardado =
-                    storageService.publicLogoUrl(
-                            usuario.getInstitucion()
-                                    .getLogoUrl());
+			String logoGuardado = storageService.publicLogoUrl(usuario.getInstitucion().getLogoUrl());
 
-            if (logoGuardado != null
-                    && !logoGuardado.isBlank()) {
-                logoEmpresa = logoGuardado;
-            }
-        }
+			if (logoGuardado != null && !logoGuardado.isBlank()) {
+				logoEmpresa = logoGuardado;
+			}
+		}
 
-        String rol =
-                usuario.getRol() != null
-                        ? usuario.getRol().getNombre()
-                        : "sin rol";
+		String rol = usuario.getRol() != null ? usuario.getRol().getNombre() : "sin rol";
 
-        Map<String, Object> response =
-                new LinkedHashMap<>();
+		Map<String, Object> response = new LinkedHashMap<>();
 
-        response.put(
-                "idUsuario",
-                usuario.getIdUsuario());
+		response.put("idUsuario", usuario.getIdUsuario());
 
-        response.put(
-                "username",
-                usuario.getUsername());
+		response.put("username", usuario.getUsername());
 
-        response.put(
-                "nombreUsuario",
-                construirNombreCompleto(usuario));
+		response.put("nombreUsuario", texto(usuario.getNombre()));
 
-        response.put("rolUsuario", rol);
-        response.put("fotoUrl", fotoUrl);
-        response.put("logoEmpresa", logoEmpresa);
-        response.put("abreviacion", abreviacion);
+		response.put("rolUsuario", rol);
+		response.put("fotoUrl", fotoUrl);
+		response.put("logoEmpresa", logoEmpresa);
+		response.put("abreviacion", abreviacion);
 
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/usuarios")
-    public ResponseEntity<List<Map<String, Object>>>
-            obtenerUsuarios(
-                    @RequestParam String view) {
+		return ResponseEntity.ok(response);
+	}
 
-        List<Map<String, Object>> response =
-                usuarioService
-                        .listarUsuariosPorView(view)
-                        .stream()
-                        .map(this::convertirUsuario)
-                        .toList();
+	@GetMapping("/usuarios")
+	public ResponseEntity<List<Map<String, Object>>> obtenerUsuarios(@RequestParam String view) {
 
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/usuarios/pendientes")
-    public ResponseEntity<List<Map<String, Object>>>
-            obtenerPendientes() {
+		List<Map<String, Object>> response = usuarioService.listarUsuariosPorView(view).stream()
+				.map(this::convertirUsuario).toList();
 
-        List<Map<String, Object>> response =
-                adminService.obtenerPendientes()
-                        .stream()
-                        .map(this::convertirUsuario)
-                        .toList();
+		return ResponseEntity.ok(response);
+	}
 
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/usuarios/{id}")
-    public ResponseEntity<?> obtenerUsuario(
-            @PathVariable Long id) {
+	@GetMapping("/usuarios/pendientes")
+	public ResponseEntity<List<Map<String, Object>>> obtenerPendientes() {
 
-        Usuario usuario =
-                usuarioService.obtenerPorId(id);
+		List<Map<String, Object>> response = adminService.obtenerPendientes().stream().map(this::convertirUsuario)
+				.toList();
 
-        return ResponseEntity.ok(
-                convertirUsuario(usuario));
-    }
-    
-    @PostMapping("/usuarios")
-    public ResponseEntity<?> crearUsuario(
-            @RequestBody UsuarioUpsertDto dto) {
+		return ResponseEntity.ok(response);
+	}
 
-        try {
-            usuarioService.crearUsuario(dto);
+	@GetMapping("/usuarios/{id}")
+	public ResponseEntity<?> obtenerUsuario(@PathVariable Long id) {
 
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(Map.of(
-                            "mensaje",
-                            "Usuario creado correctamente."));
-        }
-        catch (ResponseStatusException ex) {
-            return crearError(ex);
-        }
-    }
-    
-    @PutMapping("/usuarios/{id}")
-    public ResponseEntity<?> actualizarUsuario(
-            @PathVariable Long id,
-            @RequestBody UsuarioUpsertDto dto) {
+		Usuario usuario = usuarioService.obtenerPorId(id);
 
-        try {
-            usuarioService.actualizarUsuario(id, dto);
+		return ResponseEntity.ok(convertirUsuario(usuario));
+	}
 
-            return ResponseEntity.ok(
-                    Map.of(
-                            "mensaje",
-                            "Usuario actualizado correctamente."));
-        }
-        catch (ResponseStatusException ex) {
-            return crearError(ex);
-        }
-    }
+	@PostMapping("/usuarios")
+	public ResponseEntity<?> crearUsuario(@RequestBody UsuarioUpsertDto dto) {
 
-    @DeleteMapping("/usuarios/{id}")
-    public ResponseEntity<?> eliminarUsuario(
-            @PathVariable Long id,
-            Principal principal) {
+		try {
+			usuarioService.crearUsuario(dto);
 
-        try {
-            usuarioService.eliminarUsuario(
-                    id,
-                    principal.getName());
+			return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("mensaje", "Usuario creado correctamente."));
+		} catch (ResponseStatusException ex) {
+			return crearError(ex);
+		}
+	}
 
-            return ResponseEntity.ok(
-                    Map.of(
-                            "mensaje",
-                            "Usuario eliminado correctamente."));
-        }
-        catch (ResponseStatusException ex) {
-            return crearError(ex);
-        }
-        catch (DataIntegrityViolationException ex) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of(
-                            "mensaje",
-                            "No se puede eliminar el usuario porque tiene datos relacionados."));
-        }
-    }
-    
-    @PostMapping("/usuarios/{id}/aprobar")
-    public ResponseEntity<?> aprobarUsuario(
-            @PathVariable Long id,
-            @RequestParam String rolNombre) {
+	@PutMapping("/usuarios/{id}")
+	public ResponseEntity<?> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioUpsertDto dto) {
 
-        adminService.aprobarUsuario(id, rolNombre);
+		try {
+			usuarioService.actualizarUsuario(id, dto);
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "mensaje",
-                        "Usuario aprobado correctamente."));
-    }
-    
-    @PostMapping("/usuarios/{id}/rechazar")
-    public ResponseEntity<?> rechazarUsuario(
-            @PathVariable Long id) {
+			return ResponseEntity.ok(Map.of("mensaje", "Usuario actualizado correctamente."));
+		} catch (ResponseStatusException ex) {
+			return crearError(ex);
+		}
+	}
 
-        adminService.rechazarUsuario(id);
+	@DeleteMapping("/usuarios/{id}")
+	public ResponseEntity<?> eliminarUsuario(@PathVariable Long id, Principal principal) {
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "mensaje",
-                        "Solicitud rechazada correctamente."));
-    }
-    
-    @PostMapping(
-            value = "/perfil/foto",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> subirFotoPerfil(
-            @RequestParam("file") MultipartFile file,
-            Principal principal) {
+		try {
+			usuarioService.eliminarUsuario(id, principal.getName());
 
-        Map<String, String> response =
-                perfilService.subirFotoPerfil(
-                        file,
-                        principal.getName());
+			return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente."));
+		} catch (ResponseStatusException ex) {
+			return crearError(ex);
+		} catch (DataIntegrityViolationException ex) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(Map.of("mensaje", "No se puede eliminar el usuario porque tiene datos relacionados."));
+		}
+	}
 
-        return ResponseEntity.ok(response);
-    }
-    
-    @DeleteMapping("/perfil/foto")
-    public ResponseEntity<?> eliminarFotoPerfil(
-            Principal principal) {
+	@PostMapping("/usuarios/{id}/aprobar")
+	public ResponseEntity<?> aprobarUsuario(@PathVariable Long id, @RequestParam String rolNombre) {
 
-        perfilService.eliminarFotoPerfil(
-                principal.getName());
+		adminService.aprobarUsuario(id, rolNombre);
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "mensaje",
-                        "Foto eliminada correctamente.",
-                        "url",
-                        "/assets/iconos/sinFotoPerfil.png"));
-    }
+		return ResponseEntity.ok(Map.of("mensaje", "Usuario aprobado correctamente."));
+	}
 
-    @PostMapping("/perfil/password")
-    public ResponseEntity<?> cambiarPassword(
-            @RequestBody CambiarPasswordDto dto,
-            Principal principal) {
+	@PostMapping("/usuarios/{id}/rechazar")
+	public ResponseEntity<?> rechazarUsuario(@PathVariable Long id) {
 
-        perfilService.cambiarPassword(
-                principal.getName(),
-                dto);
+		adminService.rechazarUsuario(id);
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "mensaje",
-                        "Contraseña actualizada correctamente."));
-    }
+		return ResponseEntity.ok(Map.of("mensaje", "Solicitud rechazada correctamente."));
+	}
 
-    private Map<String, Object> convertirUsuario(
-            Usuario usuario) {
+	@PostMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
 
-        Map<String, Object> dto =
-                new LinkedHashMap<>();
+		Map<String, String> response = perfilService.subirFotoPerfil(file, principal.getName());
 
-        dto.put(
-                "idUsuario",
-                usuario.getIdUsuario());
+		return ResponseEntity.ok(response);
+	}
 
-        dto.put(
-                "nombre",
-                texto(usuario.getNombre()));
+	@DeleteMapping("/perfil/foto")
+	public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
 
-        dto.put(
-                "apellido",
-                texto(usuario.getApellido()));
+		perfilService.eliminarFotoPerfil(principal.getName());
 
-        dto.put(
-                "username",
-                texto(usuario.getUsername()));
+		return ResponseEntity
+				.ok(Map.of("mensaje", "Foto eliminada correctamente.", "url", "/assets/iconos/sinFotoPerfil.png"));
+	}
 
-        dto.put(
-                "email",
-                texto(usuario.getEmail()));
+	@PostMapping("/perfil/password")
+	public ResponseEntity<?> cambiarPassword(@RequestBody CambiarPasswordDto dto, Principal principal) {
 
-        dto.put(
-                "rolNombre",
-                usuario.getRol() != null
-                        ? texto(usuario.getRol().getNombre())
-                        : "");
+		perfilService.cambiarPassword(principal.getName(), dto);
 
-        return dto;
-    }
+		return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente."));
+	}
 
-    private String construirNombreCompleto(
-            Usuario usuario) {
+	private Map<String, Object> convertirUsuario(Usuario usuario) {
 
-        String nombre = texto(usuario.getNombre());
-        String apellido = texto(usuario.getApellido());
+		Map<String, Object> dto = new LinkedHashMap<>();
 
-        return (nombre + " " + apellido).trim();
-    }
+		dto.put("idUsuario", usuario.getIdUsuario());
 
-    private String texto(String valor) {
-        return valor == null ? "" : valor;
-    }
+		dto.put("nombre", texto(usuario.getNombre()));
 
-    private ResponseEntity<?> crearError(
-            ResponseStatusException ex) {
+		dto.put("apellido", texto(usuario.getApellido()));
 
-        String mensaje =
-                ex.getReason() != null
-                        ? ex.getReason()
-                        : "No fue posible completar la operación.";
+		dto.put("username", texto(usuario.getUsername()));
 
-        return ResponseEntity
-                .status(ex.getStatusCode())
-                .body(Map.of("mensaje", mensaje));
-    }
+		dto.put("email", texto(usuario.getEmail()));
+
+		dto.put("rolNombre", usuario.getRol() != null ? texto(usuario.getRol().getNombre()) : "");
+
+		return dto;
+	}
+
+	private String construirNombreCompleto(Usuario usuario) {
+
+		String nombre = texto(usuario.getNombre());
+		String apellido = texto(usuario.getApellido());
+
+		return (nombre + " " + apellido).trim();
+	}
+
+	private String texto(String valor) {
+		return valor == null ? "" : valor;
+	}
+
+	private ResponseEntity<?> crearError(ResponseStatusException ex) {
+
+		String mensaje = ex.getReason() != null ? ex.getReason() : "No fue posible completar la operación.";
+
+		return ResponseEntity.status(ex.getStatusCode()).body(Map.of("mensaje", mensaje));
+	}
 }
