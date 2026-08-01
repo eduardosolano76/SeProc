@@ -1,27 +1,28 @@
 package com.example.demo.controller;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.modelo.Usuario;
 import com.example.demo.repository.UsuarioRepository;
 import com.example.demo.storage.StorageService;
 
-@Controller
+@RestController
+@RequestMapping("/api/supervisor")
 public class SupervisorController {
 
 	private final UsuarioRepository usuarioRepo;
@@ -37,65 +38,94 @@ public class SupervisorController {
 		this.passwordEncoder = passwordEncoder;
 	}
 
-	@GetMapping("/supervisor")
-	public String supervisor(Model model, Principal principal,
-			@RequestParam(value = "view", required = false, defaultValue = "proyectos") String view) {
+	@GetMapping("/perfil")
+	public ResponseEntity<?> obtenerPerfil(Principal principal) {
 
-		String username = principal.getName();
-		var usuario = usuarioRepo.findByUsername(username).orElse(null);
-
-		if (usuario != null) {
-			model.addAttribute("nombreUsuario", usuario.getNombre());
-			String rol = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "sin rol";
-			model.addAttribute("rolUsuario", rol);
-			model.addAttribute("fotoUrl", storageService.publicUrl(usuario.getFoto()));
-			
-			if (usuario.getInstitucion() != null) {
-				model.addAttribute("logoEmpresa", storageService.publicLogoUrl(usuario.getInstitucion().getLogoUrl()));
-			} else {
-				model.addAttribute("logoEmpresa", "/assets/iconos/logoIgife.jpg");
-			}
-		}
-		else {
-			model.addAttribute("nombreUsuario", username);
-			model.addAttribute("rolUsuario", "sin rol");
-			model.addAttribute("fotoUrl", null);
-		}
-
-		model.addAttribute("view", view);
-
-		return "supervisor/supervisor";
-	}
-
-	// Cambiar contraseña del perfil logueado
-	@PostMapping("/supervisor/perfil/password")
-	@ResponseBody
-	public ResponseEntity<?> cambiarPassword(@RequestBody Map<String, String> payload, Principal principal) {
-		String username = principal.getName();
-		Usuario usuario = usuarioRepo.findByUsername(username).orElse(null);
+		Usuario usuario = usuarioRepo.findByUsername(principal.getName()).orElse(null);
 
 		if (usuario == null) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", "Usuario no encontrado."));
 		}
 
-		String passActual = payload.get("passActual");
-		String passNueva = payload.get("passNueva");
+		String rol = usuario.getRol() != null ? usuario.getRol().getNombre() : "SUPERVISOR";
 
-		// 1. Verificar que la contraseña actual ingresada coincida con la de la BD
-		if (!passwordEncoder.matches(passActual, usuario.getPassword())) {
-			return ResponseEntity.badRequest().body("La contraseña actual es incorrecta.");
+		String fotoUrl = storageService.publicUrl(usuario.getFoto());
+
+		String logoEmpresa = null;
+		String abreviacion = null;
+
+		if (usuario.getInstitucion() != null) {
+			logoEmpresa = storageService.publicLogoUrl(usuario.getInstitucion().getLogoUrl());
+
+			// Ajusta el getter si en tu entidad tiene otro nombre.
+			abreviacion = usuario.getInstitucion().getAbreviacion();
 		}
 
-		// 2. Encriptar y guardar la nueva contraseña
-		usuario.setPassword(passwordEncoder.encode(passNueva));
-		usuarioRepo.save(usuario);
+		Map<String, Object> perfil = new HashMap<>();
+		perfil.put("nombreUsuario", usuario.getNombre());
+		perfil.put("rolUsuario", rol);
+		perfil.put("fotoUrl", fotoUrl);
+		perfil.put("logoEmpresa", logoEmpresa);
+		perfil.put("abreviacion", abreviacion);
 
-		return ResponseEntity.ok().build();
+		return ResponseEntity.ok(perfil);
+	}
+	
+	// Cambiar password del perfil logueado
+	@PostMapping("/perfil/password")
+	public ResponseEntity<?> cambiarPassword(
+	        @RequestBody Map<String, String> payload,
+	        Principal principal) {
+
+	    Usuario usuario = usuarioRepo.findByUsername(principal.getName())
+	            .orElse(null);
+
+	    if (usuario == null) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+	                .body(Map.of("mensaje", "Usuario no encontrado."));
+	    }
+
+	    String passActual = payload.get("passActual");
+	    String passNueva = payload.get("passNueva");
+	    String passRepetida = payload.get("passRepetida");
+
+	    if (passActual == null || passNueva == null || passRepetida == null
+	            || passActual.isBlank()
+	            || passNueva.isBlank()
+	            || passRepetida.isBlank()) {
+
+	        return ResponseEntity.badRequest()
+	                .body(Map.of("mensaje", "Todos los campos son obligatorios."));
+	    }
+
+	    if (!passNueva.equals(passRepetida)) {
+	        return ResponseEntity.badRequest()
+	                .body(Map.of("mensaje", "Las contraseñas nuevas no coinciden."));
+	    }
+
+	    if (!passwordEncoder.matches(passActual, usuario.getPassword())) {
+	        return ResponseEntity.badRequest()
+	                .body(Map.of("mensaje", "La contraseña actual es incorrecta."));
+	    }
+
+	    if (passwordEncoder.matches(passNueva, usuario.getPassword())) {
+	        return ResponseEntity.badRequest()
+	                .body(Map.of(
+	                        "mensaje",
+	                        "La nueva contraseña debe ser diferente a la actual."
+	                ));
+	    }
+
+	    usuario.setPassword(passwordEncoder.encode(passNueva));
+	    usuarioRepo.save(usuario);
+
+	    return ResponseEntity.ok(
+	            Map.of("mensaje", "Contraseña actualizada correctamente.")
+	    );
 	}
 
 	// Subir foto
-	@PostMapping(value = "/supervisor/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@ResponseBody
+	@PostMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
 
 		String username = principal.getName();
@@ -114,17 +144,14 @@ public class SupervisorController {
 
 			String url = storageService.publicUrl(key);
 			return ResponseEntity.ok(Map.of("url", url));
-		}
-		catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo subir la foto.");
 		}
 	}
 
-	@GetMapping("/supervisor/perfil/foto")
-	@ResponseBody
+	@GetMapping("/perfil/foto")
 	public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
 		String username = principal.getName();
 		Usuario u = usuarioRepo.findByUsername(username).orElse(null);
@@ -141,8 +168,7 @@ public class SupervisorController {
 		return ResponseEntity.ok(Map.of("url", url));
 	}
 
-	@DeleteMapping("/supervisor/perfil/foto")
-	@ResponseBody
+	@DeleteMapping("/perfil/foto")
 	public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
 		String username = principal.getName();
 		Usuario u = usuarioRepo.findByUsername(username).orElse(null);
@@ -154,7 +180,7 @@ public class SupervisorController {
 		}
 
 		return ResponseEntity
-			.ok(Map.of("message", "Foto eliminada correctamente", "url", "/assets/iconos/sinFotoPerfil.png"));
+				.ok(Map.of("message", "Foto eliminada correctamente", "url", "/assets/iconos/sinFotoPerfil.png"));
 	}
 
 }

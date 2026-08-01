@@ -156,7 +156,6 @@ public class SecurityConfig {
 						.requestMatchers("/constructor", "/constructor/**").hasRole("CONTRATISTA")
 						.requestMatchers("/api/constructor/**").hasRole("CONTRATISTA")
 
-						.requestMatchers("/supervisor", "/supervisor/**").hasRole("SUPERVISOR")
 						.requestMatchers("/api/supervisor/**").hasRole("SUPERVISOR")
 
 						.requestMatchers("/central", "/central/**").hasRole("CENTRAL")
@@ -294,7 +293,7 @@ public class SecurityConfig {
 
 		if (authorities.stream()
 				.anyMatch(a -> a.getAuthority().equals("ROLE_SUPERVISOR") || a.getAuthority().equals("SUPERVISOR"))) {
-			return "/supervisor";
+			return "/supervisor-institucion/dashboard";
 		}
 
 		if (authorities.stream()
