@@ -284,12 +284,12 @@ public class SecurityConfig {
 
 		if (authorities.stream().anyMatch(
 				a -> a.getAuthority().equals("ROLE_ADMINISTRADOR") || a.getAuthority().equals("ADMINISTRADOR"))) {
-			return "/seproc/admin-institucion/dashboard";
+			return "/admin-institucion/dashboard";
 		}
 
 		if (authorities.stream()
 				.anyMatch(a -> a.getAuthority().equals("ROLE_CONTRATISTA") || a.getAuthority().equals("CONTRATISTA"))) {
-			return "/constructor";
+			return "/constructor-institucion/dashboard";
 		}
 
 		if (authorities.stream()

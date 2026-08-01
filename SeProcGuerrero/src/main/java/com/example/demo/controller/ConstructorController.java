@@ -6,177 +6,179 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.dto.CambiarPasswordDto;
-import com.example.demo.modelo.Proyecto;
-import com.example.demo.modelo.SolicitudProyecto;
-import com.example.demo.repository.ProyectoRepository;
 import com.example.demo.repository.UsuarioRepository;
 import com.example.demo.service.PerfilService;
 import com.example.demo.storage.StorageService;
 
-@Controller
+@RestController
+@RequestMapping("/api/constructor")
 public class ConstructorController {
 
 	private final UsuarioRepository usuarioRepo;
-
-	private final ProyectoRepository proyectoRepo;
-
 	private final StorageService storageService;
-
 	private final PerfilService perfilService;
 
-	public ConstructorController(UsuarioRepository usuarioRepo, ProyectoRepository proyectoRepo,
+	public ConstructorController(UsuarioRepository usuarioRepo, 
 			StorageService storageService, PerfilService perfilService) {
 		this.usuarioRepo = usuarioRepo;
-		this.proyectoRepo = proyectoRepo;
 		this.storageService = storageService;
 		this.perfilService = perfilService;
 	}
+	
+    @GetMapping("/perfil")
+    public ResponseEntity<?> obtenerPerfil(
+            Principal principal) {
 
-	@GetMapping("/constructor")
-	public String constructor(Model model, Principal principal,
-			@RequestParam(name = "view", required = false, defaultValue = "projects") String view) {
+        var usuarioOpt = usuarioRepo.findByUsername(
+                principal.getName());
 
-		cargarDatosUsuario(model, principal);
-		model.addAttribute("vistaActiva", view);
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "mensaje",
+                            "Usuario no encontrado."));
+        }
 
-		return "constructor/constructor";
-	}
+        var usuario = usuarioOpt.get();
+        var institucion = usuario.getInstitucion();
 
-	@GetMapping("/constructor/proyectos/{id}/avance")
-	public String avanceProyecto(@PathVariable Integer id, Model model, Principal principal) {
+        String rol = usuario.getRol() != null
+                ? usuario.getRol().getNombre()
+                : "";
 
-		cargarDatosUsuario(model, principal);
+        String fotoUrl = storageService.publicUrl(
+                usuario.getFoto());
 
-		String username = principal.getName();
-		var usuario = usuarioRepo.findByUsername(username).orElse(null);
-		if (usuario == null) {
-			return "redirect:/constructor";
-		}
+        String logoEmpresa = institucion != null
+                ? storageService.publicLogoUrl(
+                        institucion.getLogoUrl())
+                : "";
 
-		Proyecto proyecto = proyectoRepo.findById(id).orElse(null);
-		if (proyecto == null) {
-			return "redirect:/constructor";
-		}
+        String abreviacion = institucion != null
+                ? institucion.getAbreviacion()
+                : "";
 
-		SolicitudProyecto solicitud = proyecto.getSolicitud();
-		if (solicitud == null || !usuario.getIdUsuario().equals(solicitud.getIdUsuarioContratista())) {
-			return "redirect:/constructor";
-		}
+        var respuesta = new PerfilConstructorResponse(
+                usuario.getIdUsuario(),
+                usuario.getUsername(),
+                usuario.getNombre(),
+                rol,
+                fotoUrl,
+                logoEmpresa,
+                abreviacion);
 
-		String tipoEdificacion = solicitud.getTipoEdificacion() != null ? solicitud.getTipoEdificacion().getNombre()
-				: "";
+        return ResponseEntity.ok(respuesta);
+    }
+    
+    @PostMapping("/perfil/password")
+    public ResponseEntity<?> cambiarPassword(
+            @RequestBody CambiarPasswordDto dto,
+            Principal principal) {
 
-		Integer numeroNiveles = solicitud.getTipoEdificacion() != null
-				? solicitud.getTipoEdificacion().getNumeroNiveles() : 1;
+        try {
+            perfilService.cambiarPassword(
+                    principal.getName(),
+                    dto);
 
-		model.addAttribute("vistaActiva", "projects");
-		model.addAttribute("idProyecto", proyecto.getIdProyecto());
-		model.addAttribute("nombreEscuela", solicitud.getNombreEscuela());
-		model.addAttribute("tipoObra", solicitud.getTipoObra());
-		model.addAttribute("tipoEdificacion", tipoEdificacion);
-		model.addAttribute("numeroNiveles", numeroNiveles);
-		model.addAttribute("avanceGeneral", 25); // visual temporal
-		model.addAttribute("etapaActual", "Cimentación");
+            return ResponseEntity.ok(Map.of(
+                    "mensaje",
+                    "Contraseña actualizada correctamente."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("mensaje", e.getMessage()));
+        }
+    }
+    
+    @PostMapping(
+            value = "/perfil/foto",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> subirFotoPerfil(
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
 
-		return "constructor/proceso";
-	}
+        var usuarioOpt = usuarioRepo.findByUsername(
+                principal.getName());
 
-	private void cargarDatosUsuario(Model model, Principal principal) {
-		String username = principal.getName();
-		var usuario = usuarioRepo.findByUsername(username).orElse(null);
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "mensaje",
+                            "Usuario no encontrado."));
+        }
 
-		if (usuario != null) {
-			model.addAttribute("nombreUsuario", usuario.getNombre());
-			String rol = (usuario.getRol() != null) ? usuario.getRol().getNombre() : "sin rol";
-			model.addAttribute("rolUsuario", rol);
-			model.addAttribute("fotoUrl", storageService.publicUrl(usuario.getFoto()));
-			
-			if (usuario.getInstitucion() != null) {
-				String logoFirebase = storageService.publicLogoUrl(usuario.getInstitucion().getLogoUrl());
-				model.addAttribute("logoEmpresa", logoFirebase);
-			} else {
-				model.addAttribute("logoEmpresa", "/assets/iconos/logo.jpg");
-			}
-		}
-		else {
-			model.addAttribute("nombreUsuario", username);
-			model.addAttribute("rolUsuario", "sin rol");
-			model.addAttribute("fotoUrl", null);
-		}
-	}
+        var usuario = usuarioOpt.get();
 
-	@PostMapping("/constructor/perfil/password")
-	@ResponseBody
-	public ResponseEntity<?> cambiarPassword(@RequestBody CambiarPasswordDto dto, Principal principal) {
-		perfilService.cambiarPassword(principal.getName(), dto);
-		return ResponseEntity.ok().build();
-	}
+        try {
+            storageService.deleteIfExists(
+                    usuario.getFoto());
 
-	@PostMapping(value = "/constructor/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@ResponseBody
-	public ResponseEntity<?> subirFotoPerfil(@RequestParam("file") MultipartFile file, Principal principal) {
+            String key = storageService.saveProfilePhoto(
+                    usuario.getIdUsuario(),
+                    usuario.getUsername(),
+                    file);
 
-		String username = principal.getName();
-		var usuario = usuarioRepo.findByUsername(username).orElse(null);
+            usuario.setFoto(key);
+            usuarioRepo.save(usuario);
 
-		if (usuario == null) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
-		}
+            String url = storageService.publicUrl(key);
 
-		try {
-			storageService.deleteIfExists(usuario.getFoto());
+            return ResponseEntity.ok(Map.of(
+                    "mensaje",
+                    "Foto actualizada correctamente.",
+                    "url",
+                    url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("mensaje", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "mensaje",
+                            "No se pudo subir la foto."));
+        }
+    }
 
-			String key = storageService.saveProfilePhoto(usuario.getIdUsuario(), usuario.getUsername(), file);
-			usuario.setFoto(key);
-			usuarioRepo.save(usuario);
+    @DeleteMapping("/perfil/foto")
+    public ResponseEntity<?> eliminarFotoPerfil(
+            Principal principal) {
 
-			String url = storageService.publicUrl(key);
-			return ResponseEntity.ok(Map.of("url", url));
-		}
-		catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-		catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo subir la foto.");
-		}
-	}
+        try {
+            perfilService.eliminarFotoPerfil(
+                    principal.getName());
 
-	@GetMapping("/constructor/perfil/foto")
-	@ResponseBody
-	public ResponseEntity<?> obtenerFotoPerfil(Principal principal) {
-		String username = principal.getName();
-		var usuario = usuarioRepo.findByUsername(username).orElse(null);
+            return ResponseEntity.ok(Map.of(
+                    "mensaje",
+                    "Foto eliminada correctamente.",
+                    "url",
+                    "/assets/seproc/sinFotoPerfil.png"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("mensaje", e.getMessage()));
+        }
+    }
 
-		if (usuario == null) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
-		}
-
-		String url = storageService.publicUrl(usuario.getFoto());
-		if (url == null || url.isBlank()) {
-			url = "/assets/iconos/sinFotoPerfil.png";
-		}
-
-		return ResponseEntity.ok(Map.of("url", url));
-	}
-
-	@DeleteMapping("/constructor/perfil/foto")
-	@ResponseBody
-	public ResponseEntity<?> eliminarFotoPerfil(Principal principal) {
-		perfilService.eliminarFotoPerfil(principal.getName());
-		return ResponseEntity
-			.ok(Map.of("message", "Foto eliminada correctamente", "url", "/assets/iconos/sinFotoPerfil.png"));
-	}
+    private record PerfilConstructorResponse(
+            Long idUsuario,
+            String username,
+            String nombreUsuario,
+            String rolUsuario,
+            String fotoUrl,
+            String logoEmpresa,
+            String abreviacion) {
+    	
+    }
 
 }
