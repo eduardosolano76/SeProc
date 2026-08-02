@@ -298,7 +298,7 @@ public class SecurityConfig {
 
 		if (authorities.stream()
 				.anyMatch(a -> a.getAuthority().equals("ROLE_CENTRAL") || a.getAuthority().equals("CENTRAL"))) {
-			return "/central";
+			return "/central-institucion/dashboard";
 		}
 
 		if (authorities.stream()
