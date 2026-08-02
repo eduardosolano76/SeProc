@@ -1,4 +1,4 @@
-# SeProc
+# SeProc backend
 
 Sistema web para la gestión y seguimiento del proceso constructivo de aulas tipo para **IGIFE**.
 
