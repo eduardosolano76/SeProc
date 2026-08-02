@@ -1,21 +1,21 @@
 # SeProc backend
 
-Sistema web para la gestión y seguimiento del proceso constructivo de aulas tipo para **IGIFE**.
+Sistema web para la gestión y seguimiento del proceso constructivo de aulas tipo.
 
 ## Descripción
 
 SeProc es un sistema web desarrollado para apoyar el seguimiento del proceso constructivo de aulas tipo, permitiendo visualizar el avance de proyectos por etapas, controlar el flujo de trabajo según el rol del usuario y dar seguimiento al historial de entregas, observaciones y revisiones.
 
-El sistema está orientado a una dependencia encargada de la construcción y supervisión de infraestructura educativa.
+El sistema está orientado a las dependencias encargada de la construcción y supervisión de infraestructura educativa.
 
 ## Objetivo
 
 Facilitar el control y seguimiento de proyectos de construcción mediante una plataforma web que permita:
 
-- visualizar el avance por etapas del proceso constructivo
-- gestionar vistas y permisos por rol
-- consultar historial de avances y observaciones
-- mejorar el seguimiento de proyectos en ejecución
+- Visualizar el avance por etapas del proceso constructivo.
+- Gestionar vistas y permisos por rol.
+- Consultar historial de avances y observaciones.
+- Mejorar el seguimiento de proyectos en ejecución.
 
 ## Roles del sistema
 
@@ -41,37 +41,7 @@ Cada rol cuenta con vistas y acciones específicas según el flujo del proceso c
 ## Tecnologías utilizadas
 
 - **Backend:** Java, Spring Boot
-- **Frontend:** Thymeleaf, JavaScript, HTML, CSS
-- **Base de datos:** MySQL
-- **Control de versiones:** Git y GitHub
-
-## Capturas del sistema
-
-### Inicio de sesión
-![Inicio de sesión](assets/capturas/login.png)
-
-### Vista de proyectos
-![Vista de proyectos](assets/capturas/proyectos.png)
-
-### Seguimiento del proceso constructivo
-![Proceso constructivo](assets/capturas/proceso-constructivo.png)
-
-### Subida de evidencias
-![Subida de evidencias](assets/capturas/subir-evidencias.png)
-
-### Historial
-![Historial](assets/capturas/historial.png)
-
-## Mi participación
-
-Participé en el desarrollo del sistema web, colaborando en:
-
-- implementación y ajuste de interfaces web
-- lógica funcional para avance por etapas
-- desbloqueo de procesos constructivos
-- vistas por rol
-- integración de backend y base de datos
-- mejoras visuales y funcionales del sistema
+- **Base de datos:** PostgreSQL
 
 ## Estado del proyecto
 
@@ -79,7 +49,7 @@ Proyecto en desarrollo como parte de residencia profesional.
 
 ## Repositorio
 
-Este repositorio contiene el código fuente del sistema SeProc.
+Este repositorio contiene el backend del sistema SeProc.
 
 ## Autores
 
