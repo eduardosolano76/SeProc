@@ -69,7 +69,7 @@ public class AdminSistemaApiController {
                 "mensaje", "Institución y cuenta de Administrador creadas con éxito"
         );
     }
-    
+
     @PostMapping("/solicitudes/{id}/rechazar")
     public Map<String, String> rechazarSolicitud(@PathVariable Integer id) {
         adminSistemaService.rechazarSolicitud(id);
