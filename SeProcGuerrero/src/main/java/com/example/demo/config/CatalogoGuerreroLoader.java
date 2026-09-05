@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CatalogoGuerreroLoader {
-
+  
 	@Bean
 	CommandLineRunner cargarCatalogosGuerrero(CatEstadoRepository estadoRepository,
 			CatMunicipioRepository municipioRepository, CatLocalidadRepository localidadRepository,
